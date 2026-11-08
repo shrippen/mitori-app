@@ -351,6 +351,8 @@ qt_add_resources(mitori_app "licences"
     BASE third_party
     FILES third_party/zxing-cpp/ATTRIBUTION.txt third_party/zxing-cpp/LICENSE third_party/qtkeychain/COPYING
         third_party/monocypher/LICENCE.md
+        third_party/openssl/ATTRIBUTION.txt third_party/openssl/LICENSE.txt
+        third_party/libomp/ATTRIBUTION.txt third_party/libomp/LICENSE.TXT
 )
 
 # The generated type registration includes the headers by name.

@@ -73,3 +73,24 @@ def test_share_provider():
     assert [(p.tag, p.get("path")) for p in paths] == [("cache-path", "export/")]
     code = (MANIFEST.parent.parent / "platform" / "sharefile.cpp").read_text()
     assert 'kAuthority = ".fileprovider"' in code and 'kFolder = "/export"' in code
+
+
+def test_apk_tls_check(tmp_path):
+    """tests/check_apk_tls.py (run by scripts/build-android.sh) fails an APK without OpenSSL, as 0.1.0 was."""
+    import importlib.util
+    import zipfile
+
+    spec = importlib.util.spec_from_file_location("check_apk_tls", Path(__file__).parent / "check_apk_tls.py")
+    check = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(check)
+
+    def apk(*libs):
+        path = tmp_path / f"{len(libs)}.apk"
+        with zipfile.ZipFile(path, "w") as z:
+            for lib in libs:
+                z.writestr(check.ABI_DIR + lib, b"")
+        return str(path)
+
+    assert check.main(apk(check.PLUGIN)) == 1
+    assert check.main(apk(check.PLUGIN, "libssl_3.so")) == 1
+    assert check.main(apk(check.PLUGIN, *check.OPENSSL)) == 0

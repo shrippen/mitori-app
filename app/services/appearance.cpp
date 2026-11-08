@@ -190,10 +190,17 @@ QString Appearance::version() const
 
 QString Appearance::licences() const
 {
+    QStringList names = {":/licences/zxing-cpp/ATTRIBUTION.txt", ":/licences/zxing-cpp/LICENSE", ":/licences/qtkeychain/COPYING",
+                         ":/licences/monocypher/LICENCE.md"};
+#ifdef Q_OS_ANDROID
+    // Only the APK carries them (app/CMakeLists.txt, QT_ANDROID_EXTRA_LIBS).
+    names << ":/licences/openssl/ATTRIBUTION.txt" << ":/licences/openssl/LICENSE.txt" << ":/licences/libomp/ATTRIBUTION.txt"
+          << ":/licences/libomp/LICENSE.TXT";
+#endif
+
     QStringList texts;
-    for (const char *name : {":/licences/zxing-cpp/ATTRIBUTION.txt", ":/licences/zxing-cpp/LICENSE", ":/licences/qtkeychain/COPYING",
-                             ":/licences/monocypher/LICENCE.md"}) {
-        QFile file(QString::fromLatin1(name));
+    for (const QString &name : std::as_const(names)) {
+        QFile file(name);
         if (file.open(QIODevice::ReadOnly)) {
             texts << QString::fromUtf8(file.readAll());
         }
