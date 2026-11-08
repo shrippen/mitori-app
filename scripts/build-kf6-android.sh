@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the KF6 prefix the Android app needs: extra-cmake-modules, KCoreAddons (a Kirigami
-# dependency) and Kirigami, cross-compiled for android_arm64_v8a, and QtKeychain (static: nothing
-# more to package).
+# dependency) and Kirigami, cross-compiled for android_arm64_v8a, QtKeychain (static: nothing
+# more to package) and OpenSSL (libssl_3.so / libcrypto_3.so, the names Qt loads for HTTPS).
 #
 # Usage: ./scripts/build-kf6-android.sh [-f|--force] [prefix]   (prefix default $HOME/kf6-android)
 # Skips what the prefix already has in this version. Needs the NDK and Qt for Android + host tools
@@ -14,6 +14,7 @@ PREFIX="${1:-$HOME/kf6-android}"
 
 KF6_VERSION="6.30.0"
 QTKEYCHAIN_VERSION="0.17.0"
+OPENSSL_VERSION="3.5.8"   # LTS until 2030-04; raise for security releases (as in Kladde)
 SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/android-sdk}"
 QT_VER="6.11.3"
 QT_ANDROID="$HOME/Qt/$QT_VER/android_arm64_v8a"
@@ -56,9 +57,44 @@ keychain() {
     cmake --install "$WORK/qtkeychain/build"
 }
 
+# OpenSSL for Qt's TLS plugin (tests/check_apk_tls.py), added to a prefix that lacks it.
+# After Kladde's scripts/build-deps-android.sh, so both share $PREFIX/openssl.
+build_openssl() {
+    if grep -qsx "$OPENSSL_VERSION" "$PREFIX/openssl/VERSION" \
+        && [ -f "$PREFIX/openssl/libssl_3.so" ] && [ -f "$PREFIX/openssl/libcrypto_3.so" ]; then
+        return
+    fi
+    info "Building OpenSSL $OPENSSL_VERSION..."
+    git clone --quiet -c advice.detachedHead=false --depth 1 --branch "openssl-$OPENSSL_VERSION" https://github.com/openssl/openssl.git "$WORK/openssl"
+    # A target named android-*-<arch> keeps OpenSSL's NDK setup; only the file suffix changes.
+    cat > "$WORK/openssl-qt.conf" <<'CONF'
+my %targets = (
+    "android-qt-arm64" => {
+        inherit_from     => [ "android-arm64" ],
+        shared_extension => "_3.so",
+    },
+);
+CONF
+    (
+        cd "$WORK/openssl"
+        export ANDROID_NDK_ROOT="$NDK_PATH"
+        export PATH="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+        ./Configure --config="$WORK/openssl-qt.conf" shared no-tests android-qt-arm64 -D__ANDROID_API__="${ANDROID_PLATFORM_LEVEL#android-}"
+        make -j"$(nproc)" build_generated
+        make -j"$(nproc)" libcrypto_3.so
+        # Without it libssl takes libcrypto.a in statically instead of needing libcrypto_3.so.
+        ln -sf libcrypto_3.so libcrypto.so
+        make -j"$(nproc)" build_libs
+    ) > "$WORK/openssl.log" 2>&1 || { tail -n 60 "$WORK/openssl.log"; error "OpenSSL failed"; }
+    mkdir -p "$PREFIX/openssl"
+    cp "$WORK/openssl/libssl_3.so" "$WORK/openssl/libcrypto_3.so" "$PREFIX/openssl/"
+    echo "$OPENSSL_VERSION" > "$PREFIX/openssl/VERSION"
+}
+
 if [ "$FORCE" -ne 1 ] && grep -qs "\"$KF6_VERSION\"" "$PREFIX/lib/cmake/KF6Kirigami/KF6KirigamiConfigVersion.cmake"; then
     info "$PREFIX already has KF6Kirigami $KF6_VERSION, skipping (-f rebuilds)"
     keychain
+    build_openssl
     exit 0
 fi
 # Another KF6 version (built against another Qt) must not mix with this one.
@@ -90,5 +126,6 @@ cmake --build "$WORK/kirigami/build" -j"$(nproc)"
 cmake --install "$WORK/kirigami/build"
 
 keychain
+build_openssl
 
 info "KF6 for Android ready at $PREFIX"

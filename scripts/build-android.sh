@@ -79,6 +79,7 @@ cmake -S "$APP_DIR" -B "$BUILD_DIR" \
     -DANDROID_SDK_ROOT="$SDK_ROOT" \
     -DECM_DIR="$KF6_ANDROID/share/ECM/cmake" \
     -DQT_QML_IMPORT_PATH="$KF6_ANDROID/lib/qml" \
+    -DMITORI_ANDROID_OPENSSL="$KF6_ANDROID/openssl" \
     2>&1 | show 5
 cmake --build "$BUILD_DIR" -j"$(nproc)" 2>&1 | show 10
 
@@ -101,6 +102,7 @@ fi
 # ── 6. Copy APK ──
 APK=$(find "$BUILD_DIR/android-build/build/outputs/apk/$MODE" -name "*.apk" 2>/dev/null | head -1)
 [ -n "$APK" ] || error "APK not found in build output"
+python3 "$REPO_DIR/tests/check_apk_tls.py" "$APK" || error "the APK cannot speak HTTPS"
 mkdir -p "$REPO_DIR/dist/android"
 OUT="$REPO_DIR/dist/android/mitori-$MODE.apk"
 cp "$APK" "$OUT"
