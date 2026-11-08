@@ -1,0 +1,3 @@
+LLVM OpenMP runtime (libomp.so, https://github.com/llvm/llvm-project), from the Android NDK,
+needed by Kirigami in the Android app. Copyright the LLVM Project contributors.
+Licensed under the Apache License 2.0 with LLVM Exceptions, printed below. Shipped unchanged.

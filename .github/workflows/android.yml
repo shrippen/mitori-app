@@ -11,6 +11,7 @@ on:
       - 'third_party/mitori-daten'    # the submodule's pin
       - 'scripts/build-android.sh'
       - 'scripts/build-kf6-android.sh'
+      - 'tests/check_apk_tls.py'
       - '.github/actions/android-setup/**'
       - '.github/workflows/android.yml'
   workflow_dispatch:

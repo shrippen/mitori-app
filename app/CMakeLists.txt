@@ -351,6 +351,8 @@ qt_add_resources(mitori_app "licences"
     BASE third_party
     FILES third_party/zxing-cpp/ATTRIBUTION.txt third_party/zxing-cpp/LICENSE third_party/qtkeychain/COPYING
         third_party/monocypher/LICENCE.md
+        third_party/openssl/ATTRIBUTION.txt third_party/openssl/LICENSE.txt
+        third_party/libomp/ATTRIBUTION.txt third_party/libomp/LICENSE.TXT
 )
 
 # The generated type registration includes the headers by name.
@@ -412,10 +414,18 @@ if(ANDROID)
     file(GLOB LIBOMP_CANDIDATES "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/*/lib/linux/aarch64/libomp.so")
     if(LIBOMP_CANDIDATES)
         list(GET LIBOMP_CANDIDATES 0 LIBOMP_PATH)
-        set_target_properties(mitori PROPERTIES QT_ANDROID_EXTRA_LIBS "${LIBOMP_PATH}")
     else()
         message(FATAL_ERROR "libomp.so not found in the NDK (${ANDROID_NDK}); Kirigami cannot load without it")
     endif()
+    # Qt's TLS plugin loads OpenSSL at runtime: without it no HTTPS (bundles, manifest, calendar).
+    set(MITORI_ANDROID_OPENSSL "" CACHE PATH "libssl_3.so and libcrypto_3.so (scripts/build-kf6-android.sh)")
+    set(MITORI_OPENSSL_LIBS "${MITORI_ANDROID_OPENSSL}/libssl_3.so" "${MITORI_ANDROID_OPENSSL}/libcrypto_3.so")
+    foreach(lib IN LISTS MITORI_OPENSSL_LIBS)
+        if(NOT EXISTS "${lib}")
+            message(FATAL_ERROR "${lib} missing (MITORI_ANDROID_OPENSSL, scripts/build-kf6-android.sh)")
+        endif()
+    endforeach()
+    set_target_properties(mitori PROPERTIES QT_ANDROID_EXTRA_LIBS "${LIBOMP_PATH};${MITORI_OPENSSL_LIBS}")
     # Kirigami's QML plugins: <prefix>/lib/cmake/KF6Kirigami -> <prefix>/lib/qml.
     get_filename_component(KF6_QML_DIR "${KF6Kirigami_DIR}/../../qml" ABSOLUTE)
     if(IS_DIRECTORY "${KF6_QML_DIR}")

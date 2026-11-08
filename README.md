@@ -59,6 +59,9 @@ Die App enthält außerdem ZXing-C++ (Apache-2.0) mit librscpp (Apache-2.0) und 
 sowie Monocypher (BSD-2-Clause oder CC0-1.0). Ihre Lizenztexte liegen in `app/third_party/` und stehen
 ebenfalls unter „Über Mitori“.
 
+Das APK enthält zusätzlich OpenSSL (Apache-2.0) für HTTPS und libomp aus dem Android NDK (Apache-2.0 mit
+LLVM-Ausnahmen) für Kirigami; ihre Texte liegen ebenso in `app/third_party/` und unter „Über Mitori“.
+
 Die App enthält QtKeychain (auch in APK, AppImage und Flatpak; dort steht der Text unter „Über Mitori“):
 
 ```

@@ -1,0 +1,4 @@
+OpenSSL 3.5.8 (https://www.openssl.org), HTTPS in the Android app (libssl_3.so, libcrypto_3.so).
+Copyright (c) 1998-2026 The OpenSSL Project Authors.
+Licensed under the Apache License 2.0, printed below. Built unchanged from the tag openssl-3.5.8
+(scripts/build-kf6-android.sh). Upstream has no NOTICE file.
