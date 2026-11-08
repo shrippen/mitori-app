@@ -2,6 +2,40 @@
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-11-08
+
+### English
+
+A fix for Android: the app reaches the internet again, so the DVD code loads the exam videos. With it come a faster Practise today and a few fixes.
+
+#### Improved
+- Practise today opens faster: the page shows at once, the due techniques follow a moment later. After years of use it took noticeably long before.
+
+#### Fixed
+- Android: the app could not open any secure (HTTPS) connection, because a library for it was missing from the APK. The video list stayed empty, a DVD code could not be unlocked and the course calendar did not load. All three work now.
+- Glossary: after a tap on a letter the list now stays there; it sometimes jumped back to the top, for example after turning the phone.
+- Closing the window during a voice recording no longer loses it: it is kept with the note's text.
+
+#### Note
+- About Mitori now also lists the licences of OpenSSL and the OpenMP runtime, which the APK contains.
+
+All changes: https://github.com/shrippen/mitori-app/compare/v0.1.0...v0.1.1
+
+### Deutsch
+
+Eine Korrektur für Android: Die App kommt wieder ins Internet, der Code der DVD lädt die Prüfungsvideos. Dazu kommen ein schnelleres „Heute üben“ und ein paar Korrekturen.
+
+#### Verbessert
+- „Heute üben“ öffnet schneller: Die Seite steht sofort, die fälligen Techniken folgen einen Augenblick später. Nach Jahren der Nutzung dauerte es vorher spürbar.
+
+#### Behoben
+- Android: Die App konnte keine sichere Verbindung (HTTPS) aufbauen, weil eine Bibliothek dafür im APK fehlte. Die Videoliste blieb leer, der Code einer DVD ließ sich nicht freischalten, und der Lehrgangskalender lud nicht. Alle drei gehen jetzt.
+- Glossar: Nach dem Tippen auf einen Buchstaben bleibt die Liste dort; vorher sprang sie manchmal nach oben zurück, etwa nach dem Drehen des Telefons.
+- Wer das Fenster während einer Sprachaufnahme schließt, verliert sie nicht mehr: Sie bleibt mit dem Text der Notiz erhalten.
+
+#### Hinweis
+- „Über Mitori“ nennt jetzt auch die Lizenzen von OpenSSL und der OpenMP-Laufzeit, die das APK enthält.
+
 ## [0.1.0] — 2026-11-07
 
 ### English
