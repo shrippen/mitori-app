@@ -24,8 +24,8 @@
     <release version="0.1.1" date="2026-11-08">
       <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.1.1</url>
       <description>
-        <p>Android reaches the internet again, so the DVD code loads the exam videos; a faster Practise today; the glossary stays at the letter tapped; a voice recording is kept when the window closes.</p>
-        <p xml:lang="de">Android kommt wieder ins Internet, der Code der DVD lädt die Prüfungsvideos; schnelleres „Heute üben“; das Glossar bleibt beim angetippten Buchstaben; eine Sprachaufnahme bleibt erhalten, wenn das Fenster schließt.</p>
+        <p>Android now reaches the internet, so the DVD code loads the exam videos; a faster Practise today; the glossary stays at the letter tapped; a voice recording is kept when the window closes.</p>
+        <p xml:lang="de">Android kommt jetzt ins Internet, der Code der DVD lädt die Prüfungsvideos; schnelleres „Heute üben“; das Glossar bleibt beim angetippten Buchstaben; eine Sprachaufnahme bleibt erhalten, wenn das Fenster schließt.</p>
       </description>
     </release>
     <release version="0.1.0" date="2026-11-07">

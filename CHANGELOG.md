@@ -6,7 +6,7 @@
 
 ### English
 
-A fix for Android: the app reaches the internet again, so the DVD code loads the exam videos. With it come a faster Practise today and a few fixes.
+A fix for Android: the app now reaches the internet, so the DVD code loads the exam videos. With it come a faster Practise today and a few fixes.
 
 #### Improved
 - Practise today opens faster: the page shows at once, the due techniques follow a moment later. After years of use it took noticeably long before.
@@ -23,7 +23,7 @@ All changes: https://github.com/shrippen/mitori-app/compare/v0.1.0...v0.1.1
 
 ### Deutsch
 
-Eine Korrektur für Android: Die App kommt wieder ins Internet, der Code der DVD lädt die Prüfungsvideos. Dazu kommen ein schnelleres „Heute üben“ und ein paar Korrekturen.
+Eine Korrektur für Android: Die App kommt jetzt ins Internet, der Code der DVD lädt die Prüfungsvideos. Dazu kommen ein schnelleres „Heute üben“ und ein paar Korrekturen.
 
 #### Verbessert
 - „Heute üben“ öffnet schneller: Die Seite steht sofort, die fälligen Techniken folgen einen Augenblick später. Nach Jahren der Nutzung dauerte es vorher spürbar.
