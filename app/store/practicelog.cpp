@@ -210,32 +210,40 @@ PracticeLog::Rating PracticeLog::add(const QString &entry, int level, const QDat
     return r;
 }
 
-QHash<QString, PracticeLog::Rating> PracticeLog::latest() const
+PracticeLog::Summary PracticeLog::summary() const
 {
-    QHash<QString, Rating> result;
+    Summary result;
+    // Each entry's newest and oldest by (at, rowid): a later rowid wins a tie, as in the log's order.
+    QHash<QString, std::pair<qint64, qint64>> newest;
+    QHash<QString, std::pair<qint64, qint64>> oldest;
+
     QSqlQuery q(QSqlDatabase::database(m_connection));
-    // Oldest first: a later rating of the same entry replaces the earlier one.
-    q.exec(QStringLiteral("SELECT uid, entry, level, at, device FROM ratings ORDER BY at, rowid"));
+    q.setForwardOnly(true);
+    // In the table's order: sorted by time through the index, each row was a lookup (3 times slower).
+    q.exec(QStringLiteral("SELECT uid, entry, level, at, device, rowid FROM ratings WHERE level BETWEEN 1 AND 4"));
     while (q.next()) {
-        const Rating r = rating(q);
-        // Only levels 1..4 count (a merged or edited log may carry others).
-        if (r.level >= 1 && r.level <= 4) {
-            result.insert(r.entry, r);
+        const QString entry = q.value(1).toString();
+        const std::pair<qint64, qint64> key{q.value(3).toLongLong(), q.value(5).toLongLong()};
+        auto first = oldest.find(entry);
+        if (first == oldest.end() || key < *first) {
+            oldest.insert(entry, key);
         }
+        auto last = newest.find(entry);
+        if (last == newest.end() || *last < key) {
+            newest.insert(entry, key);
+            result.latest.insert(entry, rating(q));
+        }
+    }
+
+    for (auto it = oldest.cbegin(); it != oldest.cend(); ++it) {
+        result.firstRated.insert(it.key(), QDateTime::fromMSecsSinceEpoch(it.value().first, QTimeZone::UTC).toLocalTime().date());
     }
     return result;
 }
 
-QHash<QString, QDate> PracticeLog::firstRated() const
+QHash<QString, PracticeLog::Rating> PracticeLog::latest() const
 {
-    QHash<QString, QDate> result;
-    QSqlQuery q(QSqlDatabase::database(m_connection));
-    q.exec(QStringLiteral("SELECT entry, MIN(at) FROM ratings WHERE level BETWEEN 1 AND 4 GROUP BY entry"));
-    while (q.next()) {
-        result.insert(q.value(0).toString(),
-                      QDateTime::fromMSecsSinceEpoch(q.value(1).toLongLong(), QTimeZone::UTC).toLocalTime().date());
-    }
-    return result;
+    return summary().latest;
 }
 
 QHash<QDate, int> PracticeLog::practisedPerDay(const QDateTime &from, const QString &prefix, const QDateTime &to) const

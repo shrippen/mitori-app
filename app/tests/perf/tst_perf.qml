@@ -41,6 +41,7 @@ TestCase {
         "Programme tablet": 750,            // slow: list, page and small player
         "Player first": 500,                // the decoders probed after the start (#105)
         "Programme.entries": 16,
+        "Practice.load": 90,                // the start reads the whole log (155 with two queries)
         "Practice.due": 16,
         "Practice.counts": 16,
         "Practice.allNotes": 110,
@@ -203,6 +204,7 @@ TestCase {
     function test_5_calls() {
         const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")
         call("Programme.entries", () => Programme.entries("aikido", "k5"))
+        call("Practice.load", () => perfClock.loadPractice())
         call("Practice.due", () => Practice.due(rows))
         call("Practice.counts", () => Practice.counts(rows.map(r => r.id)))
         call("Practice.allNotes", () => Practice.allNotes())

@@ -59,8 +59,9 @@ void Practice::load(const QString &path)
         return;
     }
     m_open = true;
-    m_latest = m_log->latest();
-    m_first = m_log->firstRated();
+    PracticeLog::Summary summary = m_log->summary();
+    m_latest = std::move(summary.latest);
+    m_first = std::move(summary.firstRated);
     m_lastNotes = m_log->lastNotes();
 }
 
@@ -69,8 +70,9 @@ void Practice::refresh()
     if (!m_open) {
         return;
     }
-    m_latest = m_log->latest();
-    m_first = m_log->firstRated();
+    PracticeLog::Summary summary = m_log->summary();
+    m_latest = std::move(summary.latest);
+    m_first = std::move(summary.firstRated);
     m_lastNotes = m_log->lastNotes();
     m_days.clear();
     m_firstRating.reset();
