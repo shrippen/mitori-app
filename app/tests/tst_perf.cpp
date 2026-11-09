@@ -17,6 +17,7 @@
 #include <QtQml/QQmlExtensionPlugin>
 #include <QtQuickTest>
 
+#include "localtime.h"
 #include "practice.h"
 #include "practicelog.h"
 
@@ -115,6 +116,13 @@ public:
         return qint64(t.tv_sec) * 1000 + t.tv_nsec / 1000000;
     }
 
+    // The practice log opened as at the start (Practice's singleton): five years of ratings read.
+    Q_INVOKABLE int loadPractice() const
+    {
+        const Practice practice(Practice::defaultPath());
+        return practice.revision();
+    }
+
     // A debug build's C++ is up to four times slower (Programme.suggest 323 ms, 84 in release):
     // the budgets scale with it.
     Q_INVOKABLE bool debugBuild() const
@@ -134,6 +142,7 @@ public slots:
         qputenv("XDG_DATA_HOME", PERF_DATA_DIR "/data");
         qputenv("XDG_CONFIG_HOME", PERF_DATA_DIR "/config");
         qputenv("XDG_CACHE_HOME", PERF_DATA_DIR "/cache");
+        LocalTime::pin();   // as main() does
         qputenv("MITORI_SPEECH_ENGINE", "mock");
         qputenv("MITORI_DEVICE_LEVELS", "memory");
         qputenv("MITORI_COURSES_CALENDAR", "file:///nonexistent.ics");

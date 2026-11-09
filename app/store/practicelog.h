@@ -57,10 +57,16 @@ public:
 
     // Adds a rating; returns it with its new uid, or an empty uid on failure (errorString()).
     Rating add(const QString &entry, int level, const QDateTime &at, const QString &device);
-    // The latest rating of every entry (for lists); entries with a level outside 1..4 are skipped.
+    // The latest rating of every entry (for lists) and the local day each entry was rated first
+    // (its history begins: it was new that day); levels outside 1..4 are skipped. One pass over
+    // the log: a second query for the first days took 110 ms of the start with five years.
+    struct Summary {
+        QHash<QString, Rating> latest;
+        QHash<QString, QDate> firstRated;
+    };
+    Summary summary() const;
+    // summary().latest.
     QHash<QString, Rating> latest() const;
-    // The local day each entry was rated first (its history begins: it was new that day).
-    QHash<QString, QDate> firstRated() const;
     // How many entries were rated on each local day from `from` (UTC) on; an entry rated several
     // times on a day counts once (statistics: practice days).
     // `prefix` keeps a discipline's entries only ("aikido/").

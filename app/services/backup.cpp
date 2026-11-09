@@ -210,7 +210,8 @@ bool Backup::unpacked(QFile *file, BackupArchive *archive)
 // All or nothing, in the order that allows it:
 //   1  the media files the backup's rows name and this device lacks (a damaged or unwritable one
 //      stops here; what came so far goes again)
-//   2  all rows of both databases in one transaction
+//   2  all rows of both databases in one transaction (atomic per file under WAL: a crash in the
+//      commit may leave one replaced; replacing again mends it)
 //   3  the files only the old rows named; after the commit, so a failure never loses one (a file
 //      that stays is unused, no harm)
 bool Backup::swapIn()

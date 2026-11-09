@@ -90,7 +90,8 @@ aussieht und sich verhält, steht im Clickdummy (`entwuerfe/clickdummy/index.htm
   Notizbücher, Einträge und Grade per uid, das neuere `changed` gewinnt, Löschmarken eingeschlossen; zwei Notizbücher
   eines Termins werden eins, ein Grad doppelt der neuere. Vorher zeigt ein Dialog, was neu und was geändert ist.
   Oder Ersetzen (Besitzer, 06.11.2026; zweite Rückfrage mit Zahlen): alle Zeilen beider Datenbanken in einer Transaktion
-  (`TableMerge::replace`), Medien davor, alles oder nichts; schaltet den Abgleich aus, weil dessen Zusammenführen
+  (`TableMerge::replace`), Medien davor, alles oder nichts (unter WAL je Datei: ein Absturz im Commit kann eine Datei
+  ersetzt lassen, erneut ersetzen behebt es; Besitzer, 09.11.2026); schaltet den Abgleich aus, weil dessen Zusammenführen
   zurückholt, was andere Geräte haben, auch ihre neueren Änderungen und Löschungen (eine Weitergabe des Ersetzens an sie gibt es nicht; Einschätzungen und
   Prüfungsrunden haben keine Löschmarken).
   DVD-Codes und Inhaltsschlüssel bleiben draußen. Android Auto Backup sichert die Datenbanken ohne Medien.
