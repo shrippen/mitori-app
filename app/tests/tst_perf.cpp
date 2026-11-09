@@ -17,6 +17,7 @@
 #include <QtQml/QQmlExtensionPlugin>
 #include <QtQuickTest>
 
+#include "localtime.h"
 #include "practice.h"
 #include "practicelog.h"
 
@@ -134,6 +135,7 @@ public slots:
         qputenv("XDG_DATA_HOME", PERF_DATA_DIR "/data");
         qputenv("XDG_CONFIG_HOME", PERF_DATA_DIR "/config");
         qputenv("XDG_CACHE_HOME", PERF_DATA_DIR "/cache");
+        LocalTime::pin();   // as main() does
         qputenv("MITORI_SPEECH_ENGINE", "mock");
         qputenv("MITORI_DEVICE_LEVELS", "memory");
         qputenv("MITORI_COURSES_CALENDAR", "file:///nonexistent.ics");

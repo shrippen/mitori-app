@@ -205,6 +205,8 @@ qt_add_qml_module(mitori_app
         platform/sharefile.cpp
         platform/typedpath.h
         platform/typedpath.cpp
+        platform/localtime.h
+        platform/localtime.cpp
         platform/devicelevels.h
         platform/devicelevels.cpp
         services/levels.h
@@ -561,6 +563,12 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     set_target_properties(tst_filedialog PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
     add_test(NAME filedialog COMMAND tst_filedialog)
     set_tests_properties(filedialog PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+    # Local times without a file system call each.
+    qt_add_executable(tst_localtime tests/tst_localtime.cpp platform/localtime.cpp platform/localtime.h)
+    target_include_directories(tst_localtime PRIVATE platform)
+    target_link_libraries(tst_localtime PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME localtime COMMAND tst_localtime)
 
     qt_add_executable(tst_keyedlistmodel tests/tst_keyedlistmodel.cpp services/keyedlistmodel.cpp services/keyedlistmodel.h)
     target_include_directories(tst_keyedlistmodel PRIVATE services)

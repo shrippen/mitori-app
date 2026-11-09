@@ -6,6 +6,7 @@
 #include <QtQml/QQmlExtensionPlugin>
 
 #include "appearance.h"
+#include "localtime.h"
 #ifdef MITORI_DEMO
 #include "demo/demo.h"
 #endif
@@ -14,6 +15,7 @@ Q_IMPORT_QML_PLUGIN(MitoriPlugin)
 
 int main(int argc, char *argv[])
 {
+    LocalTime::pin();
     QGuiApplication app(argc, argv);
     QGuiApplication::setApplicationName(QStringLiteral("Mitori"));
     QGuiApplication::setOrganizationDomain(QStringLiteral("shrippen.github.io"));
