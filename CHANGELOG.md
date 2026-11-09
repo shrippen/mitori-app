@@ -6,7 +6,7 @@
 
 ### English
 
-A faster Mitori: it starts sooner, the calendar pages open in about half the time, and saving a rating or a note no longer makes you wait.
+A faster Mitori: it starts sooner, saving a rating or a note no longer makes you wait, and on Linux the calendar pages open in about half the time.
 
 #### Improved
 - Saving a rating, a note or a course entry no longer waits for the storage to confirm each write. Every tap held the app for about 30 ms before, longer on a phone.
@@ -15,13 +15,13 @@ A faster Mitori: it starts sooner, the calendar pages open in about half the tim
 
 #### Note
 - Linux: if the time zone changes while Mitori runs, it counts after a restart.
-- If the device loses power while a backup replaces its data (Backup and sync, “Replace …”), replace it again.
+- A power cut may lose the last saves; Mitori closing or crashing does not. If Mitori or the device stops while a backup replaces its data (Backup and sync, “Replace …”), replace it again.
 
 All changes: https://github.com/shrippen/mitori-app/compare/v0.1.1...v0.2.0
 
 ### Deutsch
 
-Ein schnelleres Mitori: Es startet früher, die Kalenderseiten öffnen in etwa der halben Zeit, und das Speichern einer Einschätzung oder Notiz lässt nicht mehr warten.
+Ein schnelleres Mitori: Es startet früher, das Speichern einer Einschätzung oder Notiz lässt nicht mehr warten, und unter Linux öffnen die Kalenderseiten in etwa der halben Zeit.
 
 #### Verbessert
 - Das Speichern einer Einschätzung, Notiz oder eines Lehrgangseintrags wartet nicht mehr darauf, dass der Speicher jeden Schreibvorgang bestätigt. Jeder Tipp hielt die App vorher etwa 30 ms auf, auf einem Telefon länger.
@@ -30,7 +30,7 @@ Ein schnelleres Mitori: Es startet früher, die Kalenderseiten öffnen in etwa d
 
 #### Hinweis
 - Linux: Ändert sich die Zeitzone, während Mitori läuft, gilt sie nach einem Neustart.
-- Fällt der Strom aus, während eine Sicherung die Daten ersetzt (Sicherung und Abgleich, „Ersetzen …“), noch einmal ersetzen.
+- Ein Stromausfall kann die letzten Speichervorgänge verlieren, ein Schließen oder Absturz von Mitori nicht. Hält Mitori oder das Gerät an, während eine Sicherung die Daten ersetzt (Sicherung und Abgleich, „Ersetzen …“), noch einmal ersetzen.
 
 ## [0.1.1] — 2026-11-08
 
