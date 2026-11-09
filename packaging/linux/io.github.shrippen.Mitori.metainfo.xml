@@ -21,6 +21,13 @@
     <control>touch</control>
   </recommends>
   <releases>
+    <release version="0.2.0" date="2026-11-09">
+      <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.2.0</url>
+      <description>
+        <p>Faster: a quicker start after years of use, calendar pages in about half the time, saving a rating or note without waiting.</p>
+        <p xml:lang="de">Schneller: ein früherer Start nach Jahren der Nutzung, Kalenderseiten in etwa der halben Zeit, Speichern einer Einschätzung oder Notiz ohne Warten.</p>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-11-08">
       <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.1.1</url>
       <description>
