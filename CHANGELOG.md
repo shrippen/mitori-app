@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-09
+
+### English
+
+A faster Mitori: it starts sooner, the calendar pages open in about half the time, and saving a rating or a note no longer makes you wait.
+
+#### Improved
+- Saving a rating, a note or a course entry no longer waits for the storage to confirm each write. Every tap held the app for about 30 ms before, longer on a phone.
+- Mitori starts faster after years of use: reading the practice history took a third of the start with five years of ratings, now about a tenth.
+- Linux: All years, Statistics and All notes open up to twice as fast. Working out the local day for each date no longer reads the system's time zone file every time.
+
+#### Note
+- Linux: if the time zone changes while Mitori runs, it counts after a restart.
+- If the device loses power while a backup replaces its data (Backup and sync, “Replace …”), replace it again.
+
+All changes: https://github.com/shrippen/mitori-app/compare/v0.1.1...v0.2.0
+
+### Deutsch
+
+Ein schnelleres Mitori: Es startet früher, die Kalenderseiten öffnen in etwa der halben Zeit, und das Speichern einer Einschätzung oder Notiz lässt nicht mehr warten.
+
+#### Verbessert
+- Das Speichern einer Einschätzung, Notiz oder eines Lehrgangseintrags wartet nicht mehr darauf, dass der Speicher jeden Schreibvorgang bestätigt. Jeder Tipp hielt die App vorher etwa 30 ms auf, auf einem Telefon länger.
+- Mitori startet nach Jahren der Nutzung schneller: Das Lesen des Übungsverlaufs brauchte mit fünf Jahren Einschätzungen ein Drittel des Starts, jetzt etwa ein Zehntel.
+- Linux: „Alle Jahre“, Statistik und „Alle Notizen“ öffnen bis zu doppelt so schnell. Der Tag in Ortszeit wird nicht mehr für jedes Datum aus der Zeitzonendatei des Systems gelesen.
+
+#### Hinweis
+- Linux: Ändert sich die Zeitzone, während Mitori läuft, gilt sie nach einem Neustart.
+- Fällt der Strom aus, während eine Sicherung die Daten ersetzt (Sicherung und Abgleich, „Ersetzen …“), noch einmal ersetzen.
+
 ## [0.1.1] — 2026-11-08
 
 ### English
