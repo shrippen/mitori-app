@@ -85,7 +85,9 @@ struct Copy {
 };
 
 // Every table of every copy takes the other file's rows, nothing of its own stays. One connection
-// and one transaction over all files: all of them or none (SQLite's journal, also on a crash).
+// and one transaction over all files: a failed step leaves all of them as they were. The stores
+// write ahead (WAL, writeahead.h): a crash during the commit itself may leave one file replaced and
+// the other not; replacing again mends it (owner, 09.11.2026).
 // False with `error` on failure.
 bool replace(const QList<Copy> &copies, QString *error);
 
