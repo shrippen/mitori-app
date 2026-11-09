@@ -9,6 +9,8 @@
 #include <QUuid>
 #include <QVariant>
 
+#include "writeahead.h"
+
 namespace {
 
 const QString kDateFormat = QStringLiteral("yyyy-MM-dd");
@@ -127,6 +129,7 @@ bool CourseBook::open(const QString &path)
         m_error = db.lastError().text();
         return false;
     }
+    WriteAhead::enable(db);
     return migrate();
 }
 

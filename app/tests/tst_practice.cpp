@@ -46,6 +46,27 @@ private slots:
         QCOMPARE(history.first().level, 2);
     }
 
+    // A rating is a tap: written ahead (WAL), not three file syncs of a journal (30 ms on an SSD).
+    void logWritesAhead()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("log.sqlite"));
+        PracticeLog log;
+        QVERIFY(log.open(path));
+        QVERIFY(!log.add(QStringLiteral("a"), 2, QDateTime::currentDateTimeUtc(), QStringLiteral("phone")).uid.isEmpty());
+        {
+            QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("peek"));
+            db.setDatabaseName(path);
+            QVERIFY(db.open());
+            QSqlQuery q(db);
+            QVERIFY(q.exec(QStringLiteral("PRAGMA journal_mode")) && q.next());
+            QCOMPARE(q.value(0).toString(), QStringLiteral("wal"));
+            QVERIFY(q.exec(QStringLiteral("SELECT COUNT(*) FROM ratings")) && q.next());
+            QCOMPARE(q.value(0).toInt(), 1);
+        }
+        QSqlDatabase::removeDatabase(QStringLiteral("peek"));
+    }
+
     // How many techniques were practised (rated) on each local day: each technique once a day.
     void practisedPerDay()
     {

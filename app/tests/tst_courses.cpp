@@ -114,6 +114,27 @@ private slots:
         QVERIFY(book.entryCounts().isEmpty());
     }
 
+    // A saved entry is written ahead (WAL), not three file syncs of a journal.
+    void bookWritesAhead()
+    {
+        const QString path = m_dir.filePath(u"ahead.sqlite"_s);
+        CourseBook book;
+        QVERIFY2(book.open(path), qPrintable(book.errorString()));
+        CourseBook::Course c;
+        c.title = u"Lehrgang"_s;
+        c.first = QDate(2026, 11, 7);
+        QVERIFY(!book.addCourse(c, QDateTime::currentDateTimeUtc(), u"dev"_s).uid.isEmpty());
+        {
+            QSqlDatabase db = QSqlDatabase::addDatabase(u"QSQLITE"_s, u"peek"_s);
+            db.setDatabaseName(path);
+            QVERIFY(db.open());
+            QSqlQuery q(db);
+            QVERIFY(q.exec(u"PRAGMA journal_mode"_s) && q.next());
+            QCOMPARE(q.value(0).toString(), u"wal"_s);
+        }
+        QSqlDatabase::removeDatabase(u"peek"_s);
+    }
+
     // A newer schema is not opened (it would be changed under a newer Mitori).
     void bookRefusesNewerSchema()
     {

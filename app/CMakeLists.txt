@@ -194,6 +194,7 @@ qt_add_qml_module(mitori_app
         store/icsreader.cpp
         store/coursebook.h
         store/coursebook.cpp
+        store/writeahead.h
         store/device.h
         services/courses.h
         services/courses.cpp

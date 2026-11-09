@@ -11,6 +11,8 @@
 #include <QUuid>
 #include <QVariant>
 
+#include "writeahead.h"
+
 namespace {
 
 PracticeLog::Rating rating(const QSqlQuery &q)
@@ -75,6 +77,7 @@ bool PracticeLog::open(const QString &path)
         m_error = db.lastError().text();
         return false;
     }
+    WriteAhead::enable(db);
     return migrate();
 }
 
