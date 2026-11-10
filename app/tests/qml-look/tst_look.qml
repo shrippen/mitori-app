@@ -232,6 +232,30 @@ TestCase {
         tryVerify(() => window.pageStack.currentIndex === 0)
     }
 
+    // The start tiles are all as high, in every style, on a phone and a tablet: the exam tile's
+    // short hint made it smaller than the others.
+    function test_start_tiles_equal_height() {
+        const names = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile"]
+        const sizes = [{ w: 360, h: 640 }, { w: 420, h: 800 }, { w: 1000, h: 600 }]
+        const styles = [Appearance.Style.Breeze, Appearance.Style.Material, Appearance.Style.Kante, Appearance.Style.Leinen, Appearance.Style.Shinki]
+        for (const style of styles) {
+            toStyle(style)
+            for (const size of sizes) {
+                window.width = size.w
+                window.height = size.h
+                const start = window.pageStack.get(0)
+                const tiles = names.map(n => findChild(start, n))
+                tryVerify(() => tiles.every(t => t.visible && t.height > 0))
+                wait(100)
+                const where = "style " + style + ", " + size.w + "x" + size.h + ": "
+                for (const t of tiles) {
+                    // A cell's fractional height rounds apart by a pixel.
+                    fuzzyCompare(t.height, tiles[0].height, 1, where + t.objectName + " is as high as " + tiles[0].objectName)
+                }
+            }
+        }
+    }
+
     // The start page keeps its place too, below the kept pages.
     function test_start_page_place() {
         // Low enough for the tiles to scroll.

@@ -120,6 +120,7 @@ Kirigami.ScrollablePage {
             objectName: "tiles"
             Layout.fillWidth: true
             columns: page.wide ? 4 : 2
+            uniformCellHeights: true    // every row as high as the highest, so no tile is smaller
             rowSpacing: Kirigami.Units.largeSpacing
             columnSpacing: Kirigami.Units.largeSpacing
 
