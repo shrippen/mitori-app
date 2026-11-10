@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### English
+
+#### Changed
+- Android: the app has a new id, `io.github.shrippen.Mitori`, the same as on Linux. It installs as a new app next to the old one (`com.github.shrippen.mitori`); nothing carries over by itself. Before uninstalling the old app, save a backup (Settings → Backup and sync) and restore it in the new app: it holds ratings, notes, exam rounds, notebooks, grades, photos and voice notes. Videos, DVD codes and settings are not in it: keep your DVD codes at hand, unlock the videos again with them, set the settings again and sign in to sync again.
+
+### Deutsch
+
+#### Geändert
+- Android: Die App hat eine neue Kennung, `io.github.shrippen.Mitori`, dieselbe wie unter Linux. Sie wird als neue App neben der alten (`com.github.shrippen.mitori`) installiert; von selbst wird nichts übernommen. Vor dem Deinstallieren der alten App eine Sicherung speichern (Einstellungen → Sicherung und Abgleich) und in der neuen App einlesen: Sie enthält Einschätzungen, Notizen, Prüfungsrunden, Lehrgänge, Noten, Fotos und Sprachnotizen. Videos, DVD-Codes und Einstellungen sind nicht darin: die DVD-Codes bereithalten, die Videos damit neu freischalten, die Einstellungen neu setzen und für den Abgleich neu anmelden.
+
 ## [0.2.0] — 2026-11-09
 
 ### English
