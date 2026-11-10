@@ -3,7 +3,7 @@ name: Release
 # A tag v* reaches GitHub through the Gitea push mirror; the Gitea release (notes only) is made
 # there with tea. Here the GitHub release is created with the same notes (scripts/release-notes.sh)
 # and the files are built and attached: the signed APK, the AppImage and the Flatpak bundles for
-# x86_64 and aarch64 (agent.md, "Release rule"). Each package is checked for demo code first
+# x86_64 and aarch64 (RELEASE.md). Each package is checked for demo code first
 # (scripts/check-no-demo.sh).
 #
 # Run by hand (workflow_dispatch):

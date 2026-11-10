@@ -1,6 +1,6 @@
 # Review guide
 
-Every PR is reviewed before it is merged (rule in `agent.md`): by a new
+Every PR is reviewed before it is merged (rule in `RULES.md`, skill `pr-review`): by a new
 Claude agent while PR-Agent is paused (owner, 01.11.2026), otherwise by
 PR-Agent, with a new Claude agent for the **Wichtig** of earlier rounds and
 when PR-Agent fails. The reviewer knows nothing of the session that wrote the
@@ -39,7 +39,7 @@ costs data or trust:
   `px` outside `app/qml/Kante` and `shinki/`, no local copy of a Kante component. Shinki
   follows `shinki/README.md`: values only from `shinki/tokens.json`.
 - Bug fixes: a test that failed before the fix, and the cause removed, not
-  one case hidden. A release follows the release rule (`CHANGELOG.md`, the
+  one case hidden. A release follows `RELEASE.md` (`CHANGELOG.md`, the
   same text in `docs/index.html` `#changes` and the Gitea release notes,
   the footer version, `versions.json` in shrippen.github.io).
 
@@ -64,5 +64,5 @@ costs data or trust:
 - In a later round: say for each open **Wichtig** of the last round whether
   it is fixed, or whether its answer is accepted, with the reason. PR-Agent
   sees no earlier round: it reports only its own findings with their labels,
-  and a new Claude agent closes the open ones (`agent.md`).
+  and a new Claude agent closes the open ones (skill `pr-review`).
 - Findings in German, code names as they are.

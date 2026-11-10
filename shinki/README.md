@@ -6,7 +6,7 @@ Tusche, ein einziges Rot. Vorlage für die App ist der Clickdummy (`entwuerfe/cl
 Ansicht im Stil Shinki.
 
 Shinki ist **kein Unterthema von Kante**, sondern ein eigener Stil mit eigenen Farben, Schriften und
-Bausteinen (Owner, 02.11.2026). Er ist eine Ausnahme von der GUI-Regel. `agent.md` (GUI rule) und
+Bausteinen (Owner, 02.11.2026). Er ist eine Ausnahme von der GUI-Regel. `agent.md` (GUI (this project)) und
 `REVIEW.md` nennen sie. Shinki gehört zur App und liegt in diesem Ordner.
 
 ```
