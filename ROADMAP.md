@@ -134,9 +134,6 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
 - Android: „Bildschirm an“ (FLAG_KEEP_SCREEN_ON) nur gebaut, nicht am Telefon geprüft.
 
 ### Fehler (Test zuerst)
-- Zurück-Taste (Android, Alt+Links → goBack) lässt den Player im Stapel, er spielt unsichtbar weiter (Review #64).
-  Ausweg: PlayerPage bekommt ein `onBackRequested`, das wie ExamEndPage per callLater `leave()` ruft
-  (`event.accepted` kommt in Qt 6.12 nicht an, Kopie).
 - Shinki, Tablet 1920×1080: Bedienelemente des Players scrollen 7 px (459 von 452), Regel „Bild mindestens halb“
   (Review #64).
 - CoursePage-Fußleiste gelb in 16b/16c (beide Stile, #57).

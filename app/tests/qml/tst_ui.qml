@@ -1066,6 +1066,16 @@ TestCase {
         tryVerify(() => window.pageStack.depth === 1)
     }
 
+    // The Back key (goBack) takes the player off the stack, so it cannot play on unseen (Review #64).
+    function test_4s_player_back_key() {
+        const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")
+        push("PlayerPage", { playlist: rows, index: 0 })
+        const depth = window.pageStack.depth
+        slidIn()
+        window.pageStack.goBack()
+        tryVerify(() => window.pageStack.depth === depth - 1, 2000, "depth " + window.pageStack.depth)
+    }
+
     // Player layout screens (no video needed): the player renders a card for a missing video.
     function test_4p_player_layout() {
         const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")

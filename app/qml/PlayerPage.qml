@@ -89,7 +89,8 @@ Kirigami.Page {
             view.forceActiveFocus()
         }
     }
-    // The Back key only moves the stack on and keeps this page: it ends full screen and the video.
+    // Moved off the stack's current place (a swipe, or the Back key before it leaves): full screen
+    // and the video end here, so that bigEnded comes in time.
     onIsCurrentPageChanged: {
         // Not while it is being made (index -1), nor under a page above it (the notes).
         const place = page.Kirigami.ColumnView.index
@@ -116,6 +117,18 @@ Kirigami.Page {
         const stack = page.Kirigami.PageStack.pageStack
         stack.currentIndex = page.Kirigami.ColumnView.index - 1
         stack.pop(stack.currentItem)
+    }
+
+    // The Back key (Android, Alt+Left) only moves the stack on and would keep the page playing:
+    // it goes at once. Qt 6.12 hands `event` over as a copy (see ExamEndPage), so `accepted` does
+    // not arrive; leave() after the step. Not when the page is gone already.
+    onBackRequested: event => {
+        Qt.callLater(() => {
+            if (page.Kirigami.ColumnView.index < 0) {
+                return
+            }
+            page.leave()
+        })
     }
 
     // The last rating of a training: its end takes this page's place, so that Back leads to where
