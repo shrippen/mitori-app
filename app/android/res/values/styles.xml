@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The activity's theme: a plain ground before Qt draws, not Android's default window. -->
+    <style name="Theme.Mitori.Launch" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/launch_ground</item>
+    </style>
+</resources>

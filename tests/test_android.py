@@ -94,3 +94,23 @@ def test_apk_tls_check(tmp_path):
     assert check.main(apk(check.PLUGIN)) == 1
     assert check.main(apk(check.PLUGIN, "libssl_3.so")) == 1
     assert check.main(apk(check.PLUGIN, *check.OPENSSL)) == 0
+
+
+# The launch shows a plain ground, not Android's default window background: the activity's theme
+# paints it in Leinen's ground (the default style), Kante's `light.ground` (KantePalette.qml).
+VALUES = MANIFEST.parent / "res" / "values"
+PALETTE = MANIFEST.parents[1] / "qml" / "Kante" / "KantePalette.qml"
+
+
+def test_launch_ground():
+    activity = ET.parse(MANIFEST).getroot().find("application").find("activity")
+    theme = activity.get(TOOLS + "theme")
+    assert theme == "@style/Theme.Mitori.Launch"
+    styles = ET.parse(VALUES / "styles.xml").getroot()
+    style = next(s for s in styles.iter("style") if s.get("name") == "Theme.Mitori.Launch")
+    items = {i.get("name"): i.text for i in style.iter("item")}
+    assert items["android:windowBackground"] == "@color/launch_ground"
+    colors = {c.get("name"): c.text for c in ET.parse(VALUES / "colors.xml").getroot().iter("color")}
+    light = PALETTE.read_text().split("readonly property QtObject light")[1]
+    ground = light.split("ground:")[1].split('"')[1]
+    assert colors["launch_ground"].lower() == ground.lower()

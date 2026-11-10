@@ -36,6 +36,7 @@
             android:label="${appLabel}"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Mitori.Launch"
             android:launchMode="singleTop"
             android:exported="true">
             <intent-filter>

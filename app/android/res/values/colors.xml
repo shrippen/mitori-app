@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kante's Leinen ground (KantePalette.qml, light.ground), the default style's: the launch
+         shows it until the first frame (tests/test_android.py keeps the two equal). -->
+    <color name="launch_ground">#f0e9d6</color>
+</resources>
