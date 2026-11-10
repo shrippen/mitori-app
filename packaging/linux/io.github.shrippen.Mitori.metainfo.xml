@@ -21,6 +21,13 @@
     <control>touch</control>
   </recommends>
   <releases>
+    <release version="0.3.0" date="2026-11-10">
+      <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.3.0</url>
+      <description>
+        <p>Android: the app has the same id as on Linux and installs as a new app.</p>
+        <p xml:lang="de">Android: Die App hat dieselbe Kennung wie unter Linux und wird als neue App installiert.</p>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-11-09">
       <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.2.0</url>
       <description>
