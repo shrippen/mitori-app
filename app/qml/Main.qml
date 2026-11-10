@@ -34,8 +34,8 @@ Kirigami.ApplicationWindow {
         value: Appearance.running === Appearance.Style.Leinen
     }
     // The scope gives the window's controls the colours of the style: Kante's under Kante and
-    // Leinen, Shinki's under Shinki (LookScope). Never both.
-    LookScope { target: root.contentItem }
+    // Leinen (also on Kirigami's bars), Shinki's under Shinki (LookWindowScope). Never both.
+    LookWindowScope { window: root }
 
     // One page at a time, also in landscape: the tablet gets its own page with list and player
     // (app-entscheidungen.md, "Tablet quer"), not Kirigami's columns.

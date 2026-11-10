@@ -126,6 +126,7 @@ qt_add_qml_module(mitori_app
         qml/Look/LookHint.qml
         qml/Look/LookButton.qml
         qml/Look/LookScope.qml
+        qml/Look/LookWindowScope.qml
         qml/Look/LookSegmented.qml
         qml/Look/LookChip.qml
         qml/Look/LookListRow.qml

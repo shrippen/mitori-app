@@ -256,6 +256,59 @@ TestCase {
         }
     }
 
+    // Kirigami's bar: the item of the page stack with a ground of its own (ToolBarPageHeader, the
+    // page's bar; PageRowGlobalToolBarUI, the stack's).
+    function globalBar() {
+        const bars = allChildren(window.pageStack).filter(c => c.visible && c.background
+                                                              && c.maximumHeight !== undefined && c.separatorVisible !== undefined)
+        verify(bars.length > 0, "the bar stands")
+        return bars[0]
+    }
+
+    // The bar carries the page ground and the window's text (KanteWindowScope), not the
+    // platform's Header colours. The scope goes on the bar once it stands, a moment after the page.
+    function verifyBar(label) {
+        const theme = window.contentItem.Kirigami.Theme
+        tryVerify(() => Qt.colorEqual(globalBar().background.color, Look.backgroundColor), 2000,
+                  label + ": ground " + globalBar().background.color + ", expected " + Look.backgroundColor)
+        const text = globalBar().Kirigami.Theme.textColor
+        verify(Qt.colorEqual(text, theme.textColor), label + ": text " + text + ", expected " + theme.textColor)
+    }
+
+    function test_bar_themed_data() {
+        return [
+            { tag: "phone", width: 420, height: 800, style: Kirigami.ApplicationHeaderStyle.ToolBar },
+            { tag: "tablet", width: 1280, height: 800, style: Kirigami.ApplicationHeaderStyle.ToolBar },
+            { tag: "phone breadcrumb", width: 420, height: 800, style: Kirigami.ApplicationHeaderStyle.Breadcrumb },
+            { tag: "tablet titles", width: 1280, height: 800, style: Kirigami.ApplicationHeaderStyle.Titles }
+        ]
+    }
+    // Kirigami's bar (Kante, Leinen) takes the style's colours, on the start page and a pushed
+    // one, and again after a change of style. The bar styles of a phone and a tablet (Android)
+    // are set here: the desktop of the test takes the ToolBar style.
+    function test_bar_themed(data) {
+        if (uiShinki) {
+            skip("Shinki carries its own head (LookHead)")
+        }
+        window.width = data.width
+        window.height = data.height
+        window.pageStack.globalToolBar.style = data.style
+        verifyBar("Leinen start " + data.tag)
+        push("SettingsPage")
+        verifyBar("Leinen pushed " + data.tag)
+
+        toStyle(Appearance.Style.Kante)
+        window.width = data.width
+        window.height = data.height
+        window.pageStack.globalToolBar.style = data.style
+        verifyBar("Kante pushed " + data.tag)
+        popPage()
+        verifyBar("Kante start " + data.tag)
+        push("SettingsPage")
+        toStyle(Appearance.Style.Leinen)
+        verifyBar("Leinen again " + data.tag)
+    }
+
     // The start page keeps its place too, below the kept pages.
     function test_start_page_place() {
         // Low enough for the tiles to scroll.
