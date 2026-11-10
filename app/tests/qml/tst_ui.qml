@@ -1846,8 +1846,8 @@ TestCase {
         verify(!hasPlayer())
     }
 
-    // The end page's head has the style's ground, as any page that slid in (it stood in the
-    // platform's colours). Shinki's head is the window's.
+    // The end page's head has the style's page ground (KanteWindowScope's bar role), as any page
+    // that slid in (it stood in the platform's colours). Shinki's head is the window's.
     function test_7d_training_end_head_data() {
         return [{ tag: "upright", width: 420, height: 800 }, { tag: "sideways", width: 800, height: 420 }]
     }
@@ -1865,8 +1865,8 @@ TestCase {
         tryVerify(() => window.pageStack.currentItem.count === 1)
         const page = window.pageStack.currentItem
         const ground = () => page.Kirigami.ColumnView.globalHeader.item.background.color
-        tryVerify(() => Qt.colorEqual(ground(), KanteStyle.dialogColor), 2000,
-                  "head " + ground() + ", expected " + KanteStyle.dialogColor)
+        tryVerify(() => Qt.colorEqual(ground(), KanteStyle.backgroundColor), 2000,
+                  "head " + ground() + ", expected " + KanteStyle.backgroundColor)
     }
 
     // Full screen has no rating; should one come, the window comes back as it was.
