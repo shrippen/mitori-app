@@ -38,6 +38,7 @@ TestCase {
         "Programme aikido": 400,
         "Programme daitoryu": 450,
         "Programme shinkitoho": 350,
+        "Programme scroll": 25,             // two passes down and up over the longest list
         "Programme tablet": 750,            // slow: list, page and small player
         "Player first": 500,                // the decoders probed after the start (#105)
         "Programme.entries": 16,
@@ -69,6 +70,8 @@ TestCase {
     readonly property int listDrawn: 500
     property var window: null
     property var times: []
+    // Rows built when scrolling over what was scrolled before: the pool (reuseItems) serves them.
+    readonly property int maxNewRows: 10
 
     function initTestCase() {
         const component = Qt.createComponent("Mitori", "Main")
@@ -180,6 +183,57 @@ TestCase {
             page("Programme " + discipline, "ProgrammePage")
             back()
         }
+        Programme.discipline = "aikido"
+    }
+
+    // The rows a list holds now: a delegate's own item, or what its Loader built (before the fix).
+    function rowItems(list) {
+        return Array.from(list.contentItem.children).filter(c => c.modelData !== undefined).map(c => c.item || c)
+    }
+
+    // Scrolling the longest list from the top down and up, twice. A row item built for each step
+    // (a Loader changing its Component) makes it slow: the second pass must make next to none.
+    function test_2b_scroll() {
+        let longest = "aikido"
+        let grade = ""
+        let most = 0
+        for (const discipline of ["aikido", "daitoryu", "shinkitoho"]) {
+            for (const g of Programme.grades(discipline)) {
+                const n = Programme.entries(discipline, g.id).length
+                if (n > most) {
+                    most = n
+                    longest = discipline
+                    grade = g.id
+                }
+            }
+        }
+        Programme.discipline = longest
+        const shown = page("Programme", "ProgrammePage", { grade: grade })
+        const list = findChild(shown, "programmeList")
+        verify(list.count > 50, "a long list: " + list.count)
+
+        const seen = []
+        const pass = () => {
+            const step = list.height / 3
+            const bottom = list.contentHeight - list.height
+            for (let y = 0; y < bottom; y += step) {
+                list.contentY = y
+                list.forceLayout()
+                rowItems(list).forEach(r => { if (seen.indexOf(r) < 0) { seen.push(r) } })
+            }
+            for (let y = bottom; y > 0; y -= step) {
+                list.contentY = y
+                list.forceLayout()
+                rowItems(list).forEach(r => { if (seen.indexOf(r) < 0) { seen.push(r) } })
+            }
+            list.contentY = 0
+        }
+        pass()
+        const afterFirst = seen.length
+        check("Programme scroll", () => { pass(); pass() }, pass)
+        console.log("PERF scroll row items " + afterFirst + " then " + (seen.length - afterFirst) + " more")
+        verify(seen.length - afterFirst <= maxNewRows, (seen.length - afterFirst) + " row items built while scrolling again")
+        back()
         Programme.discipline = "aikido"
     }
 
