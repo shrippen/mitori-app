@@ -89,7 +89,8 @@ Kirigami.Page {
             view.forceActiveFocus()
         }
     }
-    // The Back key only moves the stack on and keeps this page: it ends full screen and the video.
+    // Moved off the stack's current place (a swipe, or the Back key before it leaves): full screen
+    // and the video end here, so that bigEnded comes in time.
     onIsCurrentPageChanged: {
         // Not while it is being made (index -1), nor under a page above it (the notes).
         const place = page.Kirigami.ColumnView.index

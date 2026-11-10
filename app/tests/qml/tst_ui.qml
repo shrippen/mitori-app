@@ -1067,10 +1067,10 @@ TestCase {
         tryVerify(() => window.pageStack.depth === 1)
     }
 
-    // The Back key (goBack) takes the player off the stack and stops it (Review #64).
+    // The Back key (goBack) takes the player off the stack, so it cannot play on unseen (Review #64).
     function test_4s_player_back_key() {
         const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")
-        const page = push("PlayerPage", { playlist: rows, index: 0 })
+        push("PlayerPage", { playlist: rows, index: 0 })
         const depth = window.pageStack.depth
         slidIn()
         window.pageStack.goBack()
