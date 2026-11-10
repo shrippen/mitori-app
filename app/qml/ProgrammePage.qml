@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import QtQml.Models
 import org.kde.kirigami as Kirigami
 import Mitori
 
@@ -386,20 +387,20 @@ Kirigami.Page {
                     }
                 }
 
-                delegate: Loader {
-                    id: rowLoader
+                // One delegate per kind: a reused row is of its kind again, so the pool serves it
+                // as it is instead of a Loader building another row (the scroll stuttered).
+                delegate: DelegateChooser {
+                    role: "kind"
 
-                    required property var modelData
-                    required property int index
-
-                    width: ListView.view.width
-                    sourceComponent: modelData.kind === "group" ? groupRow
-                                   : modelData.kind === "attack" || modelData.kind === "text" ? attackRow : entryRow
-
-                    Component {
-                        id: groupRow
+                    DelegateChoice {
+                        roleValue: "group"
 
                         Item {
+                            id: groupRow
+
+                            required property var modelData
+
+                            width: ListView.view.width
                             implicitHeight: heading.implicitHeight + Kirigami.Units.largeSpacing * 2
 
                             LookGroupHead {
@@ -411,41 +412,65 @@ Kirigami.Page {
                                 anchors.leftMargin: Kirigami.Units.largeSpacing
                                 anchors.rightMargin: Kirigami.Units.largeSpacing
                                 anchors.bottomMargin: Kirigami.Units.smallSpacing
-                                title: rowLoader.modelData.title
-                                japanese: rowLoader.modelData.jp || ""
+                                title: groupRow.modelData.title
+                                japanese: groupRow.modelData.jp || ""
                             }
                         }
                     }
 
-                    Component {
-                        id: attackRow
+                    DelegateChoice {
+                        roleValue: "attack"
 
                         LookLabel {
-                            text: rowLoader.modelData.title + (rowLoader.modelData.extra ? " (" + rowLoader.modelData.extra + ")" : "")
-                                  + "  " + (rowLoader.modelData.jp || "")
-                            font.bold: rowLoader.modelData.kind === "attack"
+                            id: attackRow
+
+                            required property var modelData
+
+                            width: ListView.view.width
+                            text: modelData.title + (modelData.extra ? " (" + modelData.extra + ")" : "")
+                                  + "  " + (modelData.jp || "")
+                            font.bold: true
                             topPadding: Kirigami.Units.smallSpacing
                             leftPadding: Kirigami.Units.largeSpacing
                             wrapMode: Text.Wrap
                         }
                     }
 
-                    Component {
-                        id: entryRow
+                    DelegateChoice {
+                        roleValue: "text"
 
+                        LookLabel {
+                            id: textRow
+
+                            required property var modelData
+
+                            width: ListView.view.width
+                            text: modelData.title + (modelData.extra ? " (" + modelData.extra + ")" : "")
+                                  + "  " + (modelData.jp || "")
+                            topPadding: Kirigami.Units.smallSpacing
+                            leftPadding: Kirigami.Units.largeSpacing
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    // Entries, and any other kind (the list showed it as one before).
+                    DelegateChoice {
                         LookListRow {
                             id: entryItem
 
-                            readonly property var entry: rowLoader.modelData
+                            required property var modelData
+                            required property int index
+                            readonly property var entry: modelData
                             readonly property bool playable: page.playable(entry)
 
+                            width: ListView.view.width
                             leadingText: entry.nr ? String(entry.nr) : ""
                             text: entry.title + (entry.kind === "entry" && entry.extra && !entry.nr ? " (" + entry.extra + ")" : "")
                             subtitle: [entry.jp, entry.nr ? entry.extra : entry.text].filter(x => x).join(" · ")
                             selected: entry.id === (page.paneEntry ? page.paneEntry.id : page.split ? page.lastId : page.returnedId)
                             onClicked: page.open(entry)
-                            Keys.onTabPressed: event => page.tabRow(rowLoader.index, 1, event)
-                            Keys.onBacktabPressed: event => page.tabRow(rowLoader.index, -1, event)
+                            Keys.onTabPressed: event => page.tabRow(index, 1, event)
+                            Keys.onBacktabPressed: event => page.tabRow(index, -1, event)
                             trailing: RowLayout {
                                 spacing: Kirigami.Units.smallSpacing
 
@@ -681,9 +706,9 @@ Kirigami.Page {
                 continue
             }
             list.positionViewAtIndex(i, ListView.Contain)
-            const row = list.itemAtIndex(i) as Loader
-            if (row && row.item) {
-                (row.item as Item).forceActiveFocus(reason)
+            const row = list.itemAtIndex(i) as Item
+            if (row) {
+                row.forceActiveFocus(reason)
             }
             return
         }

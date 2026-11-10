@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Sql Network Concurrent LinguistTools)
+# 6.9: DelegateChooser in QtQml.Models (ProgrammePage); before it lived in Qt.labs.qmlmodels.
+set(MITORI_QT_MIN 6.9)
+find_package(Qt6 ${MITORI_QT_MIN} REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Sql Network Concurrent LinguistTools)
 find_package(ECM REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 find_package(KF6 REQUIRED COMPONENTS Kirigami)
@@ -13,13 +15,13 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 # The app password in the system's key store (store/secretstore).
 find_package(Qt6Keychain REQUIRED)
 # Pronunciation in the glossary; without the module the speaker buttons stay hidden.
-find_package(Qt6 6.8 QUIET COMPONENTS TextToSpeech)
+find_package(Qt6 ${MITORI_QT_MIN} QUIET COMPONENTS TextToSpeech)
 # The screen's brightness over Solid (platform/devicelevels) on Linux.
 if(NOT ANDROID)
-    find_package(Qt6 6.8 REQUIRED COMPONENTS DBus)
+    find_package(Qt6 ${MITORI_QT_MIN} REQUIRED COMPONENTS DBus)
 endif()
 
-qt_standard_project_setup(REQUIRES 6.8)
+qt_standard_project_setup(REQUIRES ${MITORI_QT_MIN})
 # Module output in <build>/qml: scripts/qmllint.sh finds the Mitori module there.
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml)
 

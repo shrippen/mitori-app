@@ -556,9 +556,8 @@ TestCase {
         list.positionViewAtIndex(last - 1, ListView.End)
         wait(300)
         let lowest = null, lowestY = -1
-        for (const loader of list.contentItem.children) {
-            const row = loader.item
-            if (!row || !loader.visible || !loader.modelData || loader.modelData.kind !== "entry") {
+        for (const row of list.contentItem.children) {
+            if (!row.visible || !row.modelData || row.modelData.kind !== "entry") {
                 continue
             }
             const y = row.mapToItem(null, 0, 0).y
@@ -4166,10 +4165,10 @@ TestCase {
         list.positionViewAtBeginning()
         wait(100)
         let first = 0
-        while (!(list.itemAtIndex(first) && list.itemAtIndex(first).item && list.itemAtIndex(first).item.entry)) {
+        while (!(list.itemAtIndex(first) && list.itemAtIndex(first).entry)) {
             first++
         }
-        list.itemAtIndex(first).item.forceActiveFocus(Qt.TabFocusReason)
+        list.itemAtIndex(first).forceActiveFocus(Qt.TabFocusReason)
         keyClick(Qt.Key_Backtab)
         verify(inHead(window.activeFocusItem), "Shift+Tab on the first row: " + window.activeFocusItem)
         // Past what else the head holds (the hint about the DVD's code), back to a chip.
@@ -4333,9 +4332,9 @@ TestCase {
         const row = page.rows.findIndex(r => r.id === chosen.id)
         const list = findChild(page, "programmeList")
         list.positionViewAtIndex(row, ListView.Contain)
-        tryVerify(() => list.itemAtIndex(row) && list.itemAtIndex(row).item)
+        tryVerify(() => list.itemAtIndex(row))
         wait(100)
-        mouseClick(list.itemAtIndex(row).item, 20, 10)
+        mouseClick(list.itemAtIndex(row), 20, 10)
 
         verify(!findChild(page, "techniqueSheet").visible, "no dialog")
         verify(page.split)
@@ -4680,10 +4679,10 @@ TestCase {
         tryVerify(() => list.contentY <= list.originY + 1, 2000, "Home")
         // Also with a row in focus (after a click or Tab): the list scrolls, not a current index.
         let i = 0
-        while (i < list.count && !(list.itemAtIndex(i) && list.itemAtIndex(i).item && list.itemAtIndex(i).item.entry))
+        while (i < list.count && !(list.itemAtIndex(i) && list.itemAtIndex(i).entry))
             i++
         verify(i < list.count, "a technique row in view")
-        list.itemAtIndex(i).item.forceActiveFocus()
+        list.itemAtIndex(i).forceActiveFocus()
         const y = list.contentY
         keyClick(Qt.Key_Down)
         tryVerify(() => list.contentY > y, 2000, "Down on a focused row")
@@ -4694,17 +4693,17 @@ TestCase {
         list.positionViewAtBeginning()
         wait(100)
         let first = 0
-        while (!(list.itemAtIndex(first) && list.itemAtIndex(first).item && list.itemAtIndex(first).item.entry))
+        while (!(list.itemAtIndex(first) && list.itemAtIndex(first).entry))
             first++
-        list.itemAtIndex(first).item.forceActiveFocus(Qt.TabFocusReason)
+        list.itemAtIndex(first).forceActiveFocus(Qt.TabFocusReason)
         const rowOf = item => {
             for (let p = item; p; p = p.parent)
-                if (p.entry !== undefined && p.parent && p.parent.modelData !== undefined)
+                if (p.entry !== undefined && p.modelData !== undefined)
                     return p
             return null
         }
         const tabbable = page.rows.filter(r => r.kind === "entry" || r.kind === "info").map(r => r.id)
-        let seen = [list.itemAtIndex(first).item.entry.id]
+        let seen = [list.itemAtIndex(first).entry.id]
         for (let n = 0; n < tabbable.length + 5; n++) {
             keyClick(Qt.Key_Tab)
             wait(20)
@@ -4719,7 +4718,7 @@ TestCase {
         // Shift+Tab from the last row goes back up.
         list.positionViewAtEnd()
         wait(100)
-        const lastRow = list.itemAtIndex(page.rows.findIndex(r => r.id === tabbable[tabbable.length - 1])).item
+        const lastRow = list.itemAtIndex(page.rows.findIndex(r => r.id === tabbable[tabbable.length - 1]))
         lastRow.forceActiveFocus(Qt.TabFocusReason)
         keyClick(Qt.Key_Backtab)
         compare(rowOf(window.activeFocusItem).entry.id, tabbable[tabbable.length - 2])
