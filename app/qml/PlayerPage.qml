@@ -118,6 +118,18 @@ Kirigami.Page {
         stack.pop(stack.currentItem)
     }
 
+    // The Back key (Android, Alt+Left) only moves the stack on and would keep the page playing:
+    // it goes at once. Qt 6.12 hands `event` over as a copy (see ExamEndPage), so `accepted` does
+    // not arrive; leave() after the step. Not when the page is gone already.
+    onBackRequested: event => {
+        Qt.callLater(() => {
+            if (page.Kirigami.ColumnView.index < 0) {
+                return
+            }
+            page.leave()
+        })
+    }
+
     // The last rating of a training: its end takes this page's place, so that Back leads to where
     // the training began. Once: a second tap on the rating still reaches the page going.
     property bool ended: false
