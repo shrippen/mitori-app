@@ -6,8 +6,8 @@
 // Signing reads four Gradle properties (RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD,
 // RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD). scripts/build-android.sh writes them into
 // gradle.properties from the MITORI_KEYSTORE_PATH, MITORI_KEYSTORE_PASSWORD, MITORI_KEY_ALIAS and
-// MITORI_KEY_PASSWORD environment variables when set (CI: the MITORI_KEYSTORE_* secrets, agent.md
-// "Release rule"). Without them, `release` builds are unsigned.
+// MITORI_KEY_PASSWORD environment variables when set (CI: the MITORI_KEYSTORE_* secrets,
+// RELEASE.md). Without them, `release` builds are unsigned.
 buildscript {
     repositories {
         google()
