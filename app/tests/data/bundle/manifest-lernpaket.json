@@ -1,0 +1,41 @@
+{
+ "format": 2,
+ "bundles": [],
+ "lernpakete": [
+  {
+   "id": "test-lesson",
+   "version": 1,
+   "titel": "Lernpaket",
+   "titel_en": "Lesson package",
+   "videos": [
+    {
+     "video": "lern-test/v1",
+     "datei": "test.mvb",
+     "groesse": 440,
+     "sha256": "04b984b376b06fd067078bfa501cb0f04ef1e65cfd0bc3d380e96b18a5fe4d81",
+     "klar": 400,
+     "beschnitten": true,
+     "url": "file:///unused/test.mvb"
+    }
+   ],
+   "inhalt": {
+    "datei": "inhalt.mvb",
+    "format": 1,
+    "groesse": 1526,
+    "sha256": "bd5a9527676972b109654f5f0034f8988f56d1b1ee816bad06c740cf6aeeb089",
+    "klar": 1486,
+    "url": "file:///unused/inhalt.mvb"
+   },
+   "hinweis": ""
+  }
+ ],
+ "codes": {
+  "cdf087d921d6e17efd7c87bfde1e18e6": {
+   "bundle": "test-lesson",
+   "salz": "cx4hHT6W/P/mLw2qYbwx5Q==",
+   "t": 1,
+   "m": 8,
+   "schluessel": "UMlZFzJHqy0zvINOCdFVux5GGCI0985la9q24Can/zUfeLTm27GYCmtZJhizz6Diuy8SQ10D58bx5IGfbBvii828uWPyLZCN"
+  }
+ }
+}

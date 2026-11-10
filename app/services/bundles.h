@@ -23,7 +23,10 @@ class QNetworkReply;
 // A new version in the manifest shows as an update. No secret is in the app: the code is the
 // only one (store/bundlecrypto, tools/bundle.py).
 //
-//   manifest (network, cache) ──► bundles [{id, title, version, installed, videos, size, state,
+// A Lernpaket (manifest key "lernpakete") is a bundle that brings its own techniques: beside the
+// videos it loads `inhalt` (encrypted JSON, kept by the shelf); Lessons reads it.
+//
+//   manifest (network, cache) ──► bundles [{id, title, kind, version, installed, videos, size, state,
 //                                           progress, hint, code}]
 //   unlock(code) ─Argon2id, a moment─► unlocked(id) / failed(reason)
 //   load(id) ──► Downloading … progress … Installed (or Failed, the old version stays)
@@ -50,8 +53,12 @@ class Bundles : public QObject
 public:
     enum class ManifestState { Empty, Loading, Ready, Failed };
     Q_ENUM(ManifestState)
-    enum class State { Locked, Unlocked, Waiting, Downloading, Installed, Update, Failed };
+    // Unsupported: a Lernpaket in a content format this version does not know (update Mitori).
+    enum class State { Locked, Unlocked, Waiting, Downloading, Installed, Update, Failed, Unsupported };
     Q_ENUM(State)
+    // Exam: a bundle with the videos of the programme; Lesson: a Lernpaket.
+    enum class Kind { Exam, Lesson };
+    Q_ENUM(Kind)
     enum class UnlockError { Invalid, Unknown, Wrong, NoManifest, Typo };
     Q_ENUM(UnlockError)
     enum class Network { WifiOnly, Any };
@@ -101,7 +108,8 @@ private:
     struct Job {
         QString id;
         int version = 0;
-        QJsonArray videos;          // still to load, first one now
+        QJsonArray videos;          // still to load, first one now (a Lernpaket's `inhalt` first, marked)
+        QJsonObject content;        // a Lernpaket's content, once loaded and checked
         QHash<QString, QString> files;
         QStringList cropped;
         BundleShelf::Cuts cuts;
@@ -117,8 +125,10 @@ private:
 
     void loadCache();
     void received(QNetworkReply *reply);
-    QJsonObject manifestBundle(const QString &id) const;
+    // The manifest's entry of a bundle or Lernpaket (`kind` tells which list); empty for an unknown id.
+    QJsonObject manifestBundle(const QString &id, Kind *kind = nullptr) const;
     void next(Job &job);
+    QString readContent(Job &job);
     void fail(const QString &id, const QString &why);
     QNetworkAccessManager *network();
 

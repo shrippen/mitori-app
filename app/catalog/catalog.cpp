@@ -70,6 +70,11 @@ Catalog::Language Catalog::languageOf(const QLocale &locale)
     return Language::English;
 }
 
+QVariant Catalog::inEnglish(const QVariant &value)
+{
+    return english(value);
+}
+
 const Catalog &Catalog::bundled()
 {
     static const Catalog catalog = [] {

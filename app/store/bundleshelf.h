@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -15,6 +16,10 @@
 //   <root>/shelf.json                 {"aikido-kyu": {"code", "key", "version", "videos": {"aikido/k5":
 //   <root>/aikido-kyu/aikido-k5.v2.mkv                 {"file", "cropped", "cuts": {"<technique>": [von, bis]}}}}}
 //   <root>/manifest.json              the manifest as last loaded (Bundles)
+//   <root>/shirakawa-1.inhalt.json    a Lernpaket's content (its techniques, tools/paket.py): the bundle
+//                                     "has content", that is what makes it a lesson (no extra field in
+//                                     shelf.json). Beside the folder, so remove() keeps it: notes and
+//                                     ratings of its techniques keep their names.
 // Tells the users of the shared shelf that bundles came or went (Videos re-reads its files).
 class BundleShelfNotifier : public QObject
 {
@@ -57,9 +62,10 @@ public:
     // or the id is not valid (as for installed and remove).
     bool unlock(const QString &id, const QString &code, const QByteArray &key);
     // A loaded version: its files (in folder(id)), which are cropped, and the techniques' places.
+    // `content` (a Lernpaket's) is kept as <id>.inhalt.json; empty keeps what is there.
     bool installed(const QString &id, int version, const QHash<QString, QString> &files, const QStringList &cropped,
-                   const Cuts &cuts);
-    // The bundle's files go; code and key stay.
+                   const Cuts &cuts, const QJsonObject &content = {});
+    // The bundle's files go; code and key stay (and its content).
     bool remove(const QString &id);
 
     // A bundle's folder; only for a valid id.
@@ -71,6 +77,12 @@ public:
     bool cropped(const QString &video) const;
     // A technique's place in the file path(video) gives, if the bundle names one.
     std::optional<Cut> cut(const QString &video, const QString &id) const;
+    // A Lernpaket's content, also after remove(); empty for a bundle without.
+    QJsonObject content(const QString &id) const { return m_content.value(id); }
+    // The ids of the bundles that have content (installed or removed).
+    QStringList lessonIds() const { return m_content.keys(); }
+    // Grows when a lesson's content or installed state changes (not for every save): Lessons reads anew.
+    quint64 lessonRevision() const { return m_lessonRevision; }
     // Bytes of all loaded videos.
     qint64 size() const;
 
@@ -81,6 +93,10 @@ private:
     void load();
     bool save() const;
 
+    QString contentPath(const QString &id) const;
+
     QString m_root;
     QHash<QString, Bundle> m_bundles;
+    QHash<QString, QJsonObject> m_content;
+    quint64 m_lessonRevision = 0;
 };

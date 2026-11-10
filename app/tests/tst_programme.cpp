@@ -1,4 +1,7 @@
+#include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -7,6 +10,7 @@
 
 #include <algorithm>
 
+#include "bundleshelf.h"
 #include "courses.h"
 #include "practicegrade.h"
 #include "programme.h"
@@ -96,10 +100,68 @@ class TstProgramme : public QObject
         return courses.addGrade(discipline, grade, QStringLiteral("2024-03-01"), QString());
     }
 
+    // The package of tests/data/bundle as Bundles leaves it on the app's shelf.
+    static void installLesson()
+    {
+        QFile file(QStringLiteral(TEST_BUNDLE_DIR "/inhalt.json"));
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QJsonObject content = QJsonDocument::fromJson(file.readAll()).object();
+        QVERIFY(BundleShelf::shared().installed(QStringLiteral("test-lesson"), 1, {}, {}, {}, content));
+    }
+
 private slots:
     void initTestCase()
     {
         QSettings().clear();
+    }
+
+    void cleanupTestCase()
+    {
+        QDir(BundleShelf::defaultRoot()).removeRecursively();
+    }
+
+    // The techniques of an installed Lernpaket (lern/<package>/<id>): by id, label, search and
+    // suggestion after the programme's; the programme's own lists stay. A removed package keeps its
+    // names (notes) but leaves the search.
+    void lessonTechniques()
+    {
+        const QString irimi = QStringLiteral("lern/test-lesson/irimi");
+        QVERIFY(programme.entry(irimi).isEmpty());
+        QCOMPARE(programme.techniqueLabel(irimi), QString());
+        QSignalSpy texts(&programme, &Programme::textsChanged);
+        const int revision = programme.revision();
+        const int before = programme.search(QStringLiteral("irimi"), 1000).size();
+
+        installLesson();
+        QCOMPARE(texts.count(), 1);
+        QCOMPARE(programme.revision(), revision + 1);
+        const QVariantMap e = programme.entry(irimi);
+        QCOMPARE(e.value(QStringLiteral("title")).toString(), QStringLiteral("Irimi-nage"));
+        QCOMPARE(e.value(QStringLiteral("discipline")).toString(), QStringLiteral("lern"));
+        QCOMPARE(programme.techniqueLabel(irimi), QStringLiteral("Irimi-nage (Variante) · Shomen-uchi · Lernpaket"));
+        QCOMPARE(programme.techniqueLabel(QStringLiteral("lern/test-lesson/tenkan")), QStringLiteral("Tenkan · Lernpaket"));
+
+        const QVariantList found = programme.search(QStringLiteral("irimi"), 1000);
+        QCOMPARE(found.size(), before + 1);
+        const QVariantMap last = found.last().toMap();
+        QCOMPARE(last.value(QStringLiteral("id")).toString(), irimi);
+        QCOMPARE(last.value(QStringLiteral("disciplineName")).toString(), QStringLiteral("Lernpaket"));
+        QCOMPARE(last.value(QStringLiteral("gradeName")).toString(), QString());
+        QCOMPARE(last.value(QStringLiteral("groupName")).toString(), QStringLiteral("Grundtechniken"));
+        // Words of the section and the addition find it too.
+        QVERIFY(ids(programme.search(QStringLiteral("grundtechniken variante"))).contains(irimi));
+        QVERIFY(ids(programme.suggest(QStringLiteral("Wir üben Irimi-nage und Tenkan."), 1000)).contains(irimi));
+        QVERIFY(ids(programme.suggest(QStringLiteral("Wir üben Irimi-nage und Tenkan."), 1000))
+                    .contains(QStringLiteral("lern/test-lesson/tenkan")));
+
+        // The programme's lists do not have it.
+        QVERIFY(!ids(programme.practiceEntries(QStringLiteral("aikido"), QStringLiteral("k5"))).contains(irimi));
+
+        QVERIFY(BundleShelf::shared().remove(QStringLiteral("test-lesson")));
+        QCOMPARE(texts.count(), 2);
+        QCOMPARE(programme.search(QStringLiteral("irimi"), 1000).size(), before);
+        QCOMPARE(programme.entry(irimi).value(QStringLiteral("title")).toString(), QStringLiteral("Irimi-nage"));
+        QCOMPARE(programme.techniqueLabel(irimi), QStringLiteral("Irimi-nage (Variante) · Shomen-uchi · Lernpaket"));
     }
 
     // The programme's chips add Hon-Menkyo and Menkyo-Kaiden with what the catalog says of them,
@@ -909,6 +971,9 @@ int main(int argc, char *argv[])
     qputenv("XDG_DATA_HOME", TEST_DATA_DIR "/data");
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("mitori-test"));
+    // The Lernpakete's shelf in a folder of the tests' own.
+    QStandardPaths::setTestModeEnabled(true);
+    QDir(BundleShelf::defaultRoot()).removeRecursively();
     TstProgramme test;
     return QTest::qExec(&test, argc, argv);
 }

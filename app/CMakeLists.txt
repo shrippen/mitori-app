@@ -171,6 +171,8 @@ qt_add_qml_module(mitori_app
     SOURCES
         catalog/catalog.h
         catalog/catalog.cpp
+        catalog/lessons.h
+        catalog/lessons.cpp
         services/programme.h
         services/programme.cpp
         services/practicegrade.h
@@ -226,6 +228,8 @@ qt_add_qml_module(mitori_app
         store/bundleshelf.cpp
         services/bundles.h
         services/bundles.cpp
+        services/library.h
+        services/library.cpp
         platform/qrreader.h
         platform/qrreader.cpp
         services/codescanner.h
@@ -459,6 +463,7 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
         catalog/catalog.cpp catalog/catalog.h)
     target_include_directories(tst_programme PRIVATE catalog services store platform)
     target_compile_definitions(tst_programme PRIVATE MITORI_DATEN_JSON="${MITORI_DATEN_JSON}"
+        TEST_BUNDLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/bundle"
         TEST_DATA_DIR="${CMAKE_BINARY_DIR}/test-data/programme")
     target_link_libraries(tst_programme PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Sql Qt6::Network Qt6::Test)
     set_target_properties(tst_programme PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
@@ -600,6 +605,10 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     foreach(target tst_media tst_backup tst_sync tst_export tst_courses)
         target_sources(${target} PRIVATE services/programme.cpp services/programme.h)
     endforeach()
+    # Programme and Videos read the Lernpakete (Lessons, from the bundle shelf).
+    foreach(target tst_programme tst_exam tst_allnotes tst_media tst_backup tst_sync tst_export tst_courses)
+        target_sources(${target} PRIVATE catalog/lessons.cpp catalog/lessons.h store/bundleshelf.cpp store/bundleshelf.h)
+    endforeach()
     target_compile_definitions(tst_export PRIVATE MITORI_DATEN_JSON="${MITORI_DATEN_JSON}")
 
     qt_add_executable(tst_bundlecrypto tests/tst_bundlecrypto.cpp store/bundlecrypto.cpp store/bundlecrypto.h)
@@ -611,12 +620,21 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
 
     qt_add_executable(tst_bundles tests/tst_bundles.cpp services/bundles.cpp services/bundles.h
         services/videos.cpp services/videos.h catalog/catalog.cpp catalog/catalog.h player/decoders.cpp player/decoders.h
-        store/bundleshelf.cpp store/bundleshelf.h store/bundlecrypto.cpp store/bundlecrypto.h)
+        catalog/lessons.cpp catalog/lessons.h services/library.cpp services/library.h store/bundleshelf.cpp store/bundleshelf.h store/bundlecrypto.cpp store/bundlecrypto.h)
     target_include_directories(tst_bundles PRIVATE services store catalog player)
     target_compile_definitions(tst_bundles PRIVATE TEST_BUNDLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/bundle")
     target_link_libraries(tst_bundles PRIVATE Qt6::Core Qt6::Qml Qt6::Network Qt6::Concurrent Qt6::Test monocypher)
     set_target_properties(tst_bundles PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
     add_test(NAME bundles COMMAND tst_bundles)
+
+    qt_add_executable(tst_lessons tests/tst_lessons.cpp catalog/lessons.cpp catalog/lessons.h
+        services/library.cpp services/library.h services/videos.cpp services/videos.h catalog/catalog.cpp catalog/catalog.h
+        player/decoders.cpp player/decoders.h store/bundleshelf.cpp store/bundleshelf.h)
+    target_include_directories(tst_lessons PRIVATE services store catalog player)
+    target_compile_definitions(tst_lessons PRIVATE TEST_BUNDLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/bundle")
+    target_link_libraries(tst_lessons PRIVATE Qt6::Core Qt6::Qml Qt6::Test)
+    set_target_properties(tst_lessons PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
+    add_test(NAME lessons COMMAND tst_lessons)
 
     if(TARGET Qt6::MultimediaPrivate AND TARGET Qt6::CorePrivate)
         qt_add_executable(tst_decoders tests/tst_decoders.cpp player/decoders.cpp player/decoders.h)

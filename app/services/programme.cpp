@@ -1,5 +1,6 @@
 #include "programme.h"
 
+#include "lessons.h"
 #include "searchkey.h"
 
 #include <QCoreApplication>
@@ -141,6 +142,11 @@ Programme::Programme(const Catalog &catalog, QObject *parent)
     if (auto *app = QCoreApplication::instance()) {
         app->installEventFilter(this);
     }
+    // A Lernpaket came or went: its techniques are in search(), suggest() and entry().
+    connect(&Lessons::shared(), &Lessons::changed, this, [this] {
+        ++m_revision;
+        emit textsChanged();
+    });
 }
 
 bool Programme::eventFilter(QObject *watched, QEvent *event)
@@ -408,6 +414,19 @@ void Programme::eachTechnique(const std::function<bool(const QVariantMap &)> &vi
             }
         }
     }
+
+    // The installed Lernpakete after the programme: rows as Lessons has them.
+    const Lessons &lessons = Lessons::shared();
+    for (const QVariant &p : lessons.packages()) {
+        for (const QVariant &r : lessons.rows(p.toMap().value(QStringLiteral("id")).toString())) {
+            if (r.toMap().value(QStringLiteral("kind")) != QLatin1String("entry")) {
+                continue;
+            }
+            if (!visit(r.toMap())) {
+                return;
+            }
+        }
+    }
 }
 
 QVariantList Programme::search(const QString &query, int limit) const
@@ -430,10 +449,11 @@ QVariantList Programme::search(const QString &query, int limit) const
 
 const QList<Programme::SearchRow> &Programme::searchRows() const
 {
-    // The language checked here, as in entry().
-    if (m_searchLanguage != Catalog::language()) {
+    // The language checked here, as in entry(); also the Lernpakete.
+    if (m_searchLanguage != Catalog::language() || m_searchLessons != Lessons::shared().revision()) {
         m_searchRows.clear();
         m_searchLanguage = Catalog::language();
+        m_searchLessons = Lessons::shared().revision();
     }
     if (!m_searchRows.isEmpty()) {
         return m_searchRows;
@@ -633,13 +653,17 @@ QString Programme::techniqueLabel(const QString &id) const
     const QString attack = e.value(QStringLiteral("attack")).toString();
     QStringList parts{nr > 0 ? QString::number(nr) : QString(), withExtra(title, e.value(QStringLiteral("extra")).toString()),
                       attack.isEmpty() ? QString() : withExtra(attack, e.value(QStringLiteral("attackExtra")).toString()),
-                      e.value(QStringLiteral("disciplineName")).toString() + u' ' + e.value(QStringLiteral("gradeName")).toString()};
+                      (e.value(QStringLiteral("disciplineName")).toString() + u' ' + e.value(QStringLiteral("gradeName")).toString()).trimmed()};
     parts.removeAll(QString());
     return parts.join(QStringLiteral(" · "));
 }
 
 QVariantMap Programme::entry(const QString &id) const
 {
+    if (id.startsWith(QLatin1String(Lessons::kPrefix))) {
+        return Lessons::shared().entry(id);
+    }
+
     // Built once per language: the search page asks for one entry per note found. The language is
     // checked here, not on LanguageChange: other services ask while that event goes round.
     if (m_indexLanguage != Catalog::language()) {
