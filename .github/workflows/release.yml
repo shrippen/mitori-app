@@ -1,7 +1,7 @@
 name: Release
 
 # A tag v* reaches GitHub through the Gitea push mirror; the Gitea release (notes only) is made
-# there with tea. Here the GitHub release is created with the same notes (scripts/release-notes.sh)
+# there with gt. Here the GitHub release is created with the same notes (scripts/release-notes.sh)
 # and the files are built and attached: the signed APK, the AppImage and the Flatpak bundles for
 # x86_64 and aarch64 (RELEASE.md). Each package is checked for demo code first
 # (scripts/check-no-demo.sh).
@@ -62,7 +62,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           app=$(sed -n 's/^project(mitori VERSION \([0-9.]*\).*/\1/p' app/CMakeLists.txt)
-          [ "$app" = "$VERSION" ] || { echo "::error::tag $VERSION, app/CMakeLists.txt $app (release rule, step 1)"; exit 1; }
+          [ "$app" = "$VERSION" ] || { echo "::error::tag $VERSION, app/CMakeLists.txt $app (RELEASE.md, step 1)"; exit 1; }
 
       - name: GitHub release
         if: steps.version.outputs.tag != ''
