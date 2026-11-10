@@ -1,0 +1,84 @@
+{
+ "format": 1,
+ "id": "test-lesson",
+ "titel": "Lernpaket",
+ "titel_en": "Lesson pack",
+ "sparte": "aikido",
+ "text": "Kurz",
+ "text_en": "Short",
+ "videos": [
+  {
+   "id": "lern-test/v1",
+   "titel": "Teil 1",
+   "titel_en": "Part 1",
+   "beschnitt": {
+    "hoehe": 1080,
+    "y": 0,
+    "h": 1000,
+    "verhaeltnis": 1.7778
+   }
+  },
+  {
+   "id": "lern-test/v2",
+   "titel": "Teil 2"
+  }
+ ],
+ "abschnitte": [
+  {
+   "titel": "Grundtechniken",
+   "titel_en": "Basic techniques",
+   "text": "Zuerst",
+   "techniken": [
+    {
+     "id": "lern/test-lesson/irimi",
+     "name": "Irimi-nage",
+     "jp": "入身投げ",
+     "angriff": {
+      "name": "Shomen-uchi",
+      "jp": "正面打ち"
+     },
+     "zusatz": "Variante",
+     "zusatz_en": "variant",
+     "text": "Zeigt den Eintritt",
+     "text_en": "Shows the entry",
+     "wie": [
+      "aikido/k5/irimi-nage-2"
+     ],
+     "video": "lern-test/v1",
+     "von": 1.5,
+     "bis": 2.5
+    },
+    {
+     "id": "lern/test-lesson/tenkan",
+     "name": "Tenkan",
+     "video": "lern-test/v1",
+     "von": 3.0,
+     "bis": 4.0
+    }
+   ]
+  },
+  {
+   "titel": "Mehr",
+   "techniken": [
+    {
+     "id": "lern/test-lesson/ohne",
+     "name": "Ohne Video"
+    },
+    {
+     "id": "lern/test-lesson/zwei",
+     "name": "Zwei",
+     "video": "lern-test/v2",
+     "von": 0.0,
+     "bis": 1.0
+    },
+    {
+     "id": "lern/other/fremd",
+     "name": "Fremd",
+     "video": "lern-test/v1",
+     "von": 0.0,
+     "bis": 1.0
+    }
+   ]
+  }
+ ]
+}

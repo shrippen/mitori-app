@@ -550,8 +550,20 @@
         <translation>Laden fehlgeschlagen: %1</translation>
     </message>
     <message>
+        <source>The package&apos;s content arrived damaged; load it again.</source>
+        <translation>Der Inhalt des Pakets kam beschädigt an; bitte neu laden.</translation>
+    </message>
+    <message>
         <source>A video arrived damaged; load it again.</source>
         <translation>Ein Video kam beschädigt an; bitte neu laden.</translation>
+    </message>
+    <message>
+        <source>The package&apos;s content does not belong to it.</source>
+        <translation>Der Inhalt gehört nicht zu diesem Paket.</translation>
+    </message>
+    <message>
+        <source>This package needs a newer version of Mitori.</source>
+        <translation>Dieses Paket braucht eine neuere Version von Mitori.</translation>
     </message>
 </context>
 <context>

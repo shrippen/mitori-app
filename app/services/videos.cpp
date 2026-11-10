@@ -2,6 +2,7 @@
 
 #include "bundleshelf.h"
 #include "decoders.h"
+#include "lessons.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -94,11 +95,16 @@ QUrl Videos::source(const QString &video) const
     return available(video) ? QUrl::fromLocalFile(path(video)) : QUrl();
 }
 
-// A bundle's file is cut already: its picture is the whole frame, at the same aspect ratio.
+// A bundle's file is cut already: its picture is the whole frame, at the same aspect ratio. A
+// video without an area gives an empty map (the player takes 16:9 and the whole frame).
 QVariantMap Videos::crop(const QString &video) const
 {
-    const QVariantMap crop = m_catalog.videos().value(video).toMap().value(QStringLiteral("beschnitt")).toMap();
-    if (!BundleShelf::shared().cropped(video) || BundleShelf::shared().path(video).isEmpty()) {
+    QVariantMap crop = m_catalog.videos().value(video).toMap().value(QStringLiteral("beschnitt")).toMap();
+    // A Lernpaket's video is not in the catalog: its picture area comes with its content.
+    if (!m_catalog.videos().contains(video)) {
+        crop = Lessons::shared().crop(video);
+    }
+    if (crop.isEmpty() || !BundleShelf::shared().cropped(video) || BundleShelf::shared().path(video).isEmpty()) {
         return crop;
     }
     return {{QStringLiteral("verhaeltnis"), crop.value(QStringLiteral("verhaeltnis"))}};

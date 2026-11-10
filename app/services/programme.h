@@ -18,7 +18,7 @@ class Programme : public QObject
     QML_SINGLETON
     // In the app's language (Catalog): texts follow a change of it, ids stay.
     Q_PROPERTY(QVariantList disciplines READ disciplines NOTIFY textsChanged)
-    // Grows when the texts change language: bindings that call the functions below read it to follow.
+    // Grows when the texts change language or a Lernpaket comes or goes: bindings that call the functions below read it to follow.
     Q_PROPERTY(int revision READ revision NOTIFY textsChanged)
     Q_PROPERTY(QString errorString READ errorString CONSTANT)
     Q_PROPERTY(QString dataVersion READ dataVersion CONSTANT)
@@ -59,7 +59,8 @@ public:
     // Techniques whose name, attack, Japanese, additions, group or steps contain every word of `query`
     // (see SearchText), in the texts the rows show (English with English on, not the German), across all disciplines and grades in programme order (at most `limit`).
     // Each row as in entries(), with `discipline`, `disciplineName`, `grade`, `gradeName` and
-    // `groupName` (Tachi-waza · Mae-seme …).
+    // `groupName` (Tachi-waza · Mae-seme …). The techniques of the installed Lernpakete follow the
+    // programme's, as Lessons has them (`disciplineName` the package's title, `gradeName` empty).
     Q_INVOKABLE QVariantList search(const QString &query, int limit = 50) const;
     // Builds what search() compares (16 ms), when the search opens, not on the first letter.
     Q_INVOKABLE void prepareSearch() const { searchRows(); }
@@ -73,7 +74,8 @@ public:
     Q_INVOKABLE QVariantList suggest(const QString &text, int limit = 8, const QStringList &without = {}) const;
     // "Shihô-nage · Katate-dori · Aikido 5. Kyu", or "" for an id not in the programme.
     Q_INVOKABLE QString techniqueLabel(const QString &id) const;
-    // One entry by id (the same map as in entries()), or an empty map.
+    // One entry by id (the same map as in entries()), or an empty map. An id "lern/<package>/…" is a
+    // technique of a Lernpaket (Lessons, also one that was removed since); the label ends with its title.
     Q_INVOKABLE QVariantMap entry(const QString &id) const;
     // The technique map (clickdummy "Landkarte") of every grade up to `grade`: a grid per group
     // with attacks, in the order of the discipline's groups; groups of the same title (kyu and dan
@@ -121,4 +123,5 @@ private:
     mutable Catalog::Language m_indexLanguage = Catalog::Language::German;
     mutable QList<SearchRow> m_searchRows;
     mutable Catalog::Language m_searchLanguage = Catalog::Language::German;
+    mutable quint64 m_searchLessons = 0;
 };

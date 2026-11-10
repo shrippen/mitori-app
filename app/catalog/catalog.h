@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QVariant>
 #include <QVariantList>
 
 class QLocale;
@@ -25,6 +26,10 @@ public:
     // The language of a locale's texts, as the app's catalogs choose: the first of its languages
     // that has one (de, en), English (the code's) without.
     static Language languageOf(const QLocale &locale);
+
+    // A value of other data (a Lernpaket's content) with every x replaced by its x_en, in nested
+    // maps and lists too: the rule above, for the data that do not come with the catalog.
+    static QVariant inEnglish(const QVariant &value);
 
     // The catalog in the app's resources, loaded once and shared by the services.
     static const Catalog &bundled();

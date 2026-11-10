@@ -13,6 +13,7 @@
 
 namespace {
 const QString kShelf = QStringLiteral("shelf.json");
+const QString kContentSuffix = QStringLiteral(".inhalt.json");
 }
 
 BundleShelf::BundleShelf(const QString &root)
@@ -68,7 +69,20 @@ void BundleShelf::load()
             }
         }
         m_bundles.insert(it.key(), b);
+
+        QFile content(contentPath(it.key()));
+        if (content.open(QIODevice::ReadOnly)) {
+            const QJsonObject c = QJsonDocument::fromJson(content.readAll()).object();
+            if (!c.isEmpty()) {
+                m_content.insert(it.key(), c);
+            }
+        }
     }
+}
+
+QString BundleShelf::contentPath(const QString &id) const
+{
+    return QDir(m_root).filePath(id + kContentSuffix);
 }
 
 // The key is kept next to the videos it opens, in the app's private data (not in a backup export).
@@ -115,10 +129,27 @@ bool BundleShelf::unlock(const QString &id, const QString &code, const QByteArra
 }
 
 bool BundleShelf::installed(const QString &id, int version, const QHash<QString, QString> &files, const QStringList &cropped,
-                            const Cuts &cuts)
+                            const Cuts &cuts, const QJsonObject &content)
 {
     if (!validId(id)) {
         return false;
+    }
+
+    // Before shelf.json says "installed": a lesson without its content would show no techniques.
+    if (!content.isEmpty()) {
+        QDir().mkpath(m_root);
+        QSaveFile out(contentPath(id));
+        if (!out.open(QIODevice::WriteOnly)) {
+            return false;
+        }
+        out.write(QJsonDocument(content).toJson(QJsonDocument::Compact));
+        if (!out.commit()) {
+            return false;
+        }
+        m_content.insert(id, content);
+    }
+    if (m_content.contains(id)) {
+        ++m_lessonRevision;
     }
     Bundle &b = m_bundles[id];
     b.version = version;
@@ -134,6 +165,9 @@ bool BundleShelf::remove(const QString &id)
         return false;
     }
     QDir(folder(id)).removeRecursively();
+    if (m_content.contains(id)) {
+        ++m_lessonRevision;
+    }
     Bundle &b = m_bundles[id];
     b.version = 0;
     b.files.clear();

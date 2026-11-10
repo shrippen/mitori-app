@@ -1,5 +1,7 @@
 #include "bundles.h"
 
+#include "catalog.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QFutureWatcher>
@@ -21,11 +23,14 @@ namespace {
 const QUrl kManifest(QStringLiteral("https://git.arianw.de/api/packages/shrippen/generic/mitori-manifest/1/manifest.json"));
 constexpr int kHttpError = 400;                 // from this status on a body is an error page
 constexpr int kFormat = 2;                      // "format" of the manifest
+constexpr int kContentFormat = 1;               // "format" of a Lernpaket's content (inhalt.mvb)
 constexpr auto kWifiOnlyKey = "videos/wifiOnly";
 constexpr qint64 kFreshSeconds = 6 * 60 * 60;
 constexpr int kTimeoutMs = 30 * 1000;           // without a byte for this long a download fails
 constexpr qint64 kProgressMs = 250;             // the least time between two progress reports
 const QString kManifestFile = QStringLiteral("manifest.json");
+const QString kContentKey = QStringLiteral("inhalt");
+const QString kContentFile = QStringLiteral("inhalt.json");     // the decrypted content, while loading
 
 // A file's cut points from the manifest; what makes no sense is left out (the app's own time counts).
 QHash<QString, BundleShelf::Cut> cutsOf(const QJsonObject &file)
@@ -177,13 +182,20 @@ void Bundles::received(QNetworkReply *reply)
 }
 
 // Only bundles whose id can name a folder (BundleShelf::validId): the id goes into paths.
-QJsonObject Bundles::manifestBundle(const QString &id) const
+QJsonObject Bundles::manifestBundle(const QString &id, Kind *kind) const
 {
     if (!BundleShelf::validId(id)) {
         return {};
     }
-    for (const QJsonValue &b : m_manifest.value(QStringLiteral("bundles")).toArray()) {
-        if (b.toObject().value(QStringLiteral("id")).toString() == id) {
+    const std::pair<QString, Kind> lists[] = {{QStringLiteral("bundles"), Kind::Exam}, {QStringLiteral("lernpakete"), Kind::Lesson}};
+    for (const auto &[key, listKind] : lists) {
+        for (const QJsonValue &b : m_manifest.value(key).toArray()) {
+            if (b.toObject().value(QStringLiteral("id")).toString() != id) {
+                continue;
+            }
+            if (kind) {
+                *kind = listKind;
+            }
             return b.toObject();
         }
     }
@@ -193,12 +205,18 @@ QJsonObject Bundles::manifestBundle(const QString &id) const
 QVariantList Bundles::bundles() const
 {
     QVariantList result;
-    for (const QJsonValue &v : m_manifest.value(QStringLiteral("bundles")).toArray()) {
-        const QJsonObject b = v.toObject();
+    QJsonArray all = m_manifest.value(QStringLiteral("bundles")).toArray();
+    const qsizetype exams = all.size();            // the exam bundles first, then the Lernpakete
+    for (const QJsonValue &v : m_manifest.value(QStringLiteral("lernpakete")).toArray()) {
+        all.append(v);
+    }
+    for (qsizetype i = 0; i < all.size(); ++i) {
+        const QJsonObject b = all.at(i).toObject();
         const QString id = b.value(QStringLiteral("id")).toString();
         if (!BundleShelf::validId(id)) {
             continue;
         }
+        const Kind kind = i < exams ? Kind::Exam : Kind::Lesson;
         const int version = b.value(QStringLiteral("version")).toInt();
         const BundleShelf::Bundle shelf = m_shelf->bundle(id);
         qint64 size = 0;
@@ -212,6 +230,9 @@ QVariantList Bundles::bundles() const
                     : shelf.version == 0  ? State::Unlocked
                     : shelf.version < version ? State::Update
                                               : State::Installed;
+        if (kind == Kind::Lesson && b.value(kContentKey).toObject().value(QStringLiteral("format")).toInt() != kContentFormat) {
+            state = State::Unsupported;
+        }
         if (m_failed.contains(id)) {
             state = m_failed.value(id);
         }
@@ -220,9 +241,14 @@ QVariantList Bundles::bundles() const
             state = State::Downloading;
             progress = job->total > 0 ? double(job->done + job->received) / double(job->total) : 0;
         }
+        // The manifest's titles as the catalog's: titel_en where the English differs.
+        const QString title = Catalog::language() == Catalog::Language::English && b.contains(QStringLiteral("titel_en"))
+                                  ? b.value(QStringLiteral("titel_en")).toString()
+                                  : b.value(QStringLiteral("titel")).toString();
         result << QVariantMap{{QStringLiteral("id"), id},
                               {QStringLiteral("uid"), id},         // the key of the page's rows (KeyedListModel)
-                              {QStringLiteral("title"), b.value(QStringLiteral("titel")).toString()},
+                              {QStringLiteral("title"), title},
+                              {QStringLiteral("kind"), QVariant::fromValue(kind)},
                               {QStringLiteral("version"), version},
                               {QStringLiteral("installed"), shelf.version},
                               {QStringLiteral("videos"), videos},
@@ -302,9 +328,15 @@ void Bundles::unlock(const QString &input)
 
 void Bundles::load(const QString &id, Network network)
 {
-    const QJsonObject b = manifestBundle(id);
+    Kind kind = Kind::Exam;
+    const QJsonObject b = manifestBundle(id, &kind);
     const BundleShelf::Bundle shelf = m_shelf->bundle(id);
     if (b.isEmpty() || shelf.key.isEmpty() || m_jobs.contains(id)) {
+        return;
+    }
+    // A content format this version does not know: the page asks for an update (State::Unsupported).
+    const QJsonObject inhalt = b.value(kContentKey).toObject();
+    if (kind == Kind::Lesson && inhalt.value(QStringLiteral("format")).toInt() != kContentFormat) {
         return;
     }
     if (network == Network::WifiOnly && wifiOnly() && !onWifi()) {
@@ -319,6 +351,12 @@ void Bundles::load(const QString &id, Network network)
     job->id = id;
     job->version = b.value(QStringLiteral("version")).toInt();
     job->videos = b.value(QStringLiteral("videos")).toArray();
+    // The content first: a damaged one fails before the large files load.
+    if (kind == Kind::Lesson) {
+        QJsonObject content = inhalt;
+        content.insert(kContentKey, true);
+        job->videos.prepend(content);
+    }
     for (const QJsonValue &f : std::as_const(job->videos)) {
         job->total += qint64(f.toObject().value(QStringLiteral("groesse")).toDouble());
     }
@@ -339,7 +377,7 @@ void Bundles::next(Job &job)
     if (job.videos.isEmpty()) {
         QDir(m_shelf->folder(id)).removeRecursively();
         if (!QDir().rename(partDir, m_shelf->folder(id))
-            || !m_shelf->installed(id, job.version, job.files, job.cropped, job.cuts)) {
+            || !m_shelf->installed(id, job.version, job.files, job.cropped, job.cuts, job.content)) {
             fail(id, tr("The videos could not be saved on this device."));
             return;
         }
@@ -362,7 +400,8 @@ void Bundles::next(Job &job)
         fail(id, tr("The manifest names a file that cannot be loaded."));
         return;
     }
-    job.part = std::make_unique<QFile>(QDir(partDir).filePath(plainName(file, job.version)));
+    const bool isContent = f.value(kContentKey).toBool();
+    job.part = std::make_unique<QFile>(QDir(partDir).filePath(isContent ? kContentFile : plainName(file, job.version)));
     if (!job.part->open(QIODevice::WriteOnly)) {
         fail(id, tr("The videos could not be saved on this device."));
         return;
@@ -398,7 +437,7 @@ void Bundles::next(Job &job)
         j->shown.start();
         emit changed();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, id, reply, f] {
+    connect(reply, &QNetworkReply::finished, this, [this, id, reply, f, isContent] {
         reply->deleteLater();
         const auto j = m_jobs.value(id);
         if (!j || j->reply != reply) {
@@ -416,10 +455,23 @@ void Bundles::next(Job &job)
             const bool gone = reply->error() == QNetworkReply::ContentNotFoundError;
             fail(id, reply->error() != QNetworkReply::NoError && reply->error() != QNetworkReply::OperationCanceledError
                          ? tr("Loading failed: %1").arg(reply->errorString())
-                         : tr("A video arrived damaged; load it again."));
+                         : isContent ? tr("The package's content arrived damaged; load it again.")
+                                     : tr("A video arrived damaged; load it again."));
             if (gone) {
                 reload();
             }
+            return;
+        }
+        if (isContent) {
+            const QString why = readContent(*j);
+            if (!why.isEmpty()) {
+                fail(id, why);
+                return;
+            }
+            j->done += qint64(f.value(QStringLiteral("groesse")).toDouble());
+            j->received = 0;
+            j->videos.removeFirst();
+            next(*j);
             return;
         }
         const QString video = f.value(QStringLiteral("video")).toString();
@@ -433,6 +485,35 @@ void Bundles::next(Job &job)
         j->videos.removeFirst();
         next(*j);
     });
+}
+
+// A Lernpaket's loaded content into job.content, and its file out of the bundle's folder. Returns
+// what is wrong with it, or "".
+QString Bundles::readContent(Job &job)
+{
+    const QString path = job.part->fileName();
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return tr("The videos could not be saved on this device.");
+    }
+    const QByteArray data = file.readAll();
+    file.close();
+    file.remove();
+
+    QJsonParseError error;
+    const QJsonObject content = QJsonDocument::fromJson(data, &error).object();
+    if (error.error != QJsonParseError::NoError || content.isEmpty()) {
+        return tr("The package's content arrived damaged; load it again.");
+    }
+    // Another package's content under this name would give it this one's techniques.
+    if (content.value(QStringLiteral("id")).toString() != job.id) {
+        return tr("The package's content does not belong to it.");
+    }
+    if (content.value(QStringLiteral("format")).toInt() != kContentFormat) {
+        return tr("This package needs a newer version of Mitori.");
+    }
+    job.content = content;
+    return {};
 }
 
 // The download stops; what was loaded before stays.

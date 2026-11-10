@@ -1,6 +1,7 @@
 #include "allnotes.h"
 
 #include "courses.h"
+#include "lessons.h"
 #include "practice.h"
 #include "programme.h"
 
@@ -38,6 +39,11 @@ AllNotes::AllNotes(QObject *parent)
     if (auto *app = QCoreApplication::instance()) {
         app->installEventFilter(this);
     }
+    // A Lernpaket came or went: its notes' titles are read anew.
+    connect(&Lessons::shared(), &Lessons::changed, this, [this] {
+        m_techniques.clear();
+        rebuild();
+    });
 }
 
 bool AllNotes::eventFilter(QObject *watched, QEvent *event)
@@ -122,8 +128,13 @@ QString AllNotes::techniqueTitle(const QVariantMap &e) const
         return tr("Technique no longer in the programme");
     }
     const QString nr = e.value(QStringLiteral("nr")).toString();
-    QStringList parts{m_gradeNames.value(e.value(QStringLiteral("discipline")).toString() + QLatin1Char('/')
-                                         + e.value(QStringLiteral("grade")).toString()),
+    // A Lernpaket's technique has no grade: its package stands there.
+    QString gradeName = m_gradeNames.value(e.value(QStringLiteral("discipline")).toString() + QLatin1Char('/')
+                                           + e.value(QStringLiteral("grade")).toString());
+    if (gradeName.isEmpty() && !e.value(QStringLiteral("package")).toString().isEmpty()) {
+        gradeName = e.value(QStringLiteral("disciplineName")).toString();
+    }
+    QStringList parts{gradeName,
                       (nr.isEmpty() ? QString() : nr + QStringLiteral(" · ")) + title,
                       e.value(QStringLiteral("attack")).toString()};
     parts.removeAll(QString());

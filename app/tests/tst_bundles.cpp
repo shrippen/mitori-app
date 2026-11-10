@@ -14,8 +14,10 @@
 #include <QTest>
 #include <QTimer>
 
+#include "bundlecrypto.h"
 #include "bundles.h"
 #include "catalog.h"
+#include "lessons.h"
 #include "videos.h"
 
 using namespace Qt::StringLiterals;
@@ -28,6 +30,8 @@ class TstBundles : public QObject
 
     QTemporaryDir m_dir;
     const QString m_code = u"7KQ2M-X9HDV-3TAPR-WE6YT"_s;
+    const QString m_lessonCode = u"EVZZG-1NQ2R-HFB8N-BY6Z3"_s;
+    const QString m_lesson = u"test-lesson"_s;
 
     static QByteArray read(const QString &name)
     {
@@ -76,6 +80,69 @@ class TstBundles : public QObject
         b.insert(u"videos"_s, videos);
         list[0] = b;
         manifest.insert(u"bundles"_s, list);
+    }
+
+    enum class Content { Real, Damaged, OtherId, OtherFormat };
+
+    // The Lernpaket as published: the video and `inhalt.mvb` in a folder, a manifest (lernpakete) with
+    // their addresses; `content` changes the content (damaged, of another package, of a format the
+    // manifest does not name). An empty `format` keeps the manifest's.
+    QUrl publishLesson(const QString &name, Content content = Content::Real, int format = 0)
+    {
+        const QString base = m_dir.filePath(name + u"-packages"_s);
+        QDir().mkpath(base);
+        QByteArray inhalt = read(u"inhalt.mvb"_s);
+        if (content == Content::Damaged) {
+            inhalt[60] = char(inhalt.at(60) ^ 1);
+        }
+        if (content == Content::OtherId || content == Content::OtherFormat) {
+            QJsonObject plain = QJsonDocument::fromJson(read(u"inhalt.json"_s)).object();
+            plain.insert(content == Content::OtherId ? u"id"_s : u"format"_s,
+                         content == Content::OtherId ? QJsonValue(u"other-lesson"_s) : QJsonValue(2));
+            inhalt = BundleCrypto::encrypted(QJsonDocument(plain).toJson(), QByteArray::fromHex(
+                "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"), QByteArray(16, 'p'));
+        }
+        for (const auto &[file, data] : {std::pair(u"test.mvb"_s, read(u"test.mvb"_s)), std::pair(u"inhalt.mvb"_s, inhalt)}) {
+            QFile f(base + u"/"_s + file);
+            if (!f.open(QIODevice::WriteOnly)) {
+                return {};
+            }
+            f.write(data);
+        }
+
+        QJsonObject manifest = QJsonDocument::fromJson(read(u"manifest-lernpaket.json"_s)).object();
+        QJsonArray list = manifest.value(u"lernpakete"_s).toArray();
+        QJsonObject lesson = list.first().toObject();
+        QJsonArray videos = lesson.value(u"videos"_s).toArray();
+        QJsonObject video = videos.first().toObject();
+        video.insert(u"url"_s, QUrl::fromLocalFile(base + u"/test.mvb"_s).toString());
+        videos[0] = video;
+        lesson.insert(u"videos"_s, videos);
+        QJsonObject info = lesson.value(u"inhalt"_s).toObject();
+        info.insert(u"url"_s, QUrl::fromLocalFile(base + u"/inhalt.mvb"_s).toString());
+        info.insert(u"groesse"_s, inhalt.size());
+        info.insert(u"sha256"_s, QString::fromLatin1(QCryptographicHash::hash(inhalt, QCryptographicHash::Sha256).toHex()));
+        if (format != 0) {
+            info.insert(u"format"_s, format);
+        }
+        lesson.insert(u"inhalt"_s, info);
+        list[0] = lesson;
+        manifest.insert(u"lernpakete"_s, list);
+        QFile m(m_dir.filePath(name + u"-manifest.json"_s));
+        if (!m.open(QIODevice::WriteOnly)) {
+            return {};
+        }
+        m.write(QJsonDocument(manifest).toJson());
+        return QUrl::fromLocalFile(m.fileName());
+    }
+
+    // Unlocks the test Lernpaket on `b`; true when it came.
+    bool unlockLesson(Bundles &b)
+    {
+        waitReady(b);
+        QSignalSpy unlocked(&b, &Bundles::unlocked);
+        b.unlock(m_lessonCode);
+        return unlocked.wait(10000);
     }
 
     // Unlocks the test bundle and loads it, on `b`.
@@ -610,6 +677,101 @@ private slots:
 
         QVERIFY(shelf.remove(id));
         QCOMPARE(videos.place(u"tech"_s, own), own);
+    }
+
+    // A Lernpaket (manifest "lernpakete") is listed beside the bundles, as a Lesson; its code unlocks it.
+    void lessonIsListed()
+    {
+        Bundles b(publishLesson(u"listed"_s), m_dir.filePath(u"listed-shelf"_s));
+        waitReady(b);
+        QCOMPARE(b.bundles().size(), 1);
+        QCOMPARE(first(b).value(u"id"_s).toString(), m_lesson);
+        QCOMPARE(first(b).value(u"kind"_s).value<Bundles::Kind>(), Bundles::Kind::Lesson);
+        QCOMPARE(state(b), Bundles::State::Locked);
+        QCOMPARE(first(b).value(u"title"_s).toString(), u"Lernpaket"_s);
+
+        // In English the manifest's titel_en.
+        Catalog::setLanguage(Catalog::Language::English);
+        QCOMPARE(first(b).value(u"title"_s).toString(), u"Lesson package"_s);
+        Catalog::setLanguage(Catalog::Language::German);
+
+        QVERIFY(unlockLesson(b));
+        QCOMPARE(state(b), Bundles::State::Unlocked);
+
+        // An exam bundle is an Exam.
+        Bundles exam(publish(u"listed-exam"_s), m_dir.filePath(u"listed-exam-shelf"_s));
+        waitReady(exam);
+        QCOMPARE(first(exam).value(u"kind"_s).value<Bundles::Kind>(), Bundles::Kind::Exam);
+    }
+
+    // Loading installs the videos and keeps the content outside the bundle's folder.
+    void lessonLoadsContent()
+    {
+        const QString root = m_dir.filePath(u"content-shelf"_s);
+        Bundles b(publishLesson(u"content"_s), root);
+        QVERIFY(unlockLesson(b));
+        QSignalSpy installed(&b, &Bundles::installed);
+        b.load(m_lesson, Bundles::Network::Any);
+        QVERIFY(installed.wait(10000));
+        QCOMPARE(state(b), Bundles::State::Installed);
+
+        const BundleShelf shelf(root);
+        QCOMPARE(shelf.content(m_lesson).value(u"id"_s).toString(), m_lesson);
+        QCOMPARE(shelf.lessonIds(), QStringList{m_lesson});
+        QVERIFY(QFileInfo::exists(root + u"/test-lesson.inhalt.json"_s));
+        QVERIFY(!QFileInfo::exists(shelf.folder(m_lesson) + u"/inhalt.json"_s));
+        QVERIFY(!shelf.path(u"lern-test/v1"_s).isEmpty());
+
+        // The techniques are there while it is installed; the content stays after remove().
+        Lessons lessons(shelf);
+        QCOMPARE(lessons.packages().size(), 1);
+        QVERIFY(b.remove(m_lesson));
+        const BundleShelf removed(root);
+        QCOMPARE(state(b), Bundles::State::Unlocked);
+        QCOMPARE(removed.content(m_lesson).value(u"id"_s).toString(), m_lesson);
+        QVERIFY(removed.path(u"lern-test/v1"_s).isEmpty());
+        Lessons after(removed);
+        QVERIFY(after.packages().isEmpty());
+        QCOMPARE(after.entry(u"lern/test-lesson/irimi"_s).value(u"title"_s).toString(), u"Irimi-nage"_s);
+    }
+
+    // A content that arrives damaged, or is another package's, fails the load; nothing is kept.
+    void lessonContentChecked_data()
+    {
+        QTest::addColumn<int>("content");
+        QTest::addColumn<QString>("error");
+        QTest::newRow("damaged") << int(Content::Damaged) << u"damaged"_s;
+        QTest::newRow("other id") << int(Content::OtherId) << u"does not belong"_s;
+        QTest::newRow("other format") << int(Content::OtherFormat) << u"newer version"_s;
+    }
+    void lessonContentChecked()
+    {
+        QFETCH(int, content);
+        QFETCH(QString, error);
+        const QString root = m_dir.filePath(u"bad-content-shelf-%1"_s.arg(content));
+        Bundles b(publishLesson(u"bad-content-%1"_s.arg(content), Content(content)), root);
+        QVERIFY(unlockLesson(b));
+        b.load(m_lesson, Bundles::Network::Any);
+        QTRY_COMPARE_WITH_TIMEOUT(state(b), Bundles::State::Failed, 5000);
+        QVERIFY2(b.errorString().contains(error), qPrintable(b.errorString()));
+        const BundleShelf shelf(root);
+        QVERIFY(shelf.lessonIds().isEmpty());
+        QCOMPARE(shelf.bundle(m_lesson).version, 0);
+        QVERIFY(!QFileInfo::exists(root + u"/test-lesson.inhalt.json"_s));
+    }
+
+    // A content format this version does not know: no load, the page says "update".
+    void lessonUnsupported()
+    {
+        const QString root = m_dir.filePath(u"unsupported-shelf"_s);
+        Bundles b(publishLesson(u"unsupported"_s, Content::Real, 2), root);
+        QVERIFY(unlockLesson(b));
+        QCOMPARE(state(b), Bundles::State::Unsupported);
+        b.load(m_lesson, Bundles::Network::Any);
+        QCOMPARE(state(b), Bundles::State::Unsupported);
+        QCOMPARE(b.updates(), 0);
+        QVERIFY(!QFileInfo::exists(BundleShelf(root).folder(m_lesson) + u".part"_s));
+        QCOMPARE(BundleShelf(root).bundle(m_lesson).version, 0);
     }
 
     // File names from the manifest may not leave the bundle's folder.

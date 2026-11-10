@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <ctime>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -7,6 +9,7 @@
 #include <QTest>
 
 #include "allnotes.h"
+#include "bundleshelf.h"
 #include "catalog.h"
 #include "courses.h"
 #include "practice.h"
@@ -67,7 +70,13 @@ private slots:
         QStandardPaths::setTestModeEnabled(true);
         QSettings().clear();
         QVERIFY(m_dir.isValid());
+        QDir(BundleShelf::defaultRoot()).removeRecursively();
         QVERIFY2(m_catalog.load(QStringLiteral(MITORI_DATEN_JSON)), qPrintable(m_catalog.errorString()));
+    }
+
+    void cleanupTestCase()
+    {
+        QDir(BundleShelf::defaultRoot()).removeRecursively();
     }
 
     // Both kinds, newest first, each with its title; the filter by discipline and by courses.
@@ -105,6 +114,27 @@ private slots:
         s.notes->setFilter({});
         QVERIFY(s.courses->remove(course));
         QCOMPARE(s.notes->count(), 2);
+    }
+
+    // A note on a Lernpaket's technique: titled with its package, in the "lern" discipline, never "no
+    // longer in the programme"; the title follows the package coming and going (its name stays).
+    void lessonNotes()
+    {
+        auto s = made(u"lesson"_s);
+        const QString id = u"lern/note-lesson/irimi"_s;
+        QVERIFY(s.practice->addNote(id, u"Eintritt"_s));
+        QCOMPARE(row(*s.notes, 0).value(u"title"_s).toString(), u"Technique no longer in the programme"_s);
+
+        const QJsonObject technique{{u"id"_s, id}, {u"name"_s, u"Irimi-nage"_s}, {u"angriff"_s, QJsonObject{{u"name"_s, u"Shomen-uchi"_s}}}};
+        const QJsonObject content{{u"id"_s, u"note-lesson"_s}, {u"titel"_s, u"Lernpaket"_s},
+                                  {u"abschnitte"_s, QJsonArray{QJsonObject{{u"titel"_s, u"Grund"_s}, {u"techniken"_s, QJsonArray{technique}}}}}};
+        QVERIFY(BundleShelf::shared().installed(u"note-lesson"_s, 1, {}, {}, {}, content));
+        QCOMPARE(row(*s.notes, 0).value(u"title"_s).toString(), u"Lernpaket · Irimi-nage · Shomen-uchi"_s);
+        QCOMPARE(row(*s.notes, 0).value(u"discipline"_s).toString(), u"lern"_s);
+
+        QVERIFY(BundleShelf::shared().remove(u"note-lesson"_s));
+        QCOMPARE(row(*s.notes, 0).value(u"title"_s).toString(), u"Lernpaket · Irimi-nage · Shomen-uchi"_s);
+        QCOMPARE(row(*s.notes, 0).value(u"discipline"_s).toString(), u"lern"_s);
     }
 
     // A technique's title names its grade in the data's language of now: a LanguageChange reads
