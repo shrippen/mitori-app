@@ -405,7 +405,7 @@ if(ANDROID)
     set_property(TARGET mitori APPEND PROPERTY
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     set_target_properties(mitori PROPERTIES
-        QT_ANDROID_PACKAGE_NAME "com.github.shrippen.mitori"
+        QT_ANDROID_PACKAGE_NAME "io.github.shrippen.Mitori"
         QT_ANDROID_VERSION_NAME "0.2.0"
         QT_ANDROID_VERSION_CODE "200"
         QT_ANDROID_MIN_SDK_VERSION "28"

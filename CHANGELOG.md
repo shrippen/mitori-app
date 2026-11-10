@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### English
+
+#### Changed
+- Android: the app has a new id, `io.github.shrippen.Mitori`, the same as on Linux. It installs as a new app next to the old one. Uninstall the old Mitori (`com.github.shrippen.mitori`) after moving your data: ratings, notes, courses, bundles and the sync account stay with the old app and are not carried over. Back them up first (Backup and sync) and restore them in the new app; sign in to sync again.
+
+### Deutsch
+
+#### Geändert
+- Android: Die App hat eine neue Kennung, `io.github.shrippen.Mitori`, dieselbe wie unter Linux. Sie wird als neue App neben der alten installiert. Die alte Mitori (`com.github.shrippen.mitori`) deinstallieren, nachdem die Daten umgezogen sind: Einschätzungen, Notizen, Lehrgänge, Bundles und das Sync-Konto bleiben in der alten App und werden nicht übernommen. Vorher sichern (Sicherung und Abgleich) und in der neuen App wiederherstellen; für den Abgleich neu anmelden.
+
 ## [0.2.0] — 2026-11-09
 
 ### English
