@@ -5,12 +5,12 @@
 ### English
 
 #### Changed
-- Android: the app has a new id, `io.github.shrippen.Mitori`, the same as on Linux. It installs as a new app next to the old one. Uninstall the old Mitori (`com.github.shrippen.mitori`) after moving your data: ratings, notes, courses, bundles and the sync account stay with the old app and are not carried over. Back them up first (Backup and sync) and restore them in the new app; sign in to sync again.
+- Android: the app has a new id, `io.github.shrippen.Mitori`, the same as on Linux. It installs as a new app next to the old one (`com.github.shrippen.mitori`); nothing carries over by itself. Before uninstalling the old app, save a backup (Settings → Backup) and restore it in the new app: it holds ratings, notes, exam rounds, notebooks, grades, photos and voice notes. Videos, DVD codes and settings are not in it: keep your DVD codes at hand, unlock the videos again with them, set the settings again and sign in to sync again.
 
 ### Deutsch
 
 #### Geändert
-- Android: Die App hat eine neue Kennung, `io.github.shrippen.Mitori`, dieselbe wie unter Linux. Sie wird als neue App neben der alten installiert. Die alte Mitori (`com.github.shrippen.mitori`) deinstallieren, nachdem die Daten umgezogen sind: Einschätzungen, Notizen, Lehrgänge, Bundles und das Sync-Konto bleiben in der alten App und werden nicht übernommen. Vorher sichern (Sicherung und Abgleich) und in der neuen App wiederherstellen; für den Abgleich neu anmelden.
+- Android: Die App hat eine neue Kennung, `io.github.shrippen.Mitori`, dieselbe wie unter Linux. Sie wird als neue App neben der alten (`com.github.shrippen.mitori`) installiert; von selbst wird nichts übernommen. Vor dem Deinstallieren der alten App eine Sicherung speichern (Einstellungen → Sicherung) und in der neuen App einlesen: Sie enthält Einschätzungen, Notizen, Prüfungsrunden, Lehrgänge, Noten, Fotos und Sprachnotizen. Videos, DVD-Codes und Einstellungen sind nicht darin: die DVD-Codes bereithalten, die Videos damit neu freischalten, die Einstellungen neu setzen und für den Abgleich neu anmelden.
 
 ## [0.2.0] — 2026-11-09
 
