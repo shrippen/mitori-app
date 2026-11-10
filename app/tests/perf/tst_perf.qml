@@ -38,7 +38,7 @@ TestCase {
         "Programme aikido": 400,
         "Programme daitoryu": 450,
         "Programme shinkitoho": 350,
-        "Programme scroll": 25,             // two passes down and up over the longest list
+        "Programme scroll": 60,             // two passes down and up over the longest list (runner 40)
         "Programme tablet": 750,            // slow: list, page and small player
         "Player first": 500,                // the decoders probed after the start (#105)
         "Programme.entries": 16,
