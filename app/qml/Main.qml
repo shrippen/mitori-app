@@ -212,6 +212,37 @@ Kirigami.ApplicationWindow {
         }
     }
 
+    // The window builds up (pages pushed, layouts settling over some frames) without being seen: a
+    // cover in the ground of the style lies over it until then. A hidden window would not do, it
+    // draws nothing, so there is no telling when it stands. The system's own window before the
+    // first frame is the ground too (Android: Theme.Mitori.Launch).
+    property bool covered: true
+    readonly property int coverZ: 1000
+    readonly property int settleFrames: 3
+    property int framesDrawn: 0
+    Rectangle {
+        objectName: "buildCover"
+        parent: root.overlay
+        anchors.fill: parent
+        z: root.coverZ
+        color: Look.backgroundColor
+        visible: root.covered
+    }
+    Connections {
+        target: root
+        enabled: root.covered
+
+        function onFrameSwapped() {
+            root.framesDrawn++
+            if (root.framesDrawn >= root.settleFrames) {
+                root.covered = false
+                return
+            }
+            // A window at rest draws no more: ask for the next one.
+            root.update()
+        }
+    }
+
     // The first start: the wizard over the start menu (it goes back there).
     Component.onCompleted: {
         Appearance.adopt(root)
@@ -220,6 +251,8 @@ Kirigami.ApplicationWindow {
             pageStack.push(Qt.resolvedUrl("WelcomePage.qml"))
         }
         Videos.prepareDecoders()
+        // Frames count from here: the pages exist now.
+        root.framesDrawn = 0
     }
 
     // Android's bars in the window's ground.

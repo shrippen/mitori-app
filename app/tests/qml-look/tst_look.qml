@@ -135,6 +135,44 @@ TestCase {
         compare(uiCatalog.drawnByShinki(findChild(window.pageStack.currentItem, "introButton")), shinki)
     }
 
+    // The window does not show its building up: a cover in the style's ground (Look.backgroundColor)
+    // lies over it from its creation until its pages stand and some frames are drawn.
+    function test_build_up_covered() {
+        const component = Qt.createComponent("Mitori", "Main")
+        verify(component.status === Component.Ready, component.errorString())
+        const fresh = component.createObject(null, { width: 420, height: 800 })
+        fresh.show()
+        compare(fresh.covered, true, "covered at once")
+        const cover = findChild(fresh, "buildCover")
+        verify(cover, "the cover exists")
+        compare(cover.visible, true)
+        verify(Qt.colorEqual(cover.color, Look.backgroundColor), "in the ground of the style")
+        tryVerify(() => !fresh.covered, 10000, "the cover goes once settled")
+        compare(cover.visible, false)
+        // Main adopted itself as the app's window (Appearance): the test's own is it again.
+        Appearance.adopt(window)
+        fresh.destroy()
+    }
+
+    // A change of style hands over a window that is covered, and there is a window all the time.
+    function test_style_change_covered() {
+        let covered = null
+        let windows = -1
+        const seen = () => {
+            covered = Appearance.window.covered
+            windows = uiCatalog.windowCount()
+        }
+        Appearance.windowChanged.connect(seen)
+        const old = Appearance.window
+        Appearance.setStyle(otherStyle)
+        tryVerify(() => Appearance.window !== old && Appearance.window !== null)
+        Appearance.windowChanged.disconnect(seen)
+        compare(covered, true, "the new window is covered when it is handed over")
+        verify(windows >= 1, "a window stands")
+        window = Appearance.window
+        tryVerify(() => !window.covered, 10000, "and uncovers once settled")
+    }
+
     // Both ways: the same pages come back, the old window is gone, Back still works, the window
     // turns, the bars take the new ground.
     function test_style_both_ways() {
