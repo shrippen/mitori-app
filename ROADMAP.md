@@ -220,7 +220,7 @@ Offen, größer (Vorschläge im Artefakt „Mitori: Nachtschicht“):
 - Tablet nach Vorlage (Programm: Player oder Blatt rechts; Heute, Statistik und Grade in zwei Spalten; Lehrgänge und
   Einstellungen als Liste und Seite: erledigt).
 - Programmdaten auf Englisch: erledigt (Daten 2026.11.1, App zeigt sie bei Englisch).
-- Kante: Kopf beim ersten Bild hell (globale Kopfleiste, siehe Kante-Bedarf).
+- Kante: Kopf beim ersten Bild hell. Die globale Kopfleiste trägt jetzt Kantes Farben (`KanteWindowScope`, Kante 1.78); ob das erste Bild beim Kaltstart stimmt, am Gerät prüfen.
 
 Offen, klein:
 - Treffer in Kommentaren und Lehrgangsnotizen, Heute merkt die Sparte, Kurzname auf der Programm-Kachel,
@@ -241,7 +241,7 @@ Abschlussrunde auf `main` (06.11.2026, ohne Videos): behoben sind Kopf des Train
 Fehlt in Kante und kommt dort hinzu (GUI-Regel), bevor Mitori es endgültig nutzt:
 - Seiten-Scope: Kirigamis ScrollablePage erbt die Kante-Farben nicht (`Theme.inherit: false`); jetzt je Seite
   `KanteScope` plus Seitengrund. Besser eine Option in `KanteScope` (auch für System/Kante Light: View- statt
-  Window-Farbe bei Listen) und die globale Kopfleiste des pageStack in Kante-Farben (heute Plattformfarbe).
+  Window-Farbe bei Listen). Die globale Kopfleiste des pageStack: erledigt (`KanteWindowScope`, Kante 1.78).
 
 ## Querschnitt
 
