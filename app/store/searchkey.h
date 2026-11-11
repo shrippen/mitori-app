@@ -292,20 +292,39 @@ public:
 
     bool matches(const QStringList &words) const
     {
-        return std::all_of(words.cbegin(), words.cend(), [this](const QString &w) {
-            if (!w.contains(u'-')) {
-                return m_key.contains(w) || fromWordStart(w);
+        return std::all_of(words.cbegin(), words.cend(), [this](const QString &w) { return find(w) >= 0; });
+    }
+
+    // Where a word of a query matches, as a letter of the text without spaces and hyphens, or -1;
+    // a hyphenated word matched part by part: where its first part does.
+    //   SearchText("Dann Shihô-nage").find("shihon")  →  4
+    qsizetype find(const QString &w) const
+    {
+        if (!w.contains(u'-')) {
+            const qsizetype at = m_key.indexOf(w);
+            if (at >= 0) {
+                return at - QStringView(m_key).first(at).count(u' ');
             }
-            if (fromWordStart(QString(w).remove(u'-'))) {
-                return true;
+            return fromWordStart(w);
+        }
+        const qsizetype joined = fromWordStart(QString(w).remove(u'-'));
+        if (joined >= 0) {
+            return joined;
+        }
+
+        qsizetype first = -1;
+        for (const QString &part : w.split(u'-', Qt::SkipEmptyParts)) {
+            const qsizetype at = fromWordStart(part);
+            if (at < 0) {
+                return -1;
             }
-            const QStringList parts = w.split(u'-', Qt::SkipEmptyParts);
-            return std::all_of(parts.cbegin(), parts.cend(), [this](const QString &p) { return fromWordStart(p); });
-        });
+            first = first < 0 ? at : first;
+        }
+        return first;
     }
 
 private:
-    bool fromWordStart(const QString &w) const
+    qsizetype fromWordStart(const QString &w) const
     {
         const QStringView joined(m_joined);
         if (joined.contains(w)) {
@@ -317,18 +336,34 @@ private:
                 const auto space = std::upper_bound(m_spaces.cbegin(), m_spaces.cend(), at);
                 const bool acrossSpace = space != m_spaces.cend() && *space < end;
                 if (!acrossSpace || std::binary_search(m_ends.cbegin(), m_ends.cend(), end)) {
-                    return true;
+                    return at;
                 }
             }
         }
         if (!hasKanji(w)) {
-            return false;
+            return -1;
         }
         if (m_kanji.isNull()) {
             m_kanji = withoutHiragana(m_joined);
         }
         const QString bare = withoutHiragana(w);
-        return !bare.isEmpty() && m_kanji.contains(bare);
+        const qsizetype at = bare.isEmpty() ? -1 : m_kanji.indexOf(bare);
+        if (at < 0) {
+            return -1;
+        }
+
+        // m_kanji is m_joined without hiragana (all in the BMP): count back to m_joined.
+        qsizetype kept = 0;
+        for (qsizetype i = 0; i < m_joined.size(); ++i) {
+            if (QChar::script(m_joined.at(i).unicode()) == QChar::Script_Hiragana) {
+                continue;
+            }
+            if (kept == at) {
+                return i;
+            }
+            ++kept;
+        }
+        return -1;
     }
 
     QString m_key;                  // as searchKey gives it
@@ -342,34 +377,33 @@ private:
 inline constexpr qsizetype kExcerptLength = 140;
 inline constexpr qsizetype kExcerptBefore = 40;
 
-// Where a word of a query (a key: no accents, lower case) stands in a text as written, or -1:
-// the first letter from which the text's key begins with it, compared as SearchText matches:
-// without spaces and hyphens (shihon in Shihô-nage), with kanji also without okurigana.
-//   keyIndex("Die Hüfte führen", "fuhren")  →  10
-inline qsizetype keyIndex(const QString &text, const QString &word)
+// A text's key as SearchText compares it: without spaces and hyphens.
+inline QString joinedKey(const QString &text)
 {
-    const bool kanji = hasKanji(word);
-    const auto bare = [kanji](QString key) {
-        key.remove(u' ');
-        key.remove(u'-');
-        return kanji ? withoutHiragana(key) : key;
-    };
-    const QString target = bare(word);
-    if (target.isEmpty()) {
+    return searchKey(text, true).remove(u' ').remove(u'-');
+}
+
+// Where letter `at` of a text's joined key stands in the text as written, or -1: the shortest
+// start of the text whose key is longer than `at`, found by halving (a key only grows with the
+// text; folding makes a letter two (ß) or none (an accent)).
+//   textIndex("Die Hüfte führen", 8)  →  10
+inline qsizetype textIndex(const QString &text, qsizetype at)
+{
+    if (joinedKey(text).size() <= at) {
         return -1;
     }
-    // Enough of the text for the word: folding can make a letter two (ß) or none (an accent,
-    // a hyphen, okurigana).
-    const qsizetype window = word.size() * 3 + 16;
-    for (qsizetype i = 0; i < text.size(); ++i) {
-        if (!text.at(i).isLetterOrNumber() && !text.at(i).isHighSurrogate()) {
-            continue;
-        }
-        if (bare(searchKey(text.mid(i, window), true)).startsWith(target)) {
-            return i;
+    qsizetype low = 0;
+    qsizetype high = text.size();
+    while (high - low > 1) {
+        const qsizetype mid = (low + high) / 2;
+        if (joinedKey(text.left(mid)).size() > at) {
+            high = mid;
+        } else {
+            low = mid;
         }
     }
-    return -1;
+    const qsizetype i = high - 1;
+    return i > 0 && text.at(i).isLowSurrogate() ? i - 1 : i;
 }
 
 // The part of a comment to show for a query: the first line that holds every word (else one that
@@ -403,10 +437,12 @@ inline QString searchExcerpt(const QString &text, const QStringList &words)
     }
 
     // Where the first word found stands in the line as written; else the start.
+    const SearchText search(line);
     qsizetype at = 0;
     for (const QString &w : words) {
-        at = keyIndex(line, w);
-        if (at >= 0) {
+        const qsizetype found = search.find(w);
+        if (found >= 0) {
+            at = textIndex(line, found);
             break;
         }
     }

@@ -957,6 +957,22 @@ private slots:
             QVERIFY2(cut.contains(shown), qPrintable(query + u" → " + cut));
         }
 
+        // Where SearchText matches, not an earlier place it rules out: parts of a hyphenated word
+        // each from a word's start (not in Kai-hanmi), across a space only to a word's end (not
+        // "mit Tenkan").
+        struct Hit {
+            QString line;
+            QString query;
+            QString shown;
+        };
+        const QList<Hit> hits{{filler + QStringLiteral("Dann Ikkyo und dann irimi weiter."), QStringLiteral("ikkyo-irimi"), QStringLiteral("Ikkyo")},
+                              {QStringLiteral("mit Tenkan ") + filler + QStringLiteral("die Mitte halten"), QStringLiteral("mitte"), QStringLiteral("Mitte")},
+                              {QStringLiteral("Kai-hanmi ") + filler + QStringLiteral("dann ai hanmi"), QStringLiteral("ai-hanmi"), QStringLiteral("ai hanmi")}};
+        for (const Hit &hit : hits) {
+            const QString cut = searchExcerpt(hit.line, searchWords(hit.query));
+            QVERIFY2(cut.contains(hit.shown), qPrintable(hit.query + u" → " + cut));
+        }
+
         // A character beyond the BMP (two UTF-16 units) right at a cut stays whole.
         const QString wide = QString(kExcerptLength - 1, u'x') + QString::fromUcs4(U"\U00020B9F") + QStringLiteral(" Ende");
         const QString cut = searchExcerpt(wide, searchWords(QStringLiteral("xyz")));
