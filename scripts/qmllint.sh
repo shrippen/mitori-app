@@ -20,7 +20,7 @@ RCC="$BUILD/.qt/rcc"
 resources=()
 for qrc in qmake_Mitori mitori_app_raw_qml_0 mitori_app_raw_qml_0_extra_qmldirs qmake_Shinki mitori_shinki_raw_qml_0; do
     # qmllint skips a missing one without a word: say it, so its findings have a cause.
-    [ -f "$RCC/$qrc.qrc" ] || echo "qmllint: $RCC/$qrc.qrc fehlt (Build unvollständig?)" >&2
+    [ -f "$RCC/$qrc.qrc" ] || echo "qmllint: $RCC/$qrc.qrc is missing (build incomplete?)" >&2
     resources+=(--resource "$RCC/$qrc.qrc")
 done
 mapfile -t files < <(find app/qml shinki/qml -name '*.qml' -not -path 'app/qml/Kante/*' | sort)
