@@ -75,6 +75,23 @@ Kirigami.ApplicationWindow {
     }
     pageStack.initialPage: StartPage {}
 
+    // Escape goes back one page, as the Back key. It gets here only when nothing took it before: an
+    // open sheet or dialog (their popup), the player (full screen first), the end pages. A text
+    // field passes it on: with text in it, Escape first leaves the field (a typed code or search
+    // stays), the next one goes back.
+    pageStack.Keys.onEscapePressed: event => {
+        const field = root.activeFocusItem
+        if (field && field.cursorPosition !== undefined && field.text) {
+            field.focus = false
+            event.accepted = true
+            return
+        }
+        event.accepted = root.pageStack.depth > 1
+        if (event.accepted) {
+            root.back()
+        }
+    }
+
     // Closing the window (desktop): typed text asks first (LeaveDialog), the top page first, on it
     // an open note editor (`editAsk`) before the page's field (`leaveAsk`); after Save or Discard
     // the window tries again, the next one may ask. A recording (`busy`) asks nothing: it stops and
