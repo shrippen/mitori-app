@@ -3926,6 +3926,7 @@ TestCase {
         const cancel = asked.standardButton(QQC2.Dialog.Cancel)
         const discard = asked.standardButton(QQC2.Dialog.Ok)
         verify(cancel.mapToItem(null, 0, 0).x < discard.mapToItem(null, 0, 0).x, "Cancel first")
+        compare(cancel.text, qsTr("Keep the round"), "its way out says where it goes")
         asked.reject()
         tryVerify(() => !asked.opened)
         verify(window.pageStack.currentItem === end, "still rating")
