@@ -15,7 +15,17 @@
      "sha256": "04b984b376b06fd067078bfa501cb0f04ef1e65cfd0bc3d380e96b18a5fe4d81",
      "klar": 400,
      "beschnitten": true,
-     "url": "file:///unused/test.mvb"
+     "url": "file:///unused/test.mvb",
+     "untertitel": [
+      {
+       "sprache": "en",
+       "datei": "test.en.vtt.mvb",
+       "groesse": 199,
+       "sha256": "f056a8fff5c71f7b05e5cd59d4305cf02ca0612dbca6344f4964b965d3a75702",
+       "klar": 159,
+       "url": "file:///unused/test.en.vtt.mvb"
+      }
+     ]
     }
    ],
    "inhalt": {

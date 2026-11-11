@@ -25,7 +25,9 @@ class QNetworkReply;
 // only one (store/bundlecrypto, tools/bundle.py).
 //
 // A Lernpaket (manifest key "lernpakete") is a bundle that brings its own techniques: beside the
-// videos it loads `inhalt` (encrypted JSON, kept by the shelf); Lessons reads it.
+// videos it loads `inhalt` (encrypted JSON, kept by the shelf); Lessons reads it. A video may have
+// subtitle tracks ("untertitel" in the manifest): WebVTT, encrypted like `inhalt`, decrypted next to
+// the video; the shelf names them (BundleShelf::subtitles), the player reads them (Videos).
 //
 //   manifest (network, cache) ──► bundles [{id, title, kind, version, installed, videos, size, state,
 //                                           progress, hint, code}]
@@ -70,6 +72,8 @@ public:
     explicit Bundles(QObject *parent = nullptr);
     // For tests: a manifest URL and a shelf folder of their own.
     Bundles(const QUrl &manifest, const QString &root, QObject *parent = nullptr);
+    // For tests: a shelf that others (Storage) use too.
+    Bundles(const QUrl &manifest, BundleShelf &shelf, QObject *parent = nullptr);
     ~Bundles() override;
 
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -108,18 +112,20 @@ signals:
     void installed(const QString &id);
 
 private slots:
-    // The network changed: what waits for Wi-Fi loads if it is one now.
+    // The network changed or a move of the videos ended: what waits for Wi-Fi loads if it is one now.
     void networkChanged();
 
 private:
     struct Job {
         QString id;
         int version = 0;
-        QJsonArray videos;          // still to load, first one now (a Lernpaket's `inhalt` first, marked)
+        QJsonArray videos;          // still to load, first one now (a Lernpaket's `inhalt` first, then the
+                                    // subtitles, each marked, then the videos)
         QJsonObject content;        // a Lernpaket's content, once loaded and checked
         QHash<QString, QString> files;
         QStringList cropped;
         BundleShelf::Cuts cuts;
+        BundleShelf::Subtitles subtitles;
         qint64 done = 0;            // bytes of the bundle's files already loaded
         qint64 total = 0;
         QPointer<QNetworkReply> reply;

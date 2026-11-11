@@ -329,6 +329,8 @@ Kirigami.ScrollablePage {
                         }
                         LookButton {
                             objectName: "bundleAction"
+                            // Loading and removing wait while the videos move (Bundles ignores them then).
+                            enabled: Storage.state !== Storage.State.Moving
                             // A format this version cannot read: nothing to load, but what is on the device can go.
                             readonly property bool removeOnly: bundleRow.bundleState === Bundles.State.Unsupported && bundleRow.row.installed > 0
                             visible: bundleRow.bundleState !== Bundles.State.Locked

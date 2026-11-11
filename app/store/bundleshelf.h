@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QHash>
 #include <QJsonObject>
+#include <QMap>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -16,6 +17,8 @@
 //
 //   <root>/shelf.json                 {"aikido-kyu": {"code", "key", "version", "videos": {"aikido/k5":
 //   <videoRoot>/aikido-kyu/aikido-k5.v2.mkv            {"file", "cropped", "cuts": {"<technique>": [von, bis]}}}}}
+//   a video's subtitles ("untertitel": {"en": "aikido-k5.v2.mkv.en.vtt"}) are in its entry beside "file",
+//   decrypted WebVTT in the same folder; old shelves without the key load as before.
 //   <root>/manifest.json              the manifest as last loaded (Bundles)
 //   <root>/shirakawa-1.inhalt.json    a Lernpaket's content (its techniques, tools/paket.py): the bundle
 //                                     "has content", that is what makes it a lesson (no extra field in
@@ -42,6 +45,7 @@ public:
         double bis = 0;
     };
     using Cuts = QHash<QString, QHash<QString, Cut>>;   // video key → technique id → its place
+    using Subtitles = QHash<QString, QMap<QString, QString>>;   // video key → language → file name in the folder
 
     struct Bundle {
         QString code;               // as the user typed it, normalised
@@ -50,6 +54,7 @@ public:
         QHash<QString, QString> files;      // video key → file name in the bundle's folder
         QStringList cropped;        // the videos whose files are cropped (no black bars)
         Cuts cuts;                  // from the manifest of the loaded version, so they fit its files
+        Subtitles subtitles;        // the videos' WebVTT tracks of the loaded version
     };
 
     // Without a videoRoot the videos lie in root, as before there was a choice.
@@ -59,9 +64,10 @@ public:
     // Where the bundles' folders lie. A move (Storage) copies them first, then sets the new place.
     QString videoRoot() const { return m_videoRoot; }
     void setVideoRoot(const QString &videoRoot);
-    // While the videos move, nothing may load or remove (Bundles asks).
+    // While the videos move, nothing may load or remove (Bundles asks). The end of a move tells
+    // the notifier: what waited (Bundles) goes on.
     bool moving() const { return m_moving; }
-    void setMoving(bool moving) { m_moving = moving; }
+    void setMoving(bool moving);
     // The shelf's bundles by id (unlocked ones, loaded or not).
     QHash<QString, Bundle> bundles() const { return m_bundles; }
     Bundle bundle(const QString &id) const { return m_bundles.value(id); }
@@ -70,9 +76,10 @@ public:
     // or the id is not valid (as for installed and remove).
     bool unlock(const QString &id, const QString &code, const QByteArray &key);
     // A loaded version: its files (in folder(id)), which are cropped, and the techniques' places.
-    // `content` (a Lernpaket's) is kept as <id>.inhalt.json; empty keeps what is there.
+    // `content` (a Lernpaket's) is kept as <id>.inhalt.json; empty keeps what is there. `subtitles`
+    // are files in folder(id) too.
     bool installed(const QString &id, int version, const QHash<QString, QString> &files, const QStringList &cropped,
-                   const Cuts &cuts, const QJsonObject &content = {});
+                   const Cuts &cuts, const QJsonObject &content = {}, const Subtitles &subtitles = {});
     // The bundle's files go; code and key stay (and its content).
     bool remove(const QString &id);
 
@@ -83,6 +90,8 @@ public:
     // The file of a video from a loaded bundle, or "".
     QString path(const QString &video) const;
     bool cropped(const QString &video) const;
+    // The subtitle tracks of a loaded video: language → path of the WebVTT file (those that exist).
+    QMap<QString, QString> subtitles(const QString &video) const;
     // A technique's place in the file path(video) gives, if the bundle names one.
     std::optional<Cut> cut(const QString &video, const QString &id) const;
     // A Lernpaket's content, also after remove(); empty for a bundle without.

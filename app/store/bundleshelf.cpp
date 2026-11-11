@@ -46,6 +46,17 @@ void BundleShelf::chooseVideoRoot(const QString &videoRoot)
     settings.setValue(QLatin1String(kVideoRootKey), videoRoot);
 }
 
+void BundleShelf::setMoving(bool moving)
+{
+    if (moving == m_moving) {
+        return;
+    }
+    m_moving = moving;
+    if (!moving) {
+        emit notifier().changed();
+    }
+}
+
 void BundleShelf::setVideoRoot(const QString &videoRoot)
 {
     m_videoRoot = videoRoot.isEmpty() ? m_root : videoRoot;
@@ -86,6 +97,10 @@ void BundleShelf::load()
             if (f.value(QStringLiteral("cropped")).toBool()) {
                 b.cropped << v.key();
             }
+            const QJsonObject tracks = f.value(QStringLiteral("untertitel")).toObject();
+            for (auto t = tracks.begin(); t != tracks.end(); ++t) {
+                b.subtitles[v.key()].insert(t.key(), t.value().toString());
+            }
             const QJsonObject cuts = f.value(QStringLiteral("cuts")).toObject();
             for (auto c = cuts.begin(); c != cuts.end(); ++c) {
                 const QJsonArray place = c.value().toArray();
@@ -121,9 +136,15 @@ bool BundleShelf::save() const
             for (auto c = places.cbegin(); c != places.cend(); ++c) {
                 cuts.insert(c.key(), QJsonArray{c->von, c->bis});
             }
+            QJsonObject tracks;
+            const QMap<QString, QString> subtitles = it->subtitles.value(f.key());
+            for (auto t = subtitles.cbegin(); t != subtitles.cend(); ++t) {
+                tracks.insert(t.key(), t.value());
+            }
             videos.insert(f.key(), QJsonObject{{QStringLiteral("file"), f.value()},
                                                {QStringLiteral("cropped"), it->cropped.contains(f.key())},
-                                               {QStringLiteral("cuts"), cuts}});
+                                               {QStringLiteral("cuts"), cuts},
+                                               {QStringLiteral("untertitel"), tracks}});
         }
         all.insert(it.key(), QJsonObject{{QStringLiteral("code"), it->code},
                                          {QStringLiteral("key"), QString::fromLatin1(it->key.toBase64())},
@@ -153,7 +174,7 @@ bool BundleShelf::unlock(const QString &id, const QString &code, const QByteArra
 }
 
 bool BundleShelf::installed(const QString &id, int version, const QHash<QString, QString> &files, const QStringList &cropped,
-                            const Cuts &cuts, const QJsonObject &content)
+                            const Cuts &cuts, const QJsonObject &content, const Subtitles &subtitles)
 {
     if (!validId(id)) {
         return false;
@@ -184,6 +205,7 @@ bool BundleShelf::installed(const QString &id, int version, const QHash<QString,
     b.files = files;
     b.cropped = cropped;
     b.cuts = cuts;
+    b.subtitles = subtitles;
     if (save()) {
         return true;
     }
@@ -224,6 +246,7 @@ bool BundleShelf::remove(const QString &id)
     b.files.clear();
     b.cropped.clear();
     b.cuts.clear();
+    b.subtitles.clear();
     return save();
 }
 
@@ -263,6 +286,26 @@ bool BundleShelf::cropped(const QString &video) const
         }
     }
     return false;
+}
+
+QMap<QString, QString> BundleShelf::subtitles(const QString &video) const
+{
+    for (auto it = m_bundles.cbegin(); it != m_bundles.cend(); ++it) {
+        const QString file = it->files.value(video);
+        if (it->version == 0 || file.isEmpty() || !QFileInfo::exists(QDir(folder(it.key())).filePath(file))) {
+            continue;
+        }
+        QMap<QString, QString> tracks;
+        const QMap<QString, QString> named = it->subtitles.value(video);
+        for (auto t = named.cbegin(); t != named.cend(); ++t) {
+            const QString p = QDir(folder(it.key())).filePath(t.value());
+            if (QFileInfo::exists(p)) {
+                tracks.insert(t.key(), p);
+            }
+        }
+        return tracks;
+    }
+    return {};
 }
 
 std::optional<BundleShelf::Cut> BundleShelf::cut(const QString &video, const QString &id) const

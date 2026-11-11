@@ -93,6 +93,16 @@ QVariantMap Videos::crop(const QString &video) const
     return {{QStringLiteral("verhaeltnis"), crop.value(QStringLiteral("verhaeltnis"))}};
 }
 
+QVariantList Videos::subtitles(const QString &video) const
+{
+    QVariantList tracks;
+    const QMap<QString, QString> found = BundleShelf::shared().subtitles(video);
+    for (auto it = found.cbegin(); it != found.cend(); ++it) {
+        tracks << QVariantMap{{QStringLiteral("language"), it.key()}, {QStringLiteral("source"), QUrl::fromLocalFile(it.value())}};
+    }
+    return tracks;
+}
+
 QVariantMap Videos::place(const QString &id, const QVariantMap &place) const
 {
     const auto cut = BundleShelf::shared().cut(place.value(QStringLiteral("video")).toString(), id);

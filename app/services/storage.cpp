@@ -175,10 +175,10 @@ void Storage::finish(int result, const QString &to, const QString &why)
         m_thread->wait();
         m_thread.reset();
     }
-    m_shelf.setMoving(false);
 
     const auto r = VideoMove::Result(result);
     if (r == VideoMove::Result::Failed) {
+        m_shelf.setMoving(false);
         fail(tr("The videos could not be moved: %1").arg(why));
         return;
     }
@@ -189,6 +189,10 @@ void Storage::finish(int result, const QString &to, const QString &why)
             BundleShelf::chooseVideoRoot(QDir::cleanPath(to) == QDir::cleanPath(m_shelf.root()) ? QString() : to);
         }
         m_shelf.setVideoRoot(to);
+    }
+    // After the new place is set: a bundle that waited for Wi-Fi loads into it.
+    m_shelf.setMoving(false);
+    if (r == VideoMove::Result::Done) {
         emit moved();
     }
     emit changed();

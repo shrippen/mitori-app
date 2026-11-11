@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QUrl>
+#include <QVariantList>
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
@@ -34,6 +35,9 @@ public:
     Q_INVOKABLE QUrl source(const QString &video) const;
     // Picture area without the black bars: {hoehe, y, h, verhaeltnis} (see tools/kapitel.py).
     Q_INVOKABLE QVariantMap crop(const QString &video) const;
+    // The subtitle tracks of a loaded bundle's video: [{language, source}], `source` a file URL for
+    // SubtitleTrack; empty without a loaded bundle or tracks.
+    Q_INVOKABLE QVariantList subtitles(const QString &video) const;
     // Where technique `id` lies in the file: a loaded bundle's cut point (it fits that file), else
     // `place` as is, the row's {video, von, bis} from the catalog.
     Q_INVOKABLE QVariantMap place(const QString &id, const QVariantMap &place) const;
