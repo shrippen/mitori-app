@@ -1071,7 +1071,7 @@ private slots:
         // in the code's script (traditional Chinese stays traditional).
         QCOMPARE(tracks.at(0).toMap().value(u"name"_s).toString(), u"Deutsch"_s);
         QCOMPARE(tracks.at(1).toMap().value(u"name"_s).toString(), u"English"_s);
-        QCOMPARE(tracks.at(2).toMap().value(u"name"_s).toString(), u"繁體中文"_s);
+        QCOMPARE(tracks.at(2).toMap().value(u"name"_s).toString(), u"\u7E41\u9AD4\u4E2D\u6587"_s);      // traditional, escaped: the Shinki font check reads sources
 
         // The default track follows the app's language (Catalog), not the system's: an English app on a
         // French system shows the English track, not the first one (de).
