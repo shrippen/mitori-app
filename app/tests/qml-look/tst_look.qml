@@ -439,7 +439,8 @@ TestCase {
         const before = Sync.server
         Sync.enabled = true
         const host = listHost(1280, 800)
-        // The pane once: the backup page holds a pane of its own by that name.
+        // The pane once, and the page through show(), the row's own way: after a click on the row
+        // the pane was no longer found here (cause not known; tst_ui covers the click).
         const pane = paneOf(host)
         tryVerify(() => pane.item && pane.item.title === "Videos", 5000)
         verify(host.show("BackupPage.qml", {}))
