@@ -12,6 +12,7 @@
 #include <QNetworkInformation>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QSettings>
 #include <QStorageInfo>
@@ -32,6 +33,8 @@ constexpr int kTimeoutMs = 30 * 1000;           // without a byte for this long 
 constexpr qint64 kProgressMs = 250;             // the least time between two progress reports
 const QString kManifestFile = QStringLiteral("manifest.json");
 const QString kContentKey = QStringLiteral("inhalt");
+const QString kSubtitleKey = QStringLiteral("untertitel");      // in the manifest's video, and the mark of a queued track
+const QString kVideoFileKey = QStringLiteral("videoDatei");     // a queued track's video file (its name is the track's)
 const QString kContentFile = QStringLiteral("inhalt.json");     // the decrypted content, while loading
 
 // A file's cut points from the manifest; what makes no sense is left out (the app's own time counts).
@@ -58,6 +61,19 @@ QString plainName(const QString &file, int version)
     return QFileInfo(file).completeBaseName() + QStringLiteral(".v%1.mkv").arg(version);
 }
 
+// A subtitle's file beside its video: "aikido-k5.v2.mkv" + "en" → "aikido-k5.v2.mkv.en.vtt".
+QString subtitleName(const QString &videoFile, const QString &language)
+{
+    return videoFile + QLatin1Char('.') + language + QStringLiteral(".vtt");
+}
+
+// A language tag goes into a file name: letters, digits and hyphens ("en", "pt-BR").
+bool plainLanguage(const QString &language)
+{
+    static const QRegularExpression plain(QRegularExpression::anchoredPattern(QStringLiteral("[A-Za-z0-9-]{1,16}")));
+    return plain.match(language).hasMatch();
+}
+
 } // namespace
 
 // MITORI_BUNDLES_MANIFEST: another manifest (tests: a local file).
@@ -72,6 +88,8 @@ Bundles::Bundles(QObject *parent)
     loadCache();
     // The videos moved (Storage): their size and the free space are another disk's.
     connect(&BundleShelf::notifier(), &BundleShelfNotifier::changed, this, &Bundles::changed);
+    // A move may end after Wi-Fi came: load() returned silently then, the bundle still waits.
+    connect(&BundleShelf::notifier(), &BundleShelfNotifier::changed, this, &Bundles::networkChanged);
 }
 
 Bundles::Bundles(const QUrl &manifest, const QString &root, QObject *parent)
@@ -84,6 +102,18 @@ Bundles::Bundles(const QUrl &manifest, const QString &root, QObject *parent)
     watchLanguage();
     watchNetwork();
     loadCache();
+}
+
+Bundles::Bundles(const QUrl &manifest, BundleShelf &shelf, QObject *parent)
+    : QObject(parent)
+    , m_shelf(&shelf)
+    , m_source(manifest)
+    , m_language(Catalog::language())
+{
+    watchLanguage();
+    watchNetwork();
+    loadCache();
+    connect(&BundleShelf::notifier(), &BundleShelfNotifier::changed, this, &Bundles::networkChanged);
 }
 
 // A new catalog (Appearance::setLanguage) may bring the titles' other language.
@@ -144,7 +174,7 @@ void Bundles::watchNetwork()
 
 void Bundles::networkChanged()
 {
-    if (!onWifi()) {
+    if (!onWifi() || m_shelf->moving()) {
         return;
     }
     const auto ids = m_failed.keys();
@@ -457,6 +487,22 @@ void Bundles::load(const QString &id, Network network)
     job->id = id;
     job->version = b.value(QStringLiteral("version")).toInt();
     job->videos = b.value(QStringLiteral("videos")).toArray();
+    // The subtitles before the videos: they are small, a damaged one fails before the large files load.
+    QJsonArray queue;
+    for (const QJsonValue &v : std::as_const(job->videos)) {
+        const QJsonObject video = v.toObject();
+        for (const QJsonValue &t : video.value(kSubtitleKey).toArray()) {
+            QJsonObject track = t.toObject();
+            track.insert(kSubtitleKey, true);
+            track.insert(QStringLiteral("video"), video.value(QStringLiteral("video")));
+            track.insert(kVideoFileKey, video.value(QStringLiteral("datei")));
+            queue.append(track);
+        }
+    }
+    for (const QJsonValue &v : std::as_const(job->videos)) {
+        queue.append(v);
+    }
+    job->videos = queue;
     // The content first: a damaged one fails before the large files load.
     if (kind == Kind::Lesson) {
         QJsonObject content = inhalt;
@@ -490,7 +536,7 @@ void Bundles::next(Job &job)
         const bool hadOld = QFileInfo::exists(folder);
         const bool aside = !hadOld || QDir().rename(folder, oldDir);
         if (!aside || !QDir().rename(partDir, folder)
-            || !m_shelf->installed(id, job.version, job.files, job.cropped, job.cuts, job.content)) {
+            || !m_shelf->installed(id, job.version, job.files, job.cropped, job.cuts, job.content, job.subtitles)) {
             if (aside && hadOld) {
                 QDir(folder).removeRecursively();
                 QDir().rename(oldDir, folder);
@@ -519,7 +565,19 @@ void Bundles::next(Job &job)
         return;
     }
     const bool isContent = f.value(kContentKey).toBool();
-    job.part = std::make_unique<QFile>(QDir(partDir).filePath(isContent ? kContentFile : plainName(file, job.version)));
+    const bool isSubtitle = f.value(kSubtitleKey).toBool();
+    const QString language = f.value(QStringLiteral("sprache")).toString();
+    const QString videoFile = f.value(kVideoFileKey).toString();
+    if (isSubtitle && (!plainLanguage(language) || f.value(QStringLiteral("video")).toString().isEmpty()
+                       || videoFile.isEmpty() || videoFile.contains(QLatin1Char('/')) || videoFile.contains(QLatin1Char('\\'))
+                       || videoFile.startsWith(QLatin1Char('.')))) {
+        fail(id, tr("The manifest names a file that cannot be loaded."));
+        return;
+    }
+    const QString name = isContent ? kContentFile
+                       : isSubtitle ? subtitleName(plainName(videoFile, job.version), language)
+                                    : plainName(file, job.version);
+    job.part = std::make_unique<QFile>(QDir(partDir).filePath(name));
     if (!job.part->open(QIODevice::WriteOnly)) {
         fail(id, tr("The videos could not be saved on this device."));
         return;
@@ -555,7 +613,7 @@ void Bundles::next(Job &job)
         j->shown.start();
         emit changed();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, id, reply, f, isContent] {
+    connect(reply, &QNetworkReply::finished, this, [this, id, reply, f, isContent, isSubtitle, language] {
         reply->deleteLater();
         const auto j = m_jobs.value(id);
         if (!j || j->reply != reply) {
@@ -593,6 +651,14 @@ void Bundles::next(Job &job)
             return;
         }
         const QString video = f.value(QStringLiteral("video")).toString();
+        if (isSubtitle) {
+            j->subtitles[video].insert(language, QFileInfo(*j->part).fileName());
+            j->done += qint64(f.value(QStringLiteral("groesse")).toDouble());
+            j->received = 0;
+            j->videos.removeFirst();
+            next(*j);
+            return;
+        }
         j->files.insert(video, QFileInfo(*j->part).fileName());
         if (f.value(QStringLiteral("beschnitten")).toBool()) {
             j->cropped << video;

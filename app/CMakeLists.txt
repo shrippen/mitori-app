@@ -229,6 +229,10 @@ qt_add_qml_module(mitori_app
         store/bundlecrypto.cpp
         store/bundleshelf.h
         store/bundleshelf.cpp
+        store/webvtt.h
+        store/webvtt.cpp
+        services/subtitletrack.h
+        services/subtitletrack.cpp
         store/videomove.h
         store/videomove.cpp
         platform/storageplaces.h
@@ -635,6 +639,13 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     target_link_libraries(tst_bundles PRIVATE Qt6::Core Qt6::Qml Qt6::Network Qt6::Concurrent Qt6::Test monocypher)
     set_target_properties(tst_bundles PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
     add_test(NAME bundles COMMAND tst_bundles)
+
+    qt_add_executable(tst_webvtt tests/tst_webvtt.cpp store/webvtt.cpp store/webvtt.h services/subtitletrack.cpp services/subtitletrack.h)
+    target_include_directories(tst_webvtt PRIVATE services store)
+    target_compile_definitions(tst_webvtt PRIVATE TEST_BUNDLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/bundle")
+    target_link_libraries(tst_webvtt PRIVATE Qt6::Core Qt6::Qml Qt6::Test)
+    set_target_properties(tst_webvtt PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
+    add_test(NAME webvtt COMMAND tst_webvtt)
 
     qt_add_executable(tst_storage tests/tst_storage.cpp services/storage.cpp services/storage.h
         store/videomove.cpp store/videomove.h store/bundleshelf.cpp store/bundleshelf.h

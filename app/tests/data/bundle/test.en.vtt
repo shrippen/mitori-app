@@ -1,0 +1,11 @@
+WEBVTT
+
+NOTE a comment, not a cue
+
+1
+00:00:01.000 --> 00:00:03.500 align:start
+Hello <i>test</i>
+
+00:04.000 --> 00:05.250
+First line
+<c.yellow>Second</c> line

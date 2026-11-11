@@ -74,6 +74,7 @@ TestCase {
         // A case that failed with a Lernpaket on the shelf leaves none to the next ones.
         uiCatalog.removeLesson(lessonId)
         uiCatalog.removeLesson(unsupportedId)
+        Videos.showSubtitles()
     }
 
     function cleanupTestCase() {
@@ -2714,6 +2715,149 @@ TestCase {
         compare(around.index, 1)
         popPage()
         popPage()
+    }
+
+    // The lesson's player with its subtitles: on by default, the switch only for a video with tracks,
+    // the text of the cue at the position (and none in a gap) on the picture, off hides it, and the
+    // choice holds for the next video.
+    function test_9p_lessons_subtitles() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        const lesson = "lern/" + lessonId + "/irimi"
+        const visibleOf = (root, name) => findChildren(root, name).find(i => i.visible)
+        const lessonPlayer = () => {
+            const around = Library.around(lesson)
+            return push("PlayerPage", { playlist: around.playlist, index: around.index })
+        }
+
+        // A video without tracks: no switch, no text.
+        useFolder(standInVideos)
+        const plain = push("PlayerPage", { playlist: Programme.entries("aikido", "k5").filter(r => r.kind === "entry" && r.video), index: 0 })
+        tryVerify(() => plain.hasVideo)
+        verify(!visibleOf(plain, "subtitleButton"), "no tracks, no switch")
+        verify(!findChild(plain, "subtitleText").visible)
+        popPage()
+
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        verify(Videos.subtitlesOn, "on by default")
+        const page = lessonPlayer()
+        tryVerify(() => page.hasVideo)
+        slidIn()
+        const button = () => visibleOf(page, "subtitleButton")
+        tryVerify(() => !!button())
+        verify(button().checked, "on by default")
+        compare(button().Accessible.name, qsTr("Subtitles"))
+        compare(button().icon.name, "media-view-subtitles-symbolic")
+        const track = findChild(page, "subtitleTrack")
+        const text = findChild(page, "subtitleText")
+        const stage = findChild(page, "stage")
+        tryVerify(() => stage.width > 0 && stage.height > 0, 3000, "the picture has its size")
+
+        // In a cue: its text on the picture, inside the stage, inside 90 % of the picture's width.
+        track.position = 1500
+        tryVerify(() => text.visible)
+        compare(text.text, "Hello test")
+        const at = text.mapToItem(stage, 0, 0)
+        verify(at.x >= 0 && at.y >= 0 && at.x + text.width <= stage.width && at.y + text.height <= stage.height, "inside the stage: " + JSON.stringify([at.x, at.y, text.width, text.height, stage.width, stage.height]))
+        verify(text.width <= stage.width * 0.9, "no wider than 90 %")
+        verify(Math.abs(at.x + text.width / 2 - stage.width / 2) < 1, "in the middle")
+        verify(at.y > stage.height / 2, "at the foot")
+        verify(at.y + text.height <= stage.height - 2, "above the edge")
+        shot("16h-subtitles-phone")
+        // A gap, then a cue of two lines.
+        track.position = 3700
+        tryVerify(() => !text.visible)
+        track.position = 4500
+        tryVerify(() => text.visible)
+        compare(text.text, "First line\nSecond line")
+        shot("16h-subtitles-phone-two-lines")
+
+        // Off: the text goes, the switch stays, the choice is the app's.
+        mouseClick(button())
+        tryVerify(() => !text.visible)
+        verify(!button().checked)
+        verify(!Videos.subtitlesOn)
+        verify(button().visible, "still there to turn them on")
+        shot("16h-subtitles-phone-off")
+        mouseClick(button())
+        tryVerify(() => text.visible)
+        verify(button().checked)
+        verify(Videos.subtitlesOn)
+
+        // Sideways on a phone (the rail) and on a tablet (the bands): the switch in view, the text above the timeline.
+        window.width = 800
+        window.height = 360
+        tryVerify(() => page.headless && !!button())
+        wait(300)
+        verify(button().mapToItem(page, 0, button().height).y <= page.height, "the rail ends in view")
+        verify(overflowing(page, 800).length === 0, "past the edge: " + overflowing(page, 800))
+        const timeline = findChild(page, "railTimeline")
+        verify(text.mapToItem(page, 0, text.height).y <= timeline.mapToItem(page, 0, 0).y, "above the timeline")
+        shot("16h-subtitles-phone-landscape")
+        window.width = 1280
+        window.height = 1000     // room above and below the 16:9 picture: the bands
+        tryVerify(() => findChild(page, "bandTitle").visible, 2000, "bands")
+        wait(300)
+        verify(button().text !== "", "the word in the row")
+        verify(button().mapToItem(page, button().width, 0).x <= page.width, "the row ends in view")
+        verify(overflowing(page, 1280).length === 0, "past the edge: " + overflowing(page, 1280))
+        shot("16h-subtitles-tablet")
+        window.width = 420
+        window.height = 800
+        popPage()
+
+        // The choice holds for the next video: off stays off.
+        Videos.hideSubtitles()
+        const again = lessonPlayer()
+        tryVerify(() => again.hasVideo)
+        slidIn()
+        tryVerify(() => !!visibleOf(again, "subtitleButton"))
+        verify(!visibleOf(again, "subtitleButton").checked, "off holds")
+        findChild(again, "subtitleTrack").position = 1500
+        wait(100)
+        verify(!findChild(again, "subtitleText").visible, "off holds")
+        popPage()
+
+        // Several tracks: a menu, Off and each language by its own name; the app's language by default.
+        Videos.showSubtitles()
+        verify(uiCatalog.installLessonTracks(lessonId, same))
+        const video = Library.around(lesson).playlist[0].video.video
+        compare(Videos.subtitleLanguage(video), uiCatalog.appLanguage(), "the app's language")
+        const several = lessonPlayer()
+        tryVerify(() => !!visibleOf(several, "subtitleButton"))
+        slidIn()
+        const opener = visibleOf(several, "subtitleButton")
+        const menu = findChild(opener, "subtitleMenu")
+        wait(1000)      // the page's layout settles (the switch moves while the picture takes its height)
+        mouseClick(opener)
+        tryVerify(() => menu.opened)
+        const names = findChildren(menu.contentItem, "subtitleLanguage").map(i => i.text)
+        compare(names, [Qt.locale("de").nativeLanguageName, Qt.locale("en").nativeLanguageName])
+        compare(findChild(menu.contentItem, "subtitleOff").text, qsTr("Off"))
+        shot("16h-subtitles-menu", true)
+        // The chosen entry tapped again keeps its tick (a checkable entry toggled itself off after
+        // triggered and lost it): German chosen first, on any system's language.
+        Videos.chooseSubtitles("de")
+        const german = () => findChildren(menu.contentItem, "subtitleLanguage")[0]
+        compare(german().tick, LookMenuItem.Tick.On)
+        mouseClick(german())
+        tryVerify(() => !menu.opened)
+        compare(Videos.subtitleLanguage(video), "de")
+        compare(german().tick, LookMenuItem.Tick.On, "Deutsch still ticked")
+        compare(findChildren(menu.contentItem, "subtitleLanguage")[1].tick, LookMenuItem.Tick.Off)
+        compare(findChild(menu.contentItem, "subtitleOff").tick, LookMenuItem.Tick.Off)
+        const severalTrack = findChild(several, "subtitleTrack")
+        severalTrack.position = 1500
+        tryVerify(() => findChild(several, "subtitleText").visible)
+        compare(findChild(several, "subtitleText").text, "Hallo test")
+        popPage()
+
+        // A chosen language the next video lacks: the default rule.
+        verify(uiCatalog.installLesson(lessonId, same))
+        compare(Videos.subtitleLanguage(video), "en")
+        verify(Videos.subtitlesOn)
+        verify(uiCatalog.removeLesson(lessonId))
     }
 
     // A lesson's sheet from the search: the chip to the programme works on any page that hosts the sheet.

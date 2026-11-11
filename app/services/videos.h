@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QUrl>
+#include <QVariantList>
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
@@ -20,6 +21,10 @@ class Videos : public QObject
     Q_PROPERTY(QString folder READ folder WRITE setFolder NOTIFY folderChanged)
     // The video decoders are tried (prepareDecoders()).
     Q_PROPERTY(bool decodersReady READ decodersReady NOTIFY decodersReadyChanged)
+    // The user's subtitle choice for the rest of the run, over all videos: on or off, and a language
+    // ("" = none chosen: subtitleLanguage() decides). Not saved.
+    Q_PROPERTY(bool subtitlesOn READ subtitlesOn NOTIFY subtitleChoiceChanged)
+    Q_PROPERTY(QString subtitleChoice READ subtitleChoice NOTIFY subtitleChoiceChanged)
 
 public:
     explicit Videos(QObject *parent = nullptr);
@@ -28,12 +33,25 @@ public:
     QString folder() const { return m_folder; }
     void setFolder(const QString &folder);
     bool decodersReady() const;
+    bool subtitlesOn() const { return m_subtitlesOn; }
+    QString subtitleChoice() const { return m_subtitleChoice; }
 
     // Whether the file of a video key ("aikido/k5") is on the device.
     Q_INVOKABLE bool available(const QString &video) const;
     Q_INVOKABLE QUrl source(const QString &video) const;
     // Picture area without the black bars: {hoehe, y, h, verhaeltnis} (see tools/kapitel.py).
     Q_INVOKABLE QVariantMap crop(const QString &video) const;
+    // The subtitle tracks of a loaded bundle's video: [{language, source}], `source` a file URL for
+    // SubtitleTrack; empty without a loaded bundle or tracks.
+    Q_INVOKABLE QVariantList subtitles(const QString &video) const;
+    // The language of the track a video shows: the chosen one if the video has it, else the app's
+    // language if it has, else the first track. "" when subtitles are off or the video has none.
+    Q_INVOKABLE QString subtitleLanguage(const QString &video) const;
+    // On, with the default track.
+    Q_INVOKABLE void showSubtitles();
+    // On, with this language (a video without it falls back to the default track).
+    Q_INVOKABLE void chooseSubtitles(const QString &language);
+    Q_INVOKABLE void hideSubtitles();
     // Where technique `id` lies in the file: a loaded bundle's cut point (it fits that file), else
     // `place` as is, the row's {video, von, bis} from the catalog.
     Q_INVOKABLE QVariantMap place(const QString &id, const QVariantMap &place) const;
@@ -47,10 +65,13 @@ public:
 signals:
     void folderChanged();
     void decodersReadyChanged();
+    void subtitleChoiceChanged();
 
 private:
     QString path(const QString &video) const;
 
     const Catalog &m_catalog;
     QString m_folder;
+    bool m_subtitlesOn = true;
+    QString m_subtitleChoice;
 };

@@ -82,7 +82,7 @@ class TstBundles : public QObject
         manifest.insert(u"bundles"_s, list);
     }
 
-    enum class Content { Real, Damaged, OtherId, OtherFormat };
+    enum class Content { Real, Damaged, OtherId, OtherFormat, DamagedSubtitle };
 
     // The Lernpaket as published: the video and `inhalt.mvb` in a folder, a manifest (lernpakete) with
     // their addresses; `content` changes the content (damaged, of another package, of a format the
@@ -102,7 +102,12 @@ class TstBundles : public QObject
             inhalt = BundleCrypto::encrypted(QJsonDocument(plain).toJson(), QByteArray::fromHex(
                 "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"), QByteArray(16, 'p'));
         }
-        for (const auto &[file, data] : {std::pair(u"test.mvb"_s, read(u"test.mvb"_s)), std::pair(u"inhalt.mvb"_s, inhalt)}) {
+        QByteArray subtitle = read(u"test.en.vtt.mvb"_s);
+        if (content == Content::DamagedSubtitle) {
+            subtitle[60] = char(subtitle.at(60) ^ 1);
+        }
+        for (const auto &[file, data] : {std::pair(u"test.mvb"_s, read(u"test.mvb"_s)), std::pair(u"inhalt.mvb"_s, inhalt),
+                                         std::pair(u"test.en.vtt.mvb"_s, subtitle)}) {
             QFile f(base + u"/"_s + file);
             if (!f.open(QIODevice::WriteOnly)) {
                 return {};
@@ -116,6 +121,11 @@ class TstBundles : public QObject
         QJsonArray videos = lesson.value(u"videos"_s).toArray();
         QJsonObject video = videos.first().toObject();
         video.insert(u"url"_s, QUrl::fromLocalFile(base + u"/test.mvb"_s).toString());
+        QJsonArray tracks = video.value(u"untertitel"_s).toArray();
+        QJsonObject track = tracks.first().toObject();
+        track.insert(u"url"_s, QUrl::fromLocalFile(base + u"/test.en.vtt.mvb"_s).toString());
+        tracks[0] = track;
+        video.insert(u"untertitel"_s, tracks);
         videos[0] = video;
         lesson.insert(u"videos"_s, videos);
         QJsonObject info = lesson.value(u"inhalt"_s).toObject();
@@ -830,6 +840,97 @@ private slots:
         QCOMPARE(after.entry(u"lern/test-lesson/irimi"_s).value(u"title"_s).toString(), u"Irimi-nage"_s);
     }
 
+    // A video's subtitles load, decrypt next to it, go on the shelf and go with remove().
+    void subtitlesLoad()
+    {
+        const QString root = m_dir.filePath(u"subs-shelf"_s);
+        Bundles b(publishLesson(u"subs"_s), root);
+        QVERIFY(unlockLesson(b));
+        QSignalSpy installed(&b, &Bundles::installed);
+        b.load(m_lesson, Bundles::Network::Any);
+        QVERIFY(installed.wait(10000));
+
+        const BundleShelf shelf(root);
+        const QMap<QString, QString> tracks = shelf.subtitles(u"lern-test/v1"_s);
+        QCOMPARE(tracks.keys(), QStringList{u"en"_s});
+        QCOMPARE(read(u"test.en.vtt"_s), [&] {
+            QFile f(tracks.value(u"en"_s));
+            return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+        }());
+        QCOMPARE(QFileInfo(tracks.value(u"en"_s)).fileName(), u"test.v1.mkv.en.vtt"_s);
+        QCOMPARE(QFileInfo(tracks.value(u"en"_s)).absolutePath(), QFileInfo(shelf.path(u"lern-test/v1"_s)).absolutePath());
+
+        // The shelf file names it per video; the sizes count with the folder.
+        QFile shelfFile(root + u"/shelf.json"_s);
+        QVERIFY(shelfFile.open(QIODevice::ReadOnly));
+        const QJsonObject video = QJsonDocument::fromJson(shelfFile.readAll()).object().value(m_lesson).toObject()
+                                      .value(u"videos"_s).toObject().value(u"lern-test/v1"_s).toObject();
+        QCOMPARE(video.value(u"untertitel"_s).toObject().value(u"en"_s).toString(), u"test.v1.mkv.en.vtt"_s);
+
+        QVERIFY(b.remove(m_lesson));
+        const BundleShelf removed(root);
+        QVERIFY(removed.subtitles(u"lern-test/v1"_s).isEmpty());
+        QVERIFY(!QFileInfo::exists(tracks.value(u"en"_s)));
+    }
+
+    // A subtitle that arrives damaged fails the load like a video; the loaded version stays.
+    void damagedSubtitleFails()
+    {
+        const QString root = m_dir.filePath(u"badsub-shelf"_s);
+        Bundles b(publishLesson(u"badsub"_s, Content::DamagedSubtitle), root);
+        QVERIFY(unlockLesson(b));
+        b.load(m_lesson, Bundles::Network::Any);
+        QTRY_COMPARE_WITH_TIMEOUT(state(b), Bundles::State::Failed, 10000);
+        const BundleShelf shelf(root);
+        QVERIFY(shelf.path(u"lern-test/v1"_s).isEmpty());
+        QVERIFY(shelf.subtitles(u"lern-test/v1"_s).isEmpty());
+        QVERIFY(!QFileInfo::exists(shelf.folder(m_lesson) + u".part"_s));
+    }
+
+    // A shelf of before the subtitles (no "untertitel" key) loads, without tracks.
+    void oldShelfHasNoSubtitles()
+    {
+        const QString root = m_dir.filePath(u"oldshelf"_s);
+        QDir().mkpath(root);
+        QFile f(root + u"/shelf.json"_s);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(R"({"abc": {"code": "X", "key": "AAAA", "version": 1,
+                   "videos": {"v/1": {"file": "a.mkv", "cropped": false, "cuts": {}}}}})");
+        f.close();
+        QDir().mkpath(root + u"/abc"_s);
+        QFile video(root + u"/abc/a.mkv"_s);
+        QVERIFY(video.open(QIODevice::WriteOnly));
+        video.close();
+        const BundleShelf shelf(root);
+        QCOMPARE(shelf.path(u"v/1"_s), root + u"/abc/a.mkv"_s);
+        QVERIFY(shelf.subtitles(u"v/1"_s).isEmpty());
+    }
+
+    // A language that is no file name part fails the load (the tag goes into the file's name).
+    void subtitleLanguageStaysAName()
+    {
+        const QUrl manifest = publishLesson(u"badlang"_s);
+        editManifest(manifest, [](QJsonObject &o) {
+            QJsonArray list = o.value(u"lernpakete"_s).toArray();
+            QJsonObject lesson = list.first().toObject();
+            QJsonArray videos = lesson.value(u"videos"_s).toArray();
+            QJsonObject video = videos.first().toObject();
+            QJsonArray tracks = video.value(u"untertitel"_s).toArray();
+            QJsonObject track = tracks.first().toObject();
+            track.insert(u"sprache"_s, u"../x"_s);
+            tracks[0] = track;
+            video.insert(u"untertitel"_s, tracks);
+            videos[0] = video;
+            lesson.insert(u"videos"_s, videos);
+            list[0] = lesson;
+            o.insert(u"lernpakete"_s, list);
+        });
+        Bundles b(manifest, m_dir.filePath(u"badlang-shelf"_s));
+        QVERIFY(unlockLesson(b));
+        b.load(m_lesson, Bundles::Network::Any);
+        QTRY_COMPARE_WITH_TIMEOUT(state(b), Bundles::State::Failed, 10000);
+    }
+
     // A content that arrives damaged, or is another package's, fails the load; nothing is kept.
     void lessonContentChecked_data()
     {
@@ -914,6 +1015,69 @@ private slots:
         QVERIFY(installed.wait(10000));
         QCOMPARE(state(b), Bundles::State::Installed);
         qunsetenv("MITORI_WIFI");
+    }
+
+    // A bundle waits for Wi-Fi, the network comes while the videos move (load() returns): the end of
+    // the move starts it.
+    void waitingStartsAfterMove()
+    {
+        qputenv("MITORI_WIFI", "0");
+        BundleShelf shelf(m_dir.filePath(u"move-shelf"_s));
+        Bundles b(publish(u"move"_s), shelf);
+        waitReady(b);
+        QSignalSpy unlocked(&b, &Bundles::unlocked);
+        b.unlock(m_code);
+        QVERIFY(unlocked.wait(10000));
+        QSignalSpy installed(&b, &Bundles::installed);
+        b.load(u"test-bundle"_s);
+        QCOMPARE(state(b), Bundles::State::Waiting);
+
+        shelf.setMoving(true);
+        qputenv("MITORI_WIFI", "1");
+        QVERIFY(QMetaObject::invokeMethod(&b, "networkChanged"));
+        QCOMPARE(state(b), Bundles::State::Waiting);
+
+        shelf.setMoving(false);
+        QCOMPARE(state(b), Bundles::State::Downloading);
+        QVERIFY(installed.wait(10000));
+        QCOMPARE(state(b), Bundles::State::Installed);
+    }
+
+    // Videos names the loaded video's tracks as files SubtitleTrack reads.
+    void videosNameTheTracks()
+    {
+        BundleShelf &shelf = BundleShelf::shared();
+        const QString id = u"subs-test"_s;
+        shelf.remove(id);       // a run that failed half-way left it on the shared shelf
+        QVERIFY(QDir().mkpath(shelf.folder(id)));
+        for (const QString &name : {u"v.mkv"_s, u"v.mkv.en.vtt"_s, u"v.mkv.de.vtt"_s}) {
+            QFile file(QDir(shelf.folder(id)).filePath(name));
+            QVERIFY(file.open(QIODevice::WriteOnly));
+        }
+        const Catalog catalog;
+        const Videos videos(catalog);
+        QVERIFY(videos.subtitles(u"subs/v"_s).isEmpty());
+
+        QVERIFY(shelf.installed(id, 1, {{u"subs/v"_s, u"v.mkv"_s}}, {}, {}, {},
+                                {{u"subs/v"_s, {{u"en"_s, u"v.mkv.en.vtt"_s}, {u"de"_s, u"v.mkv.de.vtt"_s}, {u"fr"_s, u"gone.vtt"_s}}}}));
+        const QVariantList tracks = videos.subtitles(u"subs/v"_s);
+        QCOMPARE(tracks.size(), 2);      // sorted by language; the missing file is no track
+        QCOMPARE(tracks.at(0).toMap().value(u"language"_s).toString(), u"de"_s);
+        QCOMPARE(tracks.at(1).toMap().value(u"source"_s).toUrl(),
+                 QUrl::fromLocalFile(QDir(shelf.folder(id)).filePath(u"v.mkv.en.vtt"_s)));
+
+        // The default track follows the app's language (Catalog), not the system's: an English app on a
+        // French system shows the English track, not the first one (de).
+        const QLocale system;
+        QLocale::setDefault(QLocale(u"fr_FR"_s));
+        Catalog::setLanguage(Catalog::Language::English);
+        QCOMPARE(videos.subtitleLanguage(u"subs/v"_s), u"en"_s);
+        Catalog::setLanguage(Catalog::Language::German);
+        QCOMPARE(videos.subtitleLanguage(u"subs/v"_s), u"de"_s);
+        QLocale::setDefault(system);
+
+        QVERIFY(shelf.remove(id));
+        QVERIFY(videos.subtitles(u"subs/v"_s).isEmpty());
     }
 
     // File names from the manifest may not leave the bundle's folder.

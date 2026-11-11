@@ -4,7 +4,10 @@
 #include "decoders.h"
 #include "lessons.h"
 
+#include <algorithm>
+
 #include <QDir>
+#include <QLocale>
 #include <QFileInfo>
 #include <QSettings>
 #include <QTimer>
@@ -91,6 +94,57 @@ QVariantMap Videos::crop(const QString &video) const
         return crop;
     }
     return {{QStringLiteral("verhaeltnis"), crop.value(QStringLiteral("verhaeltnis"))}};
+}
+
+QVariantList Videos::subtitles(const QString &video) const
+{
+    QVariantList tracks;
+    const QMap<QString, QString> found = BundleShelf::shared().subtitles(video);
+    for (auto it = found.cbegin(); it != found.cend(); ++it) {
+        tracks << QVariantMap{{QStringLiteral("language"), it.key()}, {QStringLiteral("source"), QUrl::fromLocalFile(it.value())}};
+    }
+    return tracks;
+}
+
+QString Videos::subtitleLanguage(const QString &video) const
+{
+    const QList<QString> languages = BundleShelf::shared().subtitles(video).keys();
+    if (!m_subtitlesOn || languages.isEmpty()) {
+        return {};
+    }
+    if (languages.contains(m_subtitleChoice)) {
+        return m_subtitleChoice;
+    }
+
+    // The app's language (Catalog: German or English, whatever the system's), "de" also as "de_CH".
+    const QLocale::Language app = Catalog::language() == Catalog::Language::German ? QLocale::German : QLocale::English;
+    const auto same = std::find_if(languages.cbegin(), languages.cend(),
+                                   [app](const QString &code) { return QLocale(code).language() == app; });
+    return same != languages.cend() ? *same : languages.first();
+}
+
+void Videos::showSubtitles()
+{
+    chooseSubtitles({});
+}
+
+void Videos::chooseSubtitles(const QString &language)
+{
+    if (m_subtitlesOn && m_subtitleChoice == language) {
+        return;
+    }
+    m_subtitlesOn = true;
+    m_subtitleChoice = language;
+    emit subtitleChoiceChanged();
+}
+
+void Videos::hideSubtitles()
+{
+    if (!m_subtitlesOn) {
+        return;
+    }
+    m_subtitlesOn = false;
+    emit subtitleChoiceChanged();
 }
 
 QVariantMap Videos::place(const QString &id, const QVariantMap &place) const
