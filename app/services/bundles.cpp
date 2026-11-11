@@ -2,6 +2,7 @@
 
 #include "catalog.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QFutureWatcher>
@@ -24,6 +25,7 @@ const QUrl kManifest(QStringLiteral("https://git.arianw.de/api/packages/shrippen
 constexpr int kHttpError = 400;                 // from this status on a body is an error page
 constexpr int kFormat = 2;                      // "format" of the manifest
 constexpr int kContentFormat = 1;               // "format" of a Lernpaket's content (inhalt.mvb)
+constexpr auto kWifiEnv = "MITORI_WIFI";
 constexpr auto kWifiOnlyKey = "videos/wifiOnly";
 constexpr qint64 kFreshSeconds = 6 * 60 * 60;
 constexpr int kTimeoutMs = 30 * 1000;           // without a byte for this long a download fails
@@ -63,7 +65,10 @@ Bundles::Bundles(QObject *parent)
     : QObject(parent)
     , m_shelf(&BundleShelf::shared())
     , m_source(qEnvironmentVariableIsSet("MITORI_BUNDLES_MANIFEST") ? QUrl(qEnvironmentVariable("MITORI_BUNDLES_MANIFEST")) : kManifest)
+    , m_language(Catalog::language())
 {
+    watchLanguage();
+    watchNetwork();
     loadCache();
 }
 
@@ -72,8 +77,70 @@ Bundles::Bundles(const QUrl &manifest, const QString &root, QObject *parent)
     , m_ownShelf(std::make_unique<BundleShelf>(root))
     , m_shelf(m_ownShelf.get())
     , m_source(manifest)
+    , m_language(Catalog::language())
 {
+    watchLanguage();
+    watchNetwork();
     loadCache();
+}
+
+// A new catalog (Appearance::setLanguage) may bring the titles' other language.
+void Bundles::watchLanguage()
+{
+    if (auto *app = QCoreApplication::instance()) {
+        app->installEventFilter(this);
+    }
+}
+
+// A crash during an update's swap may leave `<id>.old`: it is the loaded version if `<id>` is
+// gone, else a leftover.
+void Bundles::cleanOld(const QString &id)
+{
+    const QString folder = m_shelf->folder(id);
+    const QString oldDir = folder + QStringLiteral(".old");
+    if (!QFileInfo::exists(oldDir)) {
+        return;
+    }
+    if (QFileInfo::exists(folder)) {
+        QDir(oldDir).removeRecursively();
+        return;
+    }
+    QDir().rename(oldDir, folder);
+}
+
+// Wi-Fi or a cable may come after a bundle began to wait for it (State::Waiting).
+void Bundles::watchNetwork()
+{
+    if (!QNetworkInformation::instance()
+        && !QNetworkInformation::loadBackendByFeatures(QNetworkInformation::Feature::TransportMedium)) {
+        return;
+    }
+    const QNetworkInformation *info = QNetworkInformation::instance();
+    connect(info, &QNetworkInformation::transportMediumChanged, this, &Bundles::networkChanged);
+    connect(info, &QNetworkInformation::isMeteredChanged, this, &Bundles::networkChanged);
+}
+
+void Bundles::networkChanged()
+{
+    if (!onWifi()) {
+        return;
+    }
+    const auto ids = m_failed.keys();
+    for (const QString &id : ids) {
+        if (m_failed.value(id) == State::Waiting) {
+            load(id);
+        }
+    }
+}
+
+bool Bundles::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange && watched == QCoreApplication::instance()
+        && m_language != Catalog::language()) {
+        m_language = Catalog::language();
+        emit changed();
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 Bundles::~Bundles()
@@ -107,8 +174,12 @@ void Bundles::setWifiOnly(bool on)
     emit changed();
 }
 
+// MITORI_WIFI=0|1: no network information, the answer is given (tests).
 bool Bundles::onWifi()
 {
+    if (qEnvironmentVariableIsSet(kWifiEnv)) {
+        return qEnvironmentVariableIntValue(kWifiEnv) != 0;
+    }
     if (!QNetworkInformation::instance()
         && !QNetworkInformation::loadBackendByFeatures(QNetworkInformation::Feature::TransportMedium)) {
         return true;    // unknown: no way to tell, as on most desktops
@@ -128,6 +199,13 @@ bool Bundles::onWifi()
 // The manifest as last loaded: the list and the codes' entries also offline.
 void Bundles::loadCache()
 {
+    const QString suffix = QStringLiteral(".old");
+    for (const QString &name : QDir(m_shelf->root()).entryList({QLatin1Char('*') + suffix}, QDir::Dirs | QDir::NoDotAndDotDot)) {
+        const QString id = name.chopped(suffix.size());
+        if (BundleShelf::validId(id)) {
+            cleanOld(id);
+        }
+    }
     QFile file(QDir(m_shelf->root()).filePath(kManifestFile));
     if (!file.open(QIODevice::ReadOnly)) {
         return;
@@ -361,6 +439,7 @@ void Bundles::load(const QString &id, Network network)
         job->total += qint64(f.toObject().value(QStringLiteral("groesse")).toDouble());
     }
     // A fresh folder next to the bundle's: the loaded version stays until the new one is complete.
+    cleanOld(id);
     QDir(m_shelf->folder(id) + QStringLiteral(".part")).removeRecursively();
     QDir().mkpath(m_shelf->folder(id) + QStringLiteral(".part"));
     m_jobs.insert(id, job);
@@ -373,14 +452,25 @@ void Bundles::next(Job &job)
     const QString id = job.id;
     const QString partDir = m_shelf->folder(id) + QStringLiteral(".part");
 
-    // Every file in: the new version replaces the old one.
+    // Every file in: the new version replaces the old one. The old one goes aside first and
+    // comes back if anything fails, so that a failed update does not lose it.
+    //   <id> → <id>.old,  <id>.part → <id>,  delete <id>.old
     if (job.videos.isEmpty()) {
-        QDir(m_shelf->folder(id)).removeRecursively();
-        if (!QDir().rename(partDir, m_shelf->folder(id))
+        const QString folder = m_shelf->folder(id);
+        const QString oldDir = folder + QStringLiteral(".old");
+        QDir(oldDir).removeRecursively();
+        const bool hadOld = QFileInfo::exists(folder);
+        const bool aside = !hadOld || QDir().rename(folder, oldDir);
+        if (!aside || !QDir().rename(partDir, folder)
             || !m_shelf->installed(id, job.version, job.files, job.cropped, job.cuts, job.content)) {
+            if (aside && hadOld) {
+                QDir(folder).removeRecursively();
+                QDir().rename(oldDir, folder);
+            }
             fail(id, tr("The videos could not be saved on this device."));
             return;
         }
+        QDir(oldDir).removeRecursively();
         m_jobs.remove(id);
         emit changed();
         emit installed(id);
