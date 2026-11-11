@@ -950,7 +950,7 @@ private slots:
         const QList<std::pair<QString, QString>> found{{QStringLiteral("Dann Shihô-nage omote."), QStringLiteral("shihon")},
                                                       {QStringLiteral("Dann Shihô-nage omote."), QStringLiteral("shihonage")},
                                                       {QStringLiteral("Dann Shiho nage omote."), QStringLiteral("shiho-nage")},
-                                                      {QStringLiteral("正面打ち 切り落し 残心"), QStringLiteral("切り落とし")}};
+                                                      {QStringLiteral("正面打ち 切り落し 正面"), QStringLiteral("切り落とし")}};
         for (const auto &[end, query] : found) {
             const QString cut = searchExcerpt(filler + end, searchWords(query));
             const QString shown = end.split(u' ').at(1);
