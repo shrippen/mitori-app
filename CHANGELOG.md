@@ -5,16 +5,16 @@
 ### English
 
 #### New
-- Learning videos: a new start tile for video packages with techniques of their own, apart from the exam programme. A package loads with its own code (Settings → Videos), like the DVD videos. Its techniques are listed in sections; tap one for its description, how well it sits, notes and the video, or to jump to the same technique in the exam programme, and back from the exam technique to the learning videos that teach it. On a tablet the packages and the open one stand side by side.
-- Videos: the list is grouped into exam videos and learning videos. A package that needs a newer Mitori says so instead of offering to load.
+- Learning videos: a new start tile for video packages with techniques of their own, apart from the exam programme. A package loads with its own code (Settings → Videos), like the DVD videos; until then the app shows nothing of it. Its techniques are listed in sections; tap one for its description, how well it sits, notes and the video, or to jump to the same technique in the exam programme, and back from the exam technique to the learning videos that teach it. On a tablet the packages and the open one stand side by side.
+- Videos: the list is grouped into exam videos and unlocked learning videos. A package that needs a newer Mitori says so instead of offering to load.
 - All notes: a filter for notes on learning videos.
 - Search: also finds words in the Shinki Toho comments (a hit opens the comment) and in your course notes (a hit opens the notebook at that entry).
 
 ### Deutsch
 
 #### Neu
-- Lernvideos: eine neue Kachel im Startmenü für Videopakete mit eigenen Techniken, getrennt vom Prüfungsprogramm. Ein Paket wird mit einem eigenen Code geladen (Einstellungen → Videos), wie die Videos der DVDs. Seine Techniken stehen in Abschnitten; Antippen zeigt Beschreibung, Stand, Notizen und Video oder springt zur selben Technik im Prüfungsprogramm, und von der Prüfungstechnik zurück zu den Lernvideos, die sie zeigen. Auf einem Tablet stehen die Pakete und das geöffnete Paket nebeneinander.
-- Videos: Die Liste ist nach Prüfungsvideos und Lernvideos gegliedert. Ein Paket, das ein neueres Mitori braucht, sagt das, statt zum Laden anzubieten.
+- Lernvideos: eine neue Kachel im Startmenü für Videopakete mit eigenen Techniken, getrennt vom Prüfungsprogramm. Ein Paket wird mit einem eigenen Code geladen (Einstellungen → Videos), wie die Videos der DVDs; bis dahin zeigt die App nichts davon. Seine Techniken stehen in Abschnitten; Antippen zeigt Beschreibung, Stand, Notizen und Video oder springt zur selben Technik im Prüfungsprogramm, und von der Prüfungstechnik zurück zu den Lernvideos, die sie zeigen. Auf einem Tablet stehen die Pakete und das geöffnete Paket nebeneinander.
+- Videos: Die Liste ist nach Prüfungsvideos und freigeschalteten Lernvideos gegliedert. Ein Paket, das ein neueres Mitori braucht, sagt das, statt zum Laden anzubieten.
 - Alle Notizen: ein Filter für Notizen zu Lernvideos.
 - Suche: findet auch Wörter in den Shinki-Toho-Kommentaren (ein Treffer öffnet den Kommentar) und in deinen Lehrgangsnotizen (ein Treffer öffnet das Notizbuch an dieser Notiz).
 

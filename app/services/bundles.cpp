@@ -317,6 +317,11 @@ QVariantList Bundles::bundles() const
         const Kind kind = i < exams ? Kind::Exam : Kind::Lesson;
         const int version = b.value(QStringLiteral("version")).toInt();
         const BundleShelf::Bundle shelf = m_shelf->bundle(id);
+
+        // A Lernpaket stays out of sight until its code unlocked it (or it is on the device).
+        if (kind == Kind::Lesson && shelf.key.isEmpty() && shelf.version == 0) {
+            continue;
+        }
         qint64 size = 0;
         QStringList videos;
         for (const QJsonValue &f : b.value(QStringLiteral("videos")).toArray()) {

@@ -758,24 +758,25 @@ private slots:
         QCOMPARE(videos.place(u"tech"_s, own), own);
     }
 
-    // A Lernpaket (manifest "lernpakete") is listed beside the bundles, as a Lesson; its code unlocks it.
+    // A Lernpaket (manifest "lernpakete") is not listed until its code unlocks it, then beside the
+    // bundles, as a Lesson.
     void lessonIsListed()
     {
         Bundles b(publishLesson(u"listed"_s), m_dir.filePath(u"listed-shelf"_s));
         waitReady(b);
+        QCOMPARE(b.bundles().size(), 0);
+
+        QVERIFY(unlockLesson(b));
         QCOMPARE(b.bundles().size(), 1);
         QCOMPARE(first(b).value(u"id"_s).toString(), m_lesson);
         QCOMPARE(first(b).value(u"kind"_s).value<Bundles::Kind>(), Bundles::Kind::Lesson);
-        QCOMPARE(state(b), Bundles::State::Locked);
+        QCOMPARE(state(b), Bundles::State::Unlocked);
         QCOMPARE(first(b).value(u"title"_s).toString(), u"Lernpaket"_s);
 
         // In English the manifest's titel_en.
         Catalog::setLanguage(Catalog::Language::English);
         QCOMPARE(first(b).value(u"title"_s).toString(), u"Lesson package"_s);
         Catalog::setLanguage(Catalog::Language::German);
-
-        QVERIFY(unlockLesson(b));
-        QCOMPARE(state(b), Bundles::State::Unlocked);
 
         // An exam bundle is an Exam.
         Bundles exam(publish(u"listed-exam"_s), m_dir.filePath(u"listed-exam-shelf"_s));
@@ -857,7 +858,7 @@ private slots:
     void titlesFollowLanguage()
     {
         Bundles b(publishLesson(u"language"_s), m_dir.filePath(u"language-shelf"_s));
-        waitReady(b);
+        QVERIFY(unlockLesson(b));
         QSignalSpy changed(&b, &Bundles::changed);
         const auto languageChange = [] {
             QEvent event(QEvent::LanguageChange);
