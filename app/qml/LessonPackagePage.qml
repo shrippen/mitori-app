@@ -181,7 +181,5 @@ Kirigami.ScrollablePage {
         onCommentRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: entry })
         onNotesRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
         onVideosRequested: page.Kirigami.PageStack.push(Qt.resolvedUrl("VideosPage.qml"))
-        // The same technique in the programme: its sheet takes this one's place.
-        onProgrammeRequested: entry => page.open(entry)
     }
 }

@@ -286,9 +286,12 @@ Kirigami.ScrollablePage {
                         }
                         LookButton {
                             objectName: "bundleAction"
-                            visible: bundleRow.bundleState !== Bundles.State.Locked && bundleRow.bundleState !== Bundles.State.Unsupported
+                            // A format this version cannot read: nothing to load, but what is on the device can go.
+                            readonly property bool removeOnly: bundleRow.bundleState === Bundles.State.Unsupported && bundleRow.row.installed > 0
+                            visible: bundleRow.bundleState !== Bundles.State.Locked
+                                     && (bundleRow.bundleState !== Bundles.State.Unsupported || removeOnly)
                             text: bundleRow.bundleState === Bundles.State.Downloading ? qsTr("Cancel")
-                                : bundleRow.bundleState === Bundles.State.Installed ? qsTr("Remove")
+                                : bundleRow.bundleState === Bundles.State.Installed || removeOnly ? qsTr("Remove")
                                 : bundleRow.bundleState === Bundles.State.Update ? qsTr("Update")
                                 : bundleRow.bundleState === Bundles.State.Waiting ? qsTr("Load now")
                                 : qsTr("Load")
@@ -296,7 +299,7 @@ Kirigami.ScrollablePage {
                                 const id = bundleRow.row.id
                                 if (bundleRow.bundleState === Bundles.State.Downloading) {
                                     Bundles.cancel(id)
-                                } else if (bundleRow.bundleState === Bundles.State.Installed) {
+                                } else if (bundleRow.bundleState === Bundles.State.Installed || removeOnly) {
                                     Bundles.remove(id)
                                 } else {
                                     // "Load now" overrides Wi-Fi only once.

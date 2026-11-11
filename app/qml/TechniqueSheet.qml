@@ -18,7 +18,6 @@ Kirigami.Dialog {
     signal playRequested(var entry)
     signal commentRequested(var entry)
     signal notesRequested(var entry)
-    signal programmeRequested(var entry)
     // Without the video on the device: to the videos and DVD codes.
     signal videosRequested()
 
@@ -93,7 +92,11 @@ Kirigami.Dialog {
         onPlayRequested: entry => sheet.playRequested(entry)
         onCommentRequested: entry => sheet.commentRequested(entry)
         onNotesRequested: entry => sheet.notesRequested(entry)
-        onProgrammeRequested: entry => sheet.programmeRequested(entry)
+        // The same technique in the programme: this sheet takes its entry, whoever hosts it.
+        onProgrammeRequested: entry => {
+            sheet.entry = entry
+            sheet.playable = !!entry.video && Videos.available(entry.video.video)
+        }
         onVideosRequested: sheet.videosRequested()
     }
 }

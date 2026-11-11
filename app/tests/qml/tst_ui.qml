@@ -72,6 +72,7 @@ TestCase {
         }
         // A case that failed with a Lernpaket on the shelf leaves none to the next ones.
         uiCatalog.removeLesson(lessonId)
+        uiCatalog.removeLesson(unsupportedId)
     }
 
     function cleanupTestCase() {
@@ -2324,7 +2325,7 @@ TestCase {
         failOnWarning(/ReferenceError|TypeError|Binding loop/)
         const page = push("VideosPage")
         tryCompare(Bundles, "manifestState", Bundles.ManifestState.Ready, 5000)
-        tryVerify(() => findChildren(page, "bundleRow").length === 1)
+        tryVerify(() => findChildren(page, "bundleRow").length === 3)
         const row = () => findChildren(page, "bundleRow")[0]
         compare(row().bundleState, Bundles.State.Locked)
         // A change of the list changes the row in place (a press on Cancel during a download
@@ -2347,7 +2348,7 @@ TestCase {
         verify(Videos.available("test/v"), "the bundle's video is on the device")
         compare(Videos.crop("test/v").h, undefined, "a bundle's file is cut already")
         verify(Bundles.size > 0)
-        compare(findChildren(page, "bundleRow").length, 1)
+        compare(findChildren(page, "bundleRow").length, 3)
         verify(row() === first, "the row stays through unlocking and loading")
         tryVerify(() => findChild(row(), "bundleAction").text === qsTr("Remove"))
         shot("15b-videos-loaded")
@@ -2355,6 +2356,38 @@ TestCase {
         tryVerify(() => Bundles.bundles[0].state === Bundles.State.Unlocked)
         verify(!Videos.available("test/v"))
         compare(Bundles.bundles[0].code, "7KQ2M-X9HDV-3TAPR-WE6YT", "the code stays")
+        popPage()
+    }
+
+    // The Lernpakete in the list: under their own head; one in a format this version cannot read
+    // asks for an update, and can still be removed once it is on the device.
+    readonly property string unsupportedId: "test-unsupported"
+    function test_9n_videos_lessons() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        const page = push("VideosPage")
+        tryCompare(Bundles, "manifestState", Bundles.ManifestState.Ready, 5000)
+        tryVerify(() => findChildren(page, "bundleRow").length === 3)
+        compare(findChildren(page, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos", "Learning videos"])
+        const rowOf = id => findChildren(page, "bundleRow").find(r => r.row.id === id)
+        compare(rowOf(lessonId).bundleState, Bundles.State.Locked)
+        compare(rowOf(unsupportedId).bundleState, Bundles.State.Unsupported)
+        compare(findChild(rowOf(unsupportedId), "bundleState").text, qsTr("Needs a newer Mitori"))
+        verify(!findChild(rowOf(unsupportedId), "bundleAction").visible, "not on the device: nothing to do")
+
+        verify(uiCatalog.installLesson(unsupportedId, same))
+        Bundles.reload()
+        tryVerify(() => Bundles.bundles.find(b => b.id === unsupportedId).installed > 0)
+        compare(rowOf(unsupportedId).bundleState, Bundles.State.Unsupported)
+        const action = findChild(rowOf(unsupportedId), "bundleAction")
+        tryVerify(() => action.visible, 3000, "its videos can be removed")
+        compare(action.text, qsTr("Remove"))
+        // The list is taller than the window under Shinki: the row into view first.
+        page.flickable.contentY = action.mapToItem(page.flickable.contentItem, 0, 0).y - page.flickable.height / 2
+        wait(50)
+        mouseClick(action)
+        tryVerify(() => Bundles.bundles.find(b => b.id === unsupportedId).installed === 0)
+        tryVerify(() => !findChild(rowOf(unsupportedId), "bundleAction").visible)
         popPage()
     }
 
@@ -2387,7 +2420,7 @@ TestCase {
         // Exam bundles under their own head.
         const videos = window.pageStack.currentItem
         tryVerify(() => findChildren(videos, "bundleKind").some(h => h.visible))
-        compare(findChildren(videos, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos"])
+        compare(findChildren(videos, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos", "Learning videos"])
         popPage()
     }
 
@@ -2461,6 +2494,31 @@ TestCase {
         const around = Library.around("lern/" + lessonId + "/tenkan")
         compare(around.index, 1)
         popPage()
+        popPage()
+    }
+
+    // A lesson's sheet from the search: the chip to the programme works on any page that hosts the sheet.
+    function test_9p_lessons_search() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        const page = push("SearchPage")
+        findChild(page, "searchField").text = "irimi-nage variant"
+        const lessonRow = () => findChildren(page, "techniqueResult").find(r => r.found.id === "lern/" + lessonId + "/irimi")
+        tryVerify(() => !!lessonRow(), 2000)
+        slidIn()
+        mouseClick(lessonRow())
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, "lern/" + lessonId + "/irimi")
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetProgramme" && i.visible)
+        tryVerify(() => !!link())
+        mouseClick(link())
+        tryVerify(() => sheet.entry.id === same)
+        tryVerify(() => !link())
+        sheet.close()
+        tryVerify(() => !sheet.opened)
         popPage()
     }
 

@@ -32,6 +32,10 @@
 
 Q_IMPORT_QML_PLUGIN(MitoriPlugin)
 
+// The manifest's Lernpaket copy that this version cannot read (tst_ui.qml names it too).
+const QString kUnsupportedId = QStringLiteral("test-unsupported");
+constexpr int kUnknownContentFormat = 99;
+
 class Setup : public QObject
 {
     Q_OBJECT
@@ -224,10 +228,31 @@ public slots:
         QDir().mkpath(QFileInfo(video).absolutePath());
         QFile::remove(video);
         QFile::copy(QStringLiteral(TEST_BUNDLE_DIR "/test.mvb"), video);
-        QFile source(QStringLiteral(TEST_BUNDLE_DIR "/manifest.json"));
+        // The exam bundle, the Lernpaket (manifest-lernpaket.json) and a copy of it in a content format
+        // this version does not know (State::Unsupported).
+        const auto read = [](const QString &file) {
+            QFile source(QStringLiteral(TEST_BUNDLE_DIR "/") + file);
+            return source.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(source.readAll()).object() : QJsonObject();
+        };
+        QJsonObject json = read(QStringLiteral("manifest.json"));
+        const QJsonObject lesson = read(QStringLiteral("manifest-lernpaket.json"));
+        QJsonArray lessons = lesson.value(QStringLiteral("lernpakete")).toArray();
+        QJsonObject newer = lessons.at(0).toObject();
+        QJsonObject content = newer.value(QStringLiteral("inhalt")).toObject();
+        content.insert(QStringLiteral("format"), kUnknownContentFormat);
+        newer.insert(QStringLiteral("id"), kUnsupportedId);
+        newer.insert(QStringLiteral("inhalt"), content);
+        lessons.append(newer);
+        json.insert(QStringLiteral("lernpakete"), lessons);
+        QJsonObject codes = json.value(QStringLiteral("codes")).toObject();
+        const QJsonObject lessonCodes = lesson.value(QStringLiteral("codes")).toObject();
+        for (auto it = lessonCodes.begin(); it != lessonCodes.end(); ++it) {
+            codes.insert(it.key(), it.value());
+        }
+        json.insert(QStringLiteral("codes"), codes);
         QFile manifest(QStringLiteral(UI_DATA_DIR "/manifest.json"));
-        if (source.open(QIODevice::ReadOnly) && manifest.open(QIODevice::WriteOnly)) {
-            manifest.write(source.readAll().replace("file:///unused/test.mvb", QUrl::fromLocalFile(video).toEncoded()));
+        if (manifest.open(QIODevice::WriteOnly)) {
+            manifest.write(QJsonDocument(json).toJson().replace("file:///unused/test.mvb", QUrl::fromLocalFile(video).toEncoded()));
         }
         qputenv("MITORI_BUNDLES_MANIFEST", QUrl::fromLocalFile(manifest.fileName()).toString().toUtf8());
     }

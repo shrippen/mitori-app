@@ -21,7 +21,8 @@ ColumnLayout {
     readonly property bool hasComment: !!entry.comment
     // A technique of a Lernpaket (Lessons::kDiscipline): it has a description and may name the same
     // technique in the exam programme.
-    readonly property bool lesson: entry.discipline === "lern"
+    readonly property string lessonDiscipline: "lern"        // the discipline of a Lernpaket's techniques (Lessons::kDiscipline)
+    readonly property bool lesson: entry.discipline === lessonDiscipline
     readonly property var programmeIds: lesson ? (entry.wie || []).filter(id => Programme.techniqueLabel(id) !== "") : []
     readonly property var steps: entry.steps || []
     readonly property var lastNote: Practice.notesRevision >= 0 && entry.id ? Practice.lastNote(entry.id) : ({})
