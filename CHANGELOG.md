@@ -9,6 +9,7 @@
 - Videos: the list is grouped into exam videos and unlocked learning videos. A package that needs a newer Mitori says so instead of offering to load.
 - All notes: a filter for notes on learning videos.
 - Search: also finds words in the Shinki Toho comments (a hit opens the comment) and in your course notes (a hit opens the notebook at that entry).
+- Player: subtitles, where a video brings them (learning videos), shown by default; a button turns them off or picks the language.
 - Videos: choose where the loaded videos lie: on the device, on an SD card (Android) or in a folder of your own (Linux). A new place takes the videos along.
 
 #### Removed
@@ -21,6 +22,7 @@
 - Videos: Die Liste ist nach Prüfungsvideos und freigeschalteten Lernvideos gegliedert. Ein Paket, das ein neueres Mitori braucht, sagt das, statt zum Laden anzubieten.
 - Alle Notizen: ein Filter für Notizen zu Lernvideos.
 - Suche: findet auch Wörter in den Shinki-Toho-Kommentaren (ein Treffer öffnet den Kommentar) und in deinen Lehrgangsnotizen (ein Treffer öffnet das Notizbuch an dieser Notiz).
+- Player: Untertitel, wo ein Video welche mitbringt (Lernvideos), standardmäßig an; ein Knopf schaltet sie aus oder wählt die Sprache.
 - Videos: Wähle, wo die geladenen Videos liegen: auf dem Gerät, auf einer SD-Karte (Android) oder in einem eigenen Ordner (Linux). Ein neuer Ort nimmt die Videos mit.
 
 #### Entfernt
