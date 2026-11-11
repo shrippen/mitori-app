@@ -2731,6 +2731,30 @@ TestCase {
         verify(uiCatalog.removeLesson(lessonId))
     }
 
+    // The dialog led on to a technique of another grade (lesson chip, then its programme chip): it
+    // plays in its own list, not in this grade's (where it is not: index -1, an empty player).
+    function test_9p_other_grade_play() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        slidIn()
+        page.open(Programme.entries("aikido", "k5").find(r => r.kind === "entry"))
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        const other = Programme.entries("aikido", "k4").find(r => r.kind === "entry" && r.video && Videos.available(r.video.video))
+        verify(!!other)
+        sheet.entry = other
+        sheet.playRequested(other)
+        tryVerify(() => window.pageStack.currentItem !== page)
+        const player = window.pageStack.currentItem
+        verify(player.index >= 0, "the technique is in the player's list")
+        compare(player.playlist[player.index].id, other.id)
+        popPage()
+        popPage()
+    }
+
     // Turned sideways with a lesson technique in the dialog: it stays there, the pane's state is not its.
     function test_9p_lessons_chip_turn() {
         failOnWarning(/ReferenceError|TypeError|Binding loop/)
@@ -2783,6 +2807,14 @@ TestCase {
         compare(sheet.entry.id, "lern/" + lessonId + "/irimi")
         compare(page.sheetId, same)
         compare(body().entry.id, same)
+
+        // Turned upright: the open dialog keeps the lesson, the pane's technique does not take its place.
+        window.width = 420
+        window.height = 800
+        tryVerify(() => !page.wide)
+        wait(100)
+        verify(sheet.opened)
+        compare(sheet.entry.id, "lern/" + lessonId + "/irimi", "the lesson stays in the dialog")
         sheet.close()
         popPage()
         verify(uiCatalog.removeLesson(lessonId))

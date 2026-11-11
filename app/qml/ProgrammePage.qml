@@ -126,7 +126,10 @@ Kirigami.Page {
         if (wide && sheet.visible) {
             page.dialogToPane()
         } else if (!wide && sheetId !== "" && isCurrentPage) {
-            showDialog(rows.find(r => r.id === sheetId))
+            // A dialog already open (a technique beyond the grade, from the pane's chip) stays.
+            if (!sheet.visible) {
+                showDialog(rows.find(r => r.id === sheetId))
+            }
             sheetId = ""
         }
     }
@@ -790,7 +793,7 @@ Kirigami.Page {
     // a video stands in the player: turning starts nothing.
     function dialogToPane() {
         const entry = sheet.entry
-        if (page.isLesson(entry)) {
+        if (!page.inGrade(entry)) {
             return      // not in the grade's list: it stays in the dialog
         }
         sheet.close()
@@ -813,12 +816,14 @@ Kirigami.Page {
         sheet.open()
     }
 
-    function isLesson(entry) {
-        return entry.id.startsWith("lern/")
+    // Whether a technique is one of this grade's rows. The dialog can lead beyond them: from a
+    // learning video's chip to the lesson, and from the lesson's chip to another grade.
+    function inGrade(entry) {
+        return page.rows.some(r => r.kind === "entry" && r.id === entry.id)
     }
 
     function play(entry) {
-        if (page.isLesson(entry)) {
+        if (!page.inGrade(entry)) {
             // Its own player page: the grade's list does not hold it.
             sheet.close()
             const stack = page.QQC2.ApplicationWindow.window as Kirigami.ApplicationWindow
