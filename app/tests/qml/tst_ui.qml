@@ -2833,7 +2833,7 @@ TestCase {
         mouseClick(opener)
         tryVerify(() => menu.opened)
         const names = findChildren(menu.contentItem, "subtitleLanguage").map(i => i.text)
-        compare(names, [Qt.locale("de").nativeLanguageName, Qt.locale("en").nativeLanguageName])
+        compare(names, ["Deutsch", "English"], "each language by its plain name (not \"American English\")")
         compare(findChild(menu.contentItem, "subtitleOff").text, qsTr("Off"))
         shot("16h-subtitles-menu", true)
         // The chosen entry tapped again keeps its tick (a checkable entry toggled itself off after

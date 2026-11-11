@@ -3,7 +3,7 @@
 # Baut nach build-app/ (RelWithDebInfo, ohne Demo und Tests; nur Geändertes). Das configure läuft jedes Mal
 # (wenige Sekunden): so heilt ein abgebrochener erster Lauf, und die Optionen stimmen immer.
 # Liegt der Ordner "Mitori Videos" neben dem Repo und ist MITORI_VIDEOS nicht gesetzt, nimmt die
-# App die Videos von dort (solange in den Einstellungen kein anderer Ordner gewählt ist).
+# App die Videos von dort (nur zum Entwickeln; die Einstellungen kennen keinen Videoordner).
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 BUILD=build-app

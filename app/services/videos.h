@@ -41,8 +41,9 @@ public:
     Q_INVOKABLE QUrl source(const QString &video) const;
     // Picture area without the black bars: {hoehe, y, h, verhaeltnis} (see tools/kapitel.py).
     Q_INVOKABLE QVariantMap crop(const QString &video) const;
-    // The subtitle tracks of a loaded bundle's video: [{language, source}], `source` a file URL for
-    // SubtitleTrack; empty without a loaded bundle or tracks.
+    // The subtitle tracks of a loaded bundle's video: [{language, name, source}], `name` the
+    // language's own name without a region ("English"), `source` a file URL for SubtitleTrack;
+    // empty without a loaded bundle or tracks.
     Q_INVOKABLE QVariantList subtitles(const QString &video) const;
     // The language of the track a video shows: the chosen one if the video has it, else the app's
     // language if it has, else the first track. "" when subtitles are off or the video has none.

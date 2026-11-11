@@ -404,7 +404,7 @@ Item {
                     required property var modelData
 
                     objectName: "subtitleLanguage"
-                    text: Qt.locale(modelData.language).nativeLanguageName
+                    text: modelData.name
                     tick: page.subtitleLanguage === modelData.language ? LookMenuItem.Tick.On : LookMenuItem.Tick.Off
                     onTriggered: Videos.chooseSubtitles(modelData.language)
                 }
