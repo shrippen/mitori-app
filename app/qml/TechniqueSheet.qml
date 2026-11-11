@@ -92,6 +92,11 @@ Kirigami.Dialog {
         onPlayRequested: entry => sheet.playRequested(entry)
         onCommentRequested: entry => sheet.commentRequested(entry)
         onNotesRequested: entry => sheet.notesRequested(entry)
+        // The same technique in the programme: this sheet takes its entry, whoever hosts it.
+        onProgrammeRequested: entry => {
+            sheet.entry = entry
+            sheet.playable = !!entry.video && Videos.available(entry.video.video)
+        }
         onVideosRequested: sheet.videosRequested()
     }
 }

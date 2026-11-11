@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPointer>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QLibraryInfo>
 #include <QJsonObject>
@@ -31,6 +32,10 @@
 
 Q_IMPORT_QML_PLUGIN(MitoriPlugin)
 
+// The manifest's Lernpaket copy that this version cannot read (tst_ui.qml names it too).
+const QString kUnsupportedId = QStringLiteral("test-unsupported");
+constexpr int kUnknownContentFormat = 99;
+
 class Setup : public QObject
 {
     Q_OBJECT
@@ -45,6 +50,34 @@ public:
         }
         return m_german.translate(context.toUtf8().constData(), source.toUtf8().constData());
     }
+
+    // A Lernpaket on the device, as Bundles leaves it (tests/data/bundle/inhalt.json): its first video's
+    // file (empty: pages take it for a video, nothing plays) and its content on the shelf. Its first
+    // technique is the programme's `same` (a real id of the catalog).
+    Q_INVOKABLE bool installLesson(const QString &id, const QString &same)
+    {
+        BundleShelf &shelf = BundleShelf::shared();
+        QDir().mkpath(shelf.folder(id));
+        QFile video(QDir(shelf.folder(id)).filePath(QStringLiteral("v.mkv")));
+        QFile content(QStringLiteral(TEST_BUNDLE_DIR "/inhalt.json"));
+        if (!video.open(QIODevice::WriteOnly) || !content.open(QIODevice::ReadOnly)) {
+            return false;
+        }
+        QJsonObject json = QJsonDocument::fromJson(content.readAll()).object();
+        json.insert(QStringLiteral("id"), id);
+        QJsonArray sections = json.value(QStringLiteral("abschnitte")).toArray();
+        QJsonObject first = sections.at(0).toObject();
+        QJsonArray techniques = first.value(QStringLiteral("techniken")).toArray();
+        QJsonObject technique = techniques.at(0).toObject();
+        technique.insert(QStringLiteral("wie"), QJsonArray{same});
+        techniques.replace(0, technique);
+        first.insert(QStringLiteral("techniken"), techniques);
+        sections.replace(0, first);
+        json.insert(QStringLiteral("abschnitte"), sections);
+        return shelf.installed(id, 1, {{QStringLiteral("lern-test/v1"), QStringLiteral("v.mkv")}},
+                               {QStringLiteral("lern-test/v1")}, {}, json);
+    }
+    Q_INVOKABLE bool removeLesson(const QString &id) { return BundleShelf::shared().remove(id); }
 
     // The fake camera (services/codescanner): what stands in for the device, and a QR code or an
     // empty picture ("") as a frame of the page's sink.
@@ -195,10 +228,31 @@ public slots:
         QDir().mkpath(QFileInfo(video).absolutePath());
         QFile::remove(video);
         QFile::copy(QStringLiteral(TEST_BUNDLE_DIR "/test.mvb"), video);
-        QFile source(QStringLiteral(TEST_BUNDLE_DIR "/manifest.json"));
+        // The exam bundle, the Lernpaket (manifest-lernpaket.json) and a copy of it in a content format
+        // this version does not know (State::Unsupported).
+        const auto read = [](const QString &file) {
+            QFile source(QStringLiteral(TEST_BUNDLE_DIR "/") + file);
+            return source.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(source.readAll()).object() : QJsonObject();
+        };
+        QJsonObject json = read(QStringLiteral("manifest.json"));
+        const QJsonObject lesson = read(QStringLiteral("manifest-lernpaket.json"));
+        QJsonArray lessons = lesson.value(QStringLiteral("lernpakete")).toArray();
+        QJsonObject newer = lessons.at(0).toObject();
+        QJsonObject content = newer.value(QStringLiteral("inhalt")).toObject();
+        content.insert(QStringLiteral("format"), kUnknownContentFormat);
+        newer.insert(QStringLiteral("id"), kUnsupportedId);
+        newer.insert(QStringLiteral("inhalt"), content);
+        lessons.append(newer);
+        json.insert(QStringLiteral("lernpakete"), lessons);
+        QJsonObject codes = json.value(QStringLiteral("codes")).toObject();
+        const QJsonObject lessonCodes = lesson.value(QStringLiteral("codes")).toObject();
+        for (auto it = lessonCodes.begin(); it != lessonCodes.end(); ++it) {
+            codes.insert(it.key(), it.value());
+        }
+        json.insert(QStringLiteral("codes"), codes);
         QFile manifest(QStringLiteral(UI_DATA_DIR "/manifest.json"));
-        if (source.open(QIODevice::ReadOnly) && manifest.open(QIODevice::WriteOnly)) {
-            manifest.write(source.readAll().replace("file:///unused/test.mvb", QUrl::fromLocalFile(video).toEncoded()));
+        if (manifest.open(QIODevice::WriteOnly)) {
+            manifest.write(QJsonDocument(json).toJson().replace("file:///unused/test.mvb", QUrl::fromLocalFile(video).toEncoded()));
         }
         qputenv("MITORI_BUNDLES_MANIFEST", QUrl::fromLocalFile(manifest.fileName()).toString().toUtf8());
     }

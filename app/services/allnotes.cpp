@@ -180,6 +180,7 @@ private:
 void AllNotes::collect()
 {
     m_all.clear();
+    m_lessonNotes = 0;
     const QList<PracticeLog::Note> notes = m_practice && m_programme ? m_practice->noteRecords() : QList<PracticeLog::Note>();
     const QList<CourseBook::Entry> entries = m_courses ? m_courses->allEntries() : QList<CourseBook::Entry>();
     const QHash<QString, QString> titles = m_courses ? m_courses->courseTitles() : QHash<QString, QString>();
@@ -193,6 +194,7 @@ void AllNotes::collect()
         if (note) {
             const PracticeLog::Note &n = notes.at(i++);
             const Technique &t = technique(n.entry);
+            m_lessonNotes += t.discipline == QLatin1String(Lessons::kDiscipline);
             m_all << QVariantMap{{QStringLiteral("uid"), n.uid}, {QStringLiteral("kind"), kTechnique},
                                  {QStringLiteral("text"), n.text}, {QStringLiteral("created"), n.created},
                                  {QStringLiteral("changed"), n.changed}, {QStringLiteral("day"), dayOf(n.created)},

@@ -29,6 +29,8 @@ class AllNotes : public KeyedListModel
     // Every note before the filter, and the rows shown.
     Q_PROPERTY(int total READ total NOTIFY rowsChanged)
     Q_PROPERTY(int count READ count NOTIFY rowsChanged)
+    // Of those, the notes on a Lernpaket's techniques (the page's filter for them).
+    Q_PROPERTY(int lessonNotes READ lessonNotes NOTIFY rowsChanged)
 
 public:
     explicit AllNotes(QObject *parent = nullptr);
@@ -45,6 +47,7 @@ public:
     void setFilter(const QString &filter);
     int total() const { return int(m_all.size()); }
     int count() const { return rowCount(); }
+    int lessonNotes() const { return m_lessonNotes; }
 
     // The rows anew from the sources (on every change of theirs).
     Q_INVOKABLE void rebuild();
@@ -72,6 +75,7 @@ private:
     QPointer<Programme> m_programme;
     QString m_filter;
     QVariantList m_all;
+    int m_lessonNotes = 0;
     QHash<QString, QString> m_gradeNames;   // "aikido/k5" → "Aikido 5. Kyu"
     QHash<QString, Technique> m_techniques; // by entry id
 };

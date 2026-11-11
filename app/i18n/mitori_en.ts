@@ -145,6 +145,16 @@
     </message>
 </context>
 <context>
+    <name>LessonsPage</name>
+    <message numerus="yes">
+        <source>%n technique(s)</source>
+        <translation>
+            <numerusform>%n technique</numerusform>
+            <numerusform>%n techniques</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>SearchPage</name>
     <message numerus="yes">
         <source>%n Japanese term(s), with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</source>
@@ -175,6 +185,20 @@
         <translation>
             <numerusform>in %n day</numerusform>
             <numerusform>in %n days</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n package(s)</source>
+        <translation>
+            <numerusform>%n package</numerusform>
+            <numerusform>%n packages</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n technique(s)</source>
+        <translation>
+            <numerusform>%n technique</numerusform>
+            <numerusform>%n techniques</numerusform>
         </translation>
     </message>
     <message numerus="yes">

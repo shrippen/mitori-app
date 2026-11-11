@@ -236,51 +236,75 @@ Kirigami.ScrollablePage {
         Repeater {
             model: bundleModel
 
-            LookListRow {
-                id: bundleRow
+            ColumnLayout {
+                id: bundleItem
 
                 required property var row
-                readonly property int bundleState: row.state
+                required property int index
+                // The exam bundles come first, then the Lernpakete (Bundles): each kind has its head.
+                readonly property bool firstOfKind: index === 0 || bundleModel.rows[index - 1].kind !== row.kind
 
-                objectName: "bundleRow"
                 Layout.fillWidth: true
-                text: row.title
-                subtitle: [qsTr("%n video(s)", "", row.videos.length), page.megabytes(row.size),
-                           row.installed > 0 ? qsTr("version %1").arg(row.installed) : "",
-                           bundleRow.bundleState === Bundles.State.Update ? qsTr("version %1: %2").arg(row.version).arg(row.hint || qsTr("new")) : ""]
-                          .filter(x => x).join(" · ")
-                trailing: RowLayout {
-                    spacing: Kirigami.Units.smallSpacing
+                spacing: 0
 
-                    LookLabel {
-                        objectName: "bundleState"
-                        text: bundleRow.bundleState === Bundles.State.Locked ? qsTr("not unlocked")
-                            : bundleRow.bundleState === Bundles.State.Unlocked ? qsTr("code saved")
-                            : bundleRow.bundleState === Bundles.State.Waiting ? qsTr("waits for Wi-Fi")
-                            : bundleRow.bundleState === Bundles.State.Downloading ? qsTr("loading %1 %").arg(Math.floor(bundleRow.row.progress * 100))
-                            : bundleRow.bundleState === Bundles.State.Installed ? qsTr("loaded")
-                            : bundleRow.bundleState === Bundles.State.Update ? qsTr("update")
-                            : qsTr("failed")
-                        color: bundleRow.bundleState === Bundles.State.Failed ? Look.negativeTextColor : Look.mutedTextColor
-                        font: Look.smallFont
-                    }
-                    LookButton {
-                        objectName: "bundleAction"
-                        visible: bundleRow.bundleState !== Bundles.State.Locked
-                        text: bundleRow.bundleState === Bundles.State.Downloading ? qsTr("Cancel")
-                            : bundleRow.bundleState === Bundles.State.Installed ? qsTr("Remove")
-                            : bundleRow.bundleState === Bundles.State.Update ? qsTr("Update")
-                            : bundleRow.bundleState === Bundles.State.Waiting ? qsTr("Load now")
-                            : qsTr("Load")
-                        onClicked: {
-                            const id = bundleRow.row.id
-                            if (bundleRow.bundleState === Bundles.State.Downloading) {
-                                Bundles.cancel(id)
-                            } else if (bundleRow.bundleState === Bundles.State.Installed) {
-                                Bundles.remove(id)
-                            } else {
-                                // "Load now" overrides Wi-Fi only once.
-                                Bundles.load(id, bundleRow.bundleState === Bundles.State.Waiting ? Bundles.Network.Any : Bundles.Network.WifiOnly)
+                LookSectionLabel {
+                    objectName: "bundleKind"
+                    Layout.fillWidth: true
+                    Layout.topMargin: bundleItem.index > 0 ? Kirigami.Units.largeSpacing : 0
+                    visible: bundleItem.firstOfKind
+                    text: bundleItem.row.kind === Bundles.Kind.Lesson ? qsTr("Learning videos") : qsTr("Exam videos")
+                }
+
+                LookListRow {
+                    id: bundleRow
+
+                    readonly property var row: bundleItem.row
+                    readonly property int bundleState: row.state
+
+                    objectName: "bundleRow"
+                    Layout.fillWidth: true
+                    text: row.title
+                    subtitle: [qsTr("%n video(s)", "", row.videos.length), page.megabytes(row.size),
+                               row.installed > 0 ? qsTr("version %1").arg(row.installed) : "",
+                               bundleRow.bundleState === Bundles.State.Update ? qsTr("version %1: %2").arg(row.version).arg(row.hint || qsTr("new")) : ""]
+                              .filter(x => x).join(" · ")
+                    trailing: RowLayout {
+                        spacing: Kirigami.Units.smallSpacing
+
+                        LookLabel {
+                            objectName: "bundleState"
+                            text: bundleRow.bundleState === Bundles.State.Locked ? qsTr("not unlocked")
+                                : bundleRow.bundleState === Bundles.State.Unlocked ? qsTr("code saved")
+                                : bundleRow.bundleState === Bundles.State.Waiting ? qsTr("waits for Wi-Fi")
+                                : bundleRow.bundleState === Bundles.State.Downloading ? qsTr("loading %1 %").arg(Math.floor(bundleRow.row.progress * 100))
+                                : bundleRow.bundleState === Bundles.State.Installed ? qsTr("loaded")
+                                : bundleRow.bundleState === Bundles.State.Update ? qsTr("update")
+                                : bundleRow.bundleState === Bundles.State.Unsupported ? qsTr("Needs a newer Mitori")
+                                : qsTr("failed")
+                            color: bundleRow.bundleState === Bundles.State.Failed ? Look.negativeTextColor : Look.mutedTextColor
+                            font: Look.smallFont
+                        }
+                        LookButton {
+                            objectName: "bundleAction"
+                            // A format this version cannot read: nothing to load, but what is on the device can go.
+                            readonly property bool removeOnly: bundleRow.bundleState === Bundles.State.Unsupported && bundleRow.row.installed > 0
+                            visible: bundleRow.bundleState !== Bundles.State.Locked
+                                     && (bundleRow.bundleState !== Bundles.State.Unsupported || removeOnly)
+                            text: bundleRow.bundleState === Bundles.State.Downloading ? qsTr("Cancel")
+                                : bundleRow.bundleState === Bundles.State.Installed || removeOnly ? qsTr("Remove")
+                                : bundleRow.bundleState === Bundles.State.Update ? qsTr("Update")
+                                : bundleRow.bundleState === Bundles.State.Waiting ? qsTr("Load now")
+                                : qsTr("Load")
+                            onClicked: {
+                                const id = bundleRow.row.id
+                                if (bundleRow.bundleState === Bundles.State.Downloading) {
+                                    Bundles.cancel(id)
+                                } else if (bundleRow.bundleState === Bundles.State.Installed || removeOnly) {
+                                    Bundles.remove(id)
+                                } else {
+                                    // "Load now" overrides Wi-Fi only once.
+                                    Bundles.load(id, bundleRow.bundleState === Bundles.State.Waiting ? Bundles.Network.Any : Bundles.Network.WifiOnly)
+                                }
                             }
                         }
                     }
