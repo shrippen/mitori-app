@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QtQml.Models
 import org.kde.kirigami as Kirigami
 import Mitori
+import "playlists.js" as Playlists
 
 // Programme (clickdummy "Programm"): discipline, grade, and the grade's own material. A row opens
 // the technique sheet first; ▶ goes straight to the player. On a tablet in landscape
@@ -585,6 +586,8 @@ Kirigami.Page {
                             playable: page.paneEntry ? page.playable(page.paneEntry) : false
                             onScrollKey: event => paneBody.scrollIn(paneFlick, event)
                             onPlayRequested: entry => page.play(entry)
+                            // Not in the grade's list: the dialog shows it, the pane keeps its own.
+                            onLessonRequested: entry => page.showDialog(entry)
                             onCommentRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: entry })
                             onNotesRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
                             onVideosRequested: page.Kirigami.PageStack.push(Qt.resolvedUrl("VideosPage.qml"))
@@ -787,6 +790,9 @@ Kirigami.Page {
     // a video stands in the player: turning starts nothing.
     function dialogToPane() {
         const entry = sheet.entry
+        if (page.isLesson(entry)) {
+            return      // not in the grade's list: it stays in the dialog
+        }
         sheet.close()
         page.keepTop = false
         turnedInView.restart()
@@ -807,7 +813,18 @@ Kirigami.Page {
         sheet.open()
     }
 
+    function isLesson(entry) {
+        return entry.id.startsWith("lern/")
+    }
+
     function play(entry) {
+        if (page.isLesson(entry)) {
+            // Its own player page: the grade's list does not hold it.
+            sheet.close()
+            const stack = page.QQC2.ApplicationWindow.window as Kirigami.ApplicationWindow
+            stack.pageStack.push(Qt.resolvedUrl("PlayerPage.qml"), Playlists.around(Programme, Videos, Library, entry))
+            return
+        }
         sheet.close()
         page.sheetId = ""
         bigResume = null

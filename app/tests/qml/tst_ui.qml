@@ -2701,6 +2701,93 @@ TestCase {
         compare(findChild(start, "lessonsTile").width, findChild(start, "glossaryTile").width)
     }
 
+    // The chip in the dialog swaps it to the lesson technique; playing it plays that one, in a
+    // player page of its own (the grade's list does not hold it).
+    function test_9p_lessons_chip_play() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        slidIn()
+        page.open(Programme.entry(same))
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!link())
+        link().clicked()
+        const lesson = "lern/" + lessonId + "/irimi"
+        tryVerify(() => sheet.entry.id === lesson)
+        sheet.playRequested(sheet.entry)
+        tryVerify(() => window.pageStack.currentItem !== page)
+        const player = window.pageStack.currentItem
+        verify(player.playlist.length > 0)
+        compare(player.playlist[player.index].id, lesson)
+        popPage()
+        popPage()
+        verify(uiCatalog.removeLesson(lessonId))
+    }
+
+    // Turned sideways with a lesson technique in the dialog: it stays there, the pane's state is not its.
+    function test_9p_lessons_chip_turn() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        window.width = 420
+        window.height = 900
+        const page = push("ProgrammePage")
+        slidIn()
+        const sheet = findChild(page, "techniqueSheet")
+        page.showDialog(Programme.entry(same))
+        tryVerify(() => sheet.opened)
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!link())
+        link().clicked()
+        const lesson = "lern/" + lessonId + "/irimi"
+        tryVerify(() => sheet.entry.id === lesson)
+        window.width = 1280
+        window.height = 800
+        tryVerify(() => page.wide)
+        wait(300)
+        verify(sheet.opened, "the dialog stays")
+        compare(sheet.entry.id, lesson)
+        compare(page.sheetId, "")
+        verify(page.lastId !== lesson)
+        sheet.close()
+        popPage()
+        verify(uiCatalog.removeLesson(lessonId))
+    }
+
+    // The chip in the right pane (tablet) opens the lesson technique in the dialog; the pane keeps its own.
+    function test_9p_lessons_chip_pane() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        const page = tabletProgramme()
+        page.sheetId = same
+        const body = () => findChild(page, "paneSheet")
+        tryVerify(() => !!body())
+        const link = () => allChildren(body()).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!link())
+        link().clicked()
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, "lern/" + lessonId + "/irimi")
+        compare(page.sheetId, same)
+        compare(body().entry.id, same)
+        sheet.close()
+        popPage()
+        verify(uiCatalog.removeLesson(lessonId))
+    }
+
     // Scanning (fake frames, no camera): refused without a camera or permission, typing stays;
     // Cancel changes nothing; a QR code without a code gets a sentence and the page stays; a
     // code goes the way of a typed one: its errors, its unlocking.

@@ -3,6 +3,7 @@
 #include "bundleshelf.h"
 
 #include <QJsonObject>
+#include <QSet>
 #include <algorithm>
 
 namespace {
@@ -158,7 +159,12 @@ void Lessons::refresh() const
     for (const Package &package : std::as_const(m_packages)) {
         for (const QVariant &v : package.rows) {
             const QVariantMap row = v.toMap();
+            QSet<QString> seen;     // an id twice in `wie` is one chip
             for (const QVariant &same : row.value(QStringLiteral("wie")).toList()) {
+                if (seen.contains(same.toString())) {
+                    continue;
+                }
+                seen.insert(same.toString());
                 m_related[same.toString()] << row;
             }
         }
