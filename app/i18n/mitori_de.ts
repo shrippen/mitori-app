@@ -35,6 +35,10 @@
         <translation>Alle</translation>
     </message>
     <message>
+        <source>Learning videos</source>
+        <translation>Lernvideos</translation>
+    </message>
+    <message>
         <source>Courses</source>
         <translation>Lehrgänge</translation>
     </message>
@@ -1439,6 +1443,51 @@
     </message>
 </context>
 <context>
+    <name>LessonPackagePage</name>
+    <message>
+        <source>Learning videos</source>
+        <translation>Lernvideos</translation>
+    </message>
+    <message>
+        <source>This package is not on the device any more.</source>
+        <translation>Dieses Paket ist nicht mehr auf dem Gerät.</translation>
+    </message>
+    <message>
+        <source>Play all</source>
+        <translation>Alle abspielen</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Abspielen</translation>
+    </message>
+</context>
+<context>
+    <name>LessonsPage</name>
+    <message>
+        <source>Learning videos</source>
+        <translation>Lernvideos</translation>
+    </message>
+    <message>
+        <source>No learning videos yet</source>
+        <translation>Noch keine Lernvideos</translation>
+    </message>
+    <message>
+        <source>Learning videos come with techniques of their own, apart from the exam programme. Like the DVD videos, they are loaded onto this device with a code.</source>
+        <translation>Lernvideos bringen eigene Techniken mit, getrennt vom Prüfungsprogramm. Wie die Videos der DVDs werden sie mit einem Code auf dieses Gerät geladen.</translation>
+    </message>
+    <message>
+        <source>Enter code</source>
+        <translation>Code eingeben</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n technique(s)</source>
+        <translation>
+            <numerusform>%n Technik</numerusform>
+            <numerusform>%n Techniken</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>ListAndPage</name>
     <message>
         <source>Choose a course from the list.</source>
@@ -2197,6 +2246,28 @@
         <translation>heute</translation>
     </message>
     <message>
+        <source>Learning videos</source>
+        <translation>Lernvideos</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n package(s)</source>
+        <translation>
+            <numerusform>%n Paket</numerusform>
+            <numerusform>%n Pakete</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n technique(s)</source>
+        <translation>
+            <numerusform>%n Technik</numerusform>
+            <numerusform>%n Techniken</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Unlock with a code</source>
+        <translation>Mit einem Code freischalten</translation>
+    </message>
+    <message>
         <source>Statistics</source>
         <translation>Statistik</translation>
     </message>
@@ -2370,6 +2441,10 @@
     <message>
         <source>Close</source>
         <translation>Schließen</translation>
+    </message>
+    <message>
+        <source>In the programme: %1</source>
+        <translation>Im Programm: %1</translation>
     </message>
     <message>
         <source>Uchidachi</source>
@@ -2771,6 +2846,14 @@
         <source>free</source>
         <translation>frei</translation>
     </message>
+    <message>
+        <source>Learning videos</source>
+        <translation>Lernvideos</translation>
+    </message>
+    <message>
+        <source>Exam videos</source>
+        <translation>Prüfungsvideos</translation>
+    </message>
     <message numerus="yes">
         <source>%n video(s)</source>
         <translation>
@@ -2813,6 +2896,10 @@
     <message>
         <source>update</source>
         <translation>Update</translation>
+    </message>
+    <message>
+        <source>Needs a newer Mitori</source>
+        <translation>Braucht ein neueres Mitori</translation>
     </message>
     <message>
         <source>failed</source>

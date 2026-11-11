@@ -70,6 +70,8 @@ TestCase {
             Videos.folder = realFolder
             realFolder = ""
         }
+        // A case that failed with a Lernpaket on the shelf leaves none to the next ones.
+        uiCatalog.removeLesson(lessonId)
     }
 
     function cleanupTestCase() {
@@ -185,7 +187,7 @@ TestCase {
         compare(window.pageStack.currentItem.title, "Mitori 見取り")
         // The tiles in the decided order: Today, Exam, Statistics, Courses (clickdummy "Startmenü").
         const start = window.pageStack.currentItem
-        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile"]
+        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "lessonsTile"]
         const items = order.map(n => findChild(start, n))
         const at = it => it.mapToItem(start, 0, 0)
         for (let i = 1; i < items.length; i++) {
@@ -2354,6 +2356,175 @@ TestCase {
         verify(!Videos.available("test/v"))
         compare(Bundles.bundles[0].code, "7KQ2M-X9HDV-3TAPR-WE6YT", "the code stays")
         popPage()
+    }
+
+    // Learning videos (Lernpakete): without a package the explanation and the way to the code; the
+    // tile says so. The last small tile on the phone spans both columns (an odd number of tiles).
+    readonly property string lessonId: "test-lesson"
+    function test_9p_lessons_empty() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const start = window.pageStack.items[0]
+        const tile = findChild(start, "lessonsTile")
+        tryCompare(Library.packages, "length", 0)
+        compare(tile.hint, "Unlock with a code")
+        // 7 small tiles in 2 columns: the last one fills its row.
+        const tiles = findChild(start, "tiles")
+        compare(tiles.smallTiles, 7)
+        compare(tile.width, tiles.width)
+        const glossary = findChild(start, "glossaryTile")
+        verify(glossary.width < tiles.width)
+        slidIn()
+        clickTile(tile)
+        tryVerify(() => window.pageStack.depth === 2)
+        slidIn()
+        const page = window.pageStack.currentItem
+        verify(findChild(page, "lessonsEmpty").visible)
+        verify(findChild(page, "lessonsEmpty").explanation !== "")
+        compare(findChildren(page, "packageRow").length, 0)
+        shot("16-lessons-empty")
+        mouseClick(findChild(page, "lessonsCode"))
+        tryVerify(() => window.pageStack.currentItem.title === "Videos")
+        // Exam bundles under their own head.
+        const videos = window.pageStack.currentItem
+        tryVerify(() => findChildren(videos, "bundleKind").some(h => h.visible))
+        compare(findChildren(videos, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos"])
+        popPage()
+    }
+
+    // An installed package: its tile, its list, a technique's sheet with the description and the way
+    // to the programme's entry, the player around it.
+    function test_9p_lessons() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        const start = window.pageStack.items[0]
+        const tile = findChild(start, "lessonsTile")
+        compare(tile.hint, qsTr("%n package(s)", "", 1) + " · " + qsTr("%n technique(s)", "", 4))
+        slidIn()
+        clickTile(tile)
+        tryVerify(() => window.pageStack.depth === 2)
+        slidIn()
+        const list = window.pageStack.currentItem
+        const packageRow = () => findChildren(list, "packageRow")[0]
+        tryVerify(() => packageRow() !== undefined)
+        compare(packageRow().text, Library.packages[0].title)
+        shot("16b-lessons-packages")
+        mouseClick(packageRow())
+        tryVerify(() => window.pageStack.depth === 3)
+        slidIn()
+        const page = window.pageStack.currentItem
+        compare(page.title, Library.packages[0].title)
+        tryVerify(() => findChildren(page, "lessonRow").length >= 4)
+        verify(findChild(page, "packageText").visible)
+        verify(findChild(page, "playAll").visible, "videos are on the device")
+        shot("16c-lessons-package")
+
+        // Its sheet: the description, and the same technique in the programme.
+        const row = findChildren(page, "lessonRow").find(r => r.entry.id === "lern/" + lessonId + "/irimi")
+        verify(row)
+        mouseClick(row)
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, row.entry.id)
+        compare(findChild(sheet, "sheetLessonText").text, row.entry.text)
+        // The delegate of a Repeater is no QObject child of the sheet: by the items below it.
+        const programmeLink = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetProgramme" && i.visible)
+        tryVerify(() => !!programmeLink())
+        const link = programmeLink()
+        verify(link.visible)
+        compare(link.text, "In the programme: " + Programme.techniqueLabel(same))
+        shot("16d-lessons-sheet", true)
+        mouseClick(link)
+        tryVerify(() => sheet.entry.id === same)
+        verify(!findChild(sheet, "sheetLessonText").visible, "an exam entry has no description")
+        tryVerify(() => !programmeLink())
+        sheet.close()
+        tryVerify(() => !sheet.opened)
+
+        // ▶ and "Play all": the package's list, previous and next work.
+        const play = findChild(row, "rowPlay")
+        verify(play.enabled)
+        wait(400)       // the sheet fades out
+        mouseClick(play)
+        tryVerify(() => window.pageStack.depth === 4, 5000)
+        const player = window.pageStack.currentItem
+        compare(player.current.id, row.entry.id)
+        compare(player.playlist.map(r => r.id), ["lern/" + lessonId + "/irimi", "lern/" + lessonId + "/tenkan"])
+        popPage()
+        tryVerify(() => window.pageStack.currentItem === page)
+        slidIn()
+        // Entries without a video on the device have no play button.
+        const without = findChildren(page, "lessonRow").find(r => r.entry.id === "lern/" + lessonId + "/ohne")
+        verify(!findChild(without, "rowPlay").enabled)
+        // The player from elsewhere (search, notes): the package's list for a lesson's id.
+        const around = Library.around("lern/" + lessonId + "/tenkan")
+        compare(around.index, 1)
+        popPage()
+        popPage()
+    }
+
+    // The Lernpaket's notes have their filter on "All notes".
+    function test_9p_lessons_notes() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        const page = push("AllNotesPage")
+        page.filter = ""
+        wait(100)
+        verify(!findChild(page, "filter_lern"), "no notes on a lesson, no filter")
+        verify(Practice.addNote("lern/" + lessonId + "/irimi", "Eintritt"))
+        tryVerify(() => findChild(page, "filter_lern") !== null)
+        slidIn()
+        wait(300)
+        mouseClick(findChild(page, "filter_lern"))
+        wait(300)
+        tryVerify(() => page.filter === "lern")
+        tryCompare(page.shown, "length", 1)
+        compare(page.shown[0].discipline, "lern")
+        shot("16e-lessons-notes")
+        // The package goes, its note stays and so does its filter.
+        verify(uiCatalog.removeLesson(lessonId))
+        wait(100)
+        verify(findChild(page, "filter_lern"))
+        mouseClick(findChild(page, "filter_all"))
+        tryVerify(() => page.filter === "")
+        popPage()
+    }
+
+    // On a tablet sideways the packages and the open one stand side by side.
+    function test_9p_lessons_tablet() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        window.width = 1280
+        window.height = 800
+        const start = window.pageStack.items[0]
+        wait(200)
+        slidIn()
+        clickTile(findChild(start, "lessonsTile"))
+        tryVerify(() => window.pageStack.depth === 2)
+        slidIn()
+        const host = window.pageStack.currentItem
+        const pane = findChild(host, "pagePane")
+        tryVerify(() => host.wide && pane.item && pane.item.uid === lessonId, 3000)
+        verify(findChild(host, "packageRow").selected)
+        tryVerify(() => findChildren(pane.item, "lessonRow").length >= 4)
+        compare(overflowing(host, 1280), [])
+        shot("16f-lessons-tablet")
+        mouseClick(findChild(pane.item, "lessonRow"))
+        const sheet = findChild(pane.item, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        shot("16g-lessons-tablet-sheet", true)
+        sheet.close()
+        tryVerify(() => !sheet.opened)
+        // The tile, four to a row: eight tiles fill two rows.
+        popPage()
+        const tiles = findChild(start, "tiles")
+        compare(tiles.smallTiles, 7)
+        compare(findChild(start, "lessonsTile").width, findChild(start, "glossaryTile").width)
     }
 
     // Scanning (fake frames, no camera): refused without a camera or permission, typing stays;

@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPointer>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QLibraryInfo>
 #include <QJsonObject>
@@ -45,6 +46,34 @@ public:
         }
         return m_german.translate(context.toUtf8().constData(), source.toUtf8().constData());
     }
+
+    // A Lernpaket on the device, as Bundles leaves it (tests/data/bundle/inhalt.json): its first video's
+    // file (empty: pages take it for a video, nothing plays) and its content on the shelf. Its first
+    // technique is the programme's `same` (a real id of the catalog).
+    Q_INVOKABLE bool installLesson(const QString &id, const QString &same)
+    {
+        BundleShelf &shelf = BundleShelf::shared();
+        QDir().mkpath(shelf.folder(id));
+        QFile video(QDir(shelf.folder(id)).filePath(QStringLiteral("v.mkv")));
+        QFile content(QStringLiteral(TEST_BUNDLE_DIR "/inhalt.json"));
+        if (!video.open(QIODevice::WriteOnly) || !content.open(QIODevice::ReadOnly)) {
+            return false;
+        }
+        QJsonObject json = QJsonDocument::fromJson(content.readAll()).object();
+        json.insert(QStringLiteral("id"), id);
+        QJsonArray sections = json.value(QStringLiteral("abschnitte")).toArray();
+        QJsonObject first = sections.at(0).toObject();
+        QJsonArray techniques = first.value(QStringLiteral("techniken")).toArray();
+        QJsonObject technique = techniques.at(0).toObject();
+        technique.insert(QStringLiteral("wie"), QJsonArray{same});
+        techniques.replace(0, technique);
+        first.insert(QStringLiteral("techniken"), techniques);
+        sections.replace(0, first);
+        json.insert(QStringLiteral("abschnitte"), sections);
+        return shelf.installed(id, 1, {{QStringLiteral("lern-test/v1"), QStringLiteral("v.mkv")}},
+                               {QStringLiteral("lern-test/v1")}, {}, json);
+    }
+    Q_INVOKABLE bool removeLesson(const QString &id) { return BundleShelf::shared().remove(id); }
 
     // The fake camera (services/codescanner): what stands in for the device, and a QR code or an
     // empty picture ("") as a frame of the page's sink.

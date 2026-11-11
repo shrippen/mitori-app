@@ -215,7 +215,7 @@ Kirigami.ScrollablePage {
         onPlayRequested: entry => {
             sheet.close()
             const window = page.QQC2.ApplicationWindow.window as Kirigami.ApplicationWindow
-            window.pageStack.push(Qt.resolvedUrl("PlayerPage.qml"), Playlists.around(Programme, Videos, entry))
+            window.pageStack.push(Qt.resolvedUrl("PlayerPage.qml"), Playlists.around(Programme, Videos, Library, entry))
         }
         onCommentRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: entry })
         onNotesRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })

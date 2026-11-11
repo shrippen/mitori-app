@@ -117,7 +117,12 @@ Kirigami.ScrollablePage {
         // Two columns on the phone, four on a tablet in landscape (the clickdummy: a grid of
         // tiles, app-entscheidungen.md).
         GridLayout {
+            id: tiles
+
             objectName: "tiles"
+            // The small tiles shown (all but the big programme tile).
+            readonly property int smallTiles: visibleChildren.length - (programmeTile.visible ? 1 : 0)
+
             Layout.fillWidth: true
             columns: page.wide ? 4 : 2
             uniformCellHeights: true    // every row as high as the highest, so no tile is smaller
@@ -226,6 +231,27 @@ Kirigami.ScrollablePage {
                 text: qsTr("Glossary")
                 hint: qsTr("Kanji · pronunciation")
                 onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("SearchPage.qml"))
+            }
+
+            // The Lernpakete: video bundles with techniques of their own (not part of any exam).
+            LookTile {
+                objectName: "lessonsTile"
+
+                readonly property int techniques: Library.packages.reduce((sum, p) => sum + p.count, 0)
+
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1          // equal columns
+                // Last of an odd number of small tiles on the phone: over both columns, no gap.
+                Layout.columnSpan: !page.wide && tiles.smallTiles % 2 === 1 ? 2 : 1
+                glyph: "学"
+                text: qsTr("Learning videos")
+                hint: Library.packages.length > 0
+                      ? qsTr("%n package(s)", "", Library.packages.length) + " · " + qsTr("%n technique(s)", "", techniques)
+                      : qsTr("Unlock with a code")
+                // Beside its package on a tablet; without one only the explanation (a page of its own).
+                onClicked: Library.packages.length > 0
+                           ? page.Kirigami.PageStack.push(Qt.resolvedUrl("ListAndPage.qml"), { listSource: "LessonsPage.qml" })
+                           : page.Kirigami.PageStack.push(Qt.resolvedUrl("LessonsPage.qml"))
             }
         }
     }

@@ -28,8 +28,17 @@ Kirigami.Page {
     // A remembered discipline that no longer exists: all (also when Settings loads it). Another
     // filter starts at the top of the list.
     onFilterChanged: {
-        if (filter !== "" && filter !== page.coursesFilter && !Programme.disciplines.some(d => d.id === filter)) {
+        if (filter !== "" && filter !== page.coursesFilter && filter !== page.lessonsFilter
+                && !Programme.disciplines.some(d => d.id === filter)) {
             Qt.callLater(() => page.filter = "")     // not inside the change (Settings records it)
+        }
+        // Learning videos without notes any more (a remembered filter): later, the model may not have its rows yet.
+        if (filter === page.lessonsFilter) {
+            Qt.callLater(() => {
+                if (page.filter === page.lessonsFilter && notesModel.lessonNotes === 0) {
+                    page.filter = ""
+                }
+            })
         }
         settings.setValue("allNotesFilter", filter)  // now, not a moment later (the page may go)
         if (filter !== listFilter) {
@@ -40,6 +49,10 @@ Kirigami.Page {
     // The filter the list was last at the top for (Settings reports the same filter again).
     property string listFilter: ""
     readonly property string coursesFilter: "courses"     // AllNotes::kCourses
+    readonly property string lessonsFilter: "lern"        // the discipline of a Lernpaket's techniques (Lessons::kDiscipline)
+    // The chip for the learning videos: when there are notes on them (or it is the filter kept). A bool of its
+    // own: the chips are made anew when it changes, not with every note.
+    readonly property bool hasLessonChip: notesModel.lessonNotes > 0 || filter === lessonsFilter
     // The rows shown (AllNotes): {uid, kind, text, created, day, title, discipline, entry, course}.
     readonly property var shown: notesModel.rows
     // The list's model: a change rebuilds the rows in C++ and changes only those that changed, so
@@ -81,6 +94,8 @@ Kirigami.Page {
 
             Repeater {
                 model: [{ id: "", name: qsTr("All") }].concat(Programme.disciplines.map(d => ({ id: d.id, name: d.kurzname })))
+                                                     .concat(page.hasLessonChip
+                                                             ? [{ id: page.lessonsFilter, name: qsTr("Learning videos") }] : [])
                                                      .concat([{ id: page.coursesFilter, name: qsTr("Courses") }])
 
                 LookChip {

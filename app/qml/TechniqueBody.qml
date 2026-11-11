@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
@@ -17,6 +19,10 @@ ColumnLayout {
     property bool inPane: false
     readonly property bool hasVideo: playable && !!entry.video
     readonly property bool hasComment: !!entry.comment
+    // A technique of a Lernpaket (Lessons::kDiscipline): it has a description and may name the same
+    // technique in the exam programme.
+    readonly property bool lesson: entry.discipline === "lern"
+    readonly property var programmeIds: lesson ? (entry.wie || []).filter(id => Programme.techniqueLabel(id) !== "") : []
     readonly property var steps: entry.steps || []
     readonly property var lastNote: Practice.notesRevision >= 0 && entry.id ? Practice.lastNote(entry.id) : ({})
     // Its notes and the course entries linked to it: the notes page shows both.
@@ -30,6 +36,8 @@ ColumnLayout {
     signal playRequested(var entry)
     signal commentRequested(var entry)
     signal notesRequested(var entry)
+    // The same technique in the exam programme (its entry): the host shows that one instead.
+    signal programmeRequested(var entry)
     // Without the video on the device: to the videos and DVD codes.
     signal videosRequested()
     // The ✕, or on the way to another page: a dialog closes.
@@ -134,6 +142,33 @@ ColumnLayout {
         visible: !!body.entry.extra && !body.entry.uchidachi
         text: body.entry.extra || ""
         wrapMode: Text.Wrap
+    }
+    // A Lernpaket's description of the technique.
+    LookLabel {
+        objectName: "sheetLessonText"
+        Layout.fillWidth: true
+        visible: body.lesson && !!body.entry.text
+        text: body.entry.text || ""
+        wrapMode: Text.Wrap
+    }
+    // Where the technique stands in the exam programme: a tap shows its sheet.
+    Flow {
+        Layout.fillWidth: true
+        spacing: Kirigami.Units.smallSpacing
+        visible: body.programmeIds.length > 0
+
+        Repeater {
+            model: body.programmeIds
+
+            LookChip {
+                required property string modelData
+
+                objectName: "sheetProgramme"
+                width: Math.min(implicitWidth, parent.width)
+                text: qsTr("In the programme: %1").arg(Programme.techniqueLabel(modelData))
+                onClicked: body.programmeRequested(Programme.entry(modelData))
+            }
+        }
     }
     // A form: who stands how, what is hit and how it ends (the booklet's columns).
     GridLayout {
