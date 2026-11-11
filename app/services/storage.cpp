@@ -218,6 +218,11 @@ bool Storage::downloading() const
 // removed; codes and keys stay, so they load again there.
 void Storage::abandon(const QString &to)
 {
+    // A new card's folder does not exist yet; without it the place would still count as missing.
+    if (!QDir().mkpath(to)) {
+        fail(tr("The videos could not be moved: %1").arg(QStringLiteral("cannot create %1").arg(to)));
+        return;
+    }
     const auto bundles = m_shelf.bundles();
     for (auto it = bundles.cbegin(); it != bundles.cend(); ++it) {
         if (it->version > 0) {

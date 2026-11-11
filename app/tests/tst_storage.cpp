@@ -159,6 +159,15 @@ private slots:
         QVERIFY(storage.reachable());
         QCOMPARE(shelf.bundle(m_id).version, 0);
         QCOMPARE(shelf.bundle(m_id).key, QByteArray("key"));
+
+        // A new card's folder does not exist yet: the app makes it, the place is there.
+        BundleShelf lost(shelfWithBundle(u"lost"_s), m_dir.filePath(u"lost-card"_s));
+        Storage again(lost);
+        const QString card = m_dir.filePath(u"new-card/bundles"_s);
+        again.moveTo(card);
+        QCOMPARE(again.state(), Storage::State::Idle);
+        QCOMPARE(lost.videoRoot(), card);
+        QVERIFY(again.reachable());
     }
 
     // A folder the user picks gets a folder of the app's own: nothing else in it is touched.
