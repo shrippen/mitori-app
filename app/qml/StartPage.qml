@@ -256,7 +256,7 @@ Kirigami.ScrollablePage {
         }
     }
 
-    // Title of a discipline and the name of its practice grade.
+    // A discipline's short name (`title`: "Aikido") and the name of its practice grade.
     function disciplineInfo(id) {
         const d = Programme.disciplines.find(x => x.id === id)
         if (!d) {
