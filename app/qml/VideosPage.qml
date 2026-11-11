@@ -91,6 +91,7 @@ Kirigami.ScrollablePage {
     KeyedListModel {
         id: bundleModel
 
+        objectName: "bundleModel"
         rows: Bundles.bundles
     }
 
@@ -261,6 +262,7 @@ Kirigami.ScrollablePage {
 
                     readonly property var row: bundleItem.row
                     readonly property int bundleState: row.state
+                    readonly property bool counting: bundleState === Bundles.State.Downloading
 
                     objectName: "bundleRow"
                     Layout.fillWidth: true
@@ -272,12 +274,33 @@ Kirigami.ScrollablePage {
                     trailing: RowLayout {
                         spacing: Kirigami.Units.smallSpacing
 
+                        // The percentage rolls as a counter (visual only); the row says it for screen readers.
+                        RowLayout {
+                            objectName: "bundleCounter"
+                            visible: bundleRow.counting
+                            spacing: 0
+                            Accessible.role: Accessible.StaticText
+                            Accessible.name: qsTr("loading %1 %").arg(Math.floor(bundleRow.row.progress * 100))
+
+                            LookOdometer {
+                                objectName: "bundleOdometer"
+                                Accessible.ignored: true
+                                value: Math.floor(bundleRow.row.progress * 100)
+                                font: Look.narrowFont
+                            }
+                            LookLabel {
+                                Accessible.ignored: true
+                                text: "%"
+                                color: Look.mutedTextColor
+                                font: Look.smallFont
+                            }
+                        }
                         LookLabel {
                             objectName: "bundleState"
+                            visible: !bundleRow.counting
                             text: bundleRow.bundleState === Bundles.State.Locked ? qsTr("not unlocked")
                                 : bundleRow.bundleState === Bundles.State.Unlocked ? qsTr("code saved")
                                 : bundleRow.bundleState === Bundles.State.Waiting ? qsTr("waits for Wi-Fi")
-                                : bundleRow.bundleState === Bundles.State.Downloading ? qsTr("loading %1 %").arg(Math.floor(bundleRow.row.progress * 100))
                                 : bundleRow.bundleState === Bundles.State.Installed ? qsTr("loaded")
                                 : bundleRow.bundleState === Bundles.State.Update ? qsTr("update")
                                 : bundleRow.bundleState === Bundles.State.Unsupported ? qsTr("Needs a newer Mitori")
@@ -309,6 +332,16 @@ Kirigami.ScrollablePage {
                             }
                         }
                     }
+                }
+
+                // Under the row: the stand of a download, or stripes while it waits for Wi-Fi.
+                LookProgressBar {
+                    objectName: "bundleBar"
+                    Layout.fillWidth: true
+                    visible: bundleRow.counting || bundleRow.bundleState === Bundles.State.Waiting
+                    indeterminate: !bundleRow.counting
+                    value: bundleRow.row.progress
+                    Accessible.ignored: true
                 }
             }
         }

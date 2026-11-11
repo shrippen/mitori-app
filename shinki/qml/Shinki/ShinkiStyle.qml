@@ -102,9 +102,11 @@ QtObject {
     readonly property int selectedBarWidth: unit(3)
     readonly property int focusWidth: unit(2)
 
-    // Motion (ms) and opacities (section 4).
+    // Motion (ms) and opacities (section 4). Without platform animations ("reduce motion") nothing moves.
+    readonly property bool animate: Kirigami.Units.longDuration > 0
     readonly property int stateDuration: 150
     readonly property int sheetDuration: 200
+    readonly property int sweepDuration: 1200
     readonly property real scrimOpacity: 0.38
     readonly property real sheetShadowOpacity: 0.18
     readonly property real inkMaxOpacity: 0.1
