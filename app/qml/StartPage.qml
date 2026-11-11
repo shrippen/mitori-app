@@ -264,6 +264,6 @@ Kirigami.ScrollablePage {
         }
         const gradeId = PracticeGrade.revision >= 0 ? PracticeGrade.grade(id) : ""
         const g = d.grade.find(x => x.id === gradeId)
-        return { title: d.titel, grade: g ? g.name : "" }
+        return { title: d.kurzname, grade: g ? g.name : "" }
     }
 }
