@@ -2823,7 +2823,7 @@ TestCase {
         Videos.showSubtitles()
         verify(uiCatalog.installLessonTracks(lessonId, same))
         const video = Library.around(lesson).playlist[0].video.video
-        compare(Videos.subtitleLanguage(video), Qt.locale().name.slice(0, 2) === "de" ? "de" : "en", "the app's language")
+        compare(Videos.subtitleLanguage(video), uiCatalog.appLanguage(), "the app's language")
         const several = lessonPlayer()
         tryVerify(() => !!visibleOf(several, "subtitleButton"))
         slidIn()
@@ -2836,16 +2836,17 @@ TestCase {
         compare(names, [Qt.locale("de").nativeLanguageName, Qt.locale("en").nativeLanguageName])
         compare(findChild(menu.contentItem, "subtitleOff").text, qsTr("Off"))
         shot("16h-subtitles-menu", true)
-        const german = findChildren(menu.contentItem, "subtitleLanguage")[0]
-        mouseClick(german)
+        // The chosen entry tapped again keeps its tick (a checkable entry toggled itself off after
+        // triggered and lost it): German chosen first, on any system's language.
+        Videos.chooseSubtitles("de")
+        const german = () => findChildren(menu.contentItem, "subtitleLanguage")[0]
+        compare(german().tick, LookMenuItem.Tick.On)
+        mouseClick(german())
         tryVerify(() => !menu.opened)
         compare(Videos.subtitleLanguage(video), "de")
-        // The chosen entry tapped (it was the default already) keeps its tick; a checkable entry
-        // toggled itself off after triggered and lost it. Tick: 2 On, 1 Off.
-        const ticked = () => findChildren(menu.contentItem, "subtitleLanguage")[0]
-        compare(ticked().tick, 2, "Deutsch ticked")
-        compare(findChildren(menu.contentItem, "subtitleLanguage")[1].tick, 1)
-        compare(findChild(menu.contentItem, "subtitleOff").tick, 1)
+        compare(german().tick, LookMenuItem.Tick.On, "Deutsch still ticked")
+        compare(findChildren(menu.contentItem, "subtitleLanguage")[1].tick, LookMenuItem.Tick.Off)
+        compare(findChild(menu.contentItem, "subtitleOff").tick, LookMenuItem.Tick.Off)
         const severalTrack = findChild(several, "subtitleTrack")
         severalTrack.position = 1500
         tryVerify(() => findChild(several, "subtitleText").visible)

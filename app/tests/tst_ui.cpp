@@ -64,6 +64,11 @@ public:
         return install(id, same, {QStringLiteral("en"), QStringLiteral("de")});
     }
     Q_INVOKABLE bool removeLesson(const QString &id) { return BundleShelf::shared().remove(id); }
+    // The app's language as a code ("de", "en"): Catalog's, which may differ from the system's locale.
+    Q_INVOKABLE QString appLanguage() const
+    {
+        return Catalog::language() == Catalog::Language::German ? QStringLiteral("de") : QStringLiteral("en");
+    }
 
     // The fake camera (services/codescanner): what stands in for the device, and a QR code or an
     // empty picture ("") as a frame of the page's sink.
