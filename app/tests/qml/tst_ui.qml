@@ -640,6 +640,25 @@ TestCase {
         compare(window.pageStack.depth, 1)
     }
 
+    // Escape in a field with text leaves the field, not the page: the typed text stays.
+    function test_2i_escape_field_first() {
+        const page = push("SearchPage")
+        slidIn()
+        window.requestActivate()
+        tryVerify(() => window.active)
+        const field = findChild(page, "searchField")
+        field.forceActiveFocus()
+        keyClick(Qt.Key_I)
+        compare(field.text, "i")
+        keyClick(Qt.Key_Escape)
+        wait(300)
+        compare(window.pageStack.depth, 2, "Escape in the field keeps the page")
+        compare(field.text, "i")
+        verify(!field.activeFocus, "the field gave up the keys")
+        keyClick(Qt.Key_Escape)
+        tryCompare(window.pageStack, "depth", 1, 5000, "the next Escape leaves the page")
+    }
+
     // An open sheet takes the Escape; the page stays until the next one.
     function test_2i_escape_sheet_first() {
         Programme.discipline = "aikido"
