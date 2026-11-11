@@ -94,6 +94,7 @@ private:
     bool save() const;
 
     QString contentPath(const QString &id) const;
+    void restoreContent(const QString &id, const std::optional<QJsonObject> &content);
 
     QString m_root;
     QHash<QString, Bundle> m_bundles;

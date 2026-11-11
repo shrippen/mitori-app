@@ -623,7 +623,9 @@ private slots:
         const QString folder = BundleShelf(root).folder(u"test-bundle"_s);
         QVERIFY(QDir().rename(folder, folder + u".old"_s));
         QVERIFY(QDir().mkpath(folder));
-        QFile newer(folder + u"/test-v.v2.mkv"_s);
+        // The name a loaded file gets on the device carries its version (plainName): test.mvb → test.v2.mkv.
+        QCOMPARE(QFileInfo(before).fileName(), u"test.v1.mkv"_s);
+        QFile newer(folder + u"/test.v2.mkv"_s);
         QVERIFY(newer.open(QIODevice::WriteOnly));
         newer.close();
 
@@ -631,7 +633,7 @@ private slots:
         QCOMPARE(BundleShelf(root).path(u"test/v"_s), before);
         QVERIFY(QFile::exists(before));
         QVERIFY(!QFileInfo::exists(folder + u".old"_s));
-        QVERIFY(!QFileInfo::exists(folder + u"/test-v.v2.mkv"_s));
+        QVERIFY(!QFileInfo::exists(folder + u"/test.v2.mkv"_s));
     }
 
     // A server's error page is no video: "gone" counts, not "damaged", and the manifest is read again.
