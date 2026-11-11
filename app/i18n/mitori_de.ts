@@ -2087,6 +2087,22 @@
         <translation>Glossar</translation>
     </message>
     <message>
+        <source>In comments</source>
+        <translation>In Kommentaren</translation>
+    </message>
+    <message>
+        <source>More than %1 comments found. Add a word to narrow the search.</source>
+        <translation>Mehr als %1 Kommentare gefunden. Ein weiteres Wort grenzt die Suche ein.</translation>
+    </message>
+    <message>
+        <source>In course notes</source>
+        <translation>In Lehrgangsnotizen</translation>
+    </message>
+    <message>
+        <source>More than %1 course notes found. Add a word to narrow the search.</source>
+        <translation>Mehr als %1 Lehrgangsnotizen gefunden. Ein weiteres Wort grenzt die Suche ein.</translation>
+    </message>
+    <message>
         <source>Words with %1</source>
         <translation>Wörter mit %1</translation>
     </message>

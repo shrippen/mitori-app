@@ -916,6 +916,27 @@ private slots:
         QCOMPARE(steps.at(15).toMap().value(QStringLiteral("title")).toString(), QStringLiteral("Tsuki (right foot forward)"));
     }
 
+    // Comments are searched with the rules of search(): accents and case do not matter, every word
+    // must occur. A hit carries the line with the words, shortened.
+    void searchesComments()
+    {
+        const QVariantList found = programme.searchComments(QStringLiteral("HOCHST angespannte MOMENT"), 1000);
+        QVERIFY(!found.isEmpty());
+        for (const QVariant &f : found) {
+            const QVariantMap hit = f.toMap();
+            QVERIFY(!hit.value(QStringLiteral("comment")).toMap().isEmpty());
+            QVERIFY(!hit.value(QStringLiteral("gradeName")).toString().isEmpty());
+            const QString excerpt = hit.value(QStringLiteral("excerpt")).toString();
+            QVERIFY2(excerpt.contains(QStringLiteral("höchst")), qPrintable(excerpt));
+            QVERIFY2(excerpt.size() <= 142, qPrintable(excerpt));
+        }
+        // Every word: one that is not there leaves nothing; no query finds nothing.
+        QVERIFY(programme.searchComments(QStringLiteral("höchst angespannte zzzqqq")).isEmpty());
+        QVERIFY(programme.searchComments(QString()).isEmpty());
+        // A technique's name alone, not in a comment, is not a hit of its own.
+        QCOMPARE(programme.searchComments(QStringLiteral("höchst"), 1).size(), 1);
+    }
+
     // The search looks in what the rows show: English with English on, German with German; the
     // Japanese names in both.
     void searchInLanguage()

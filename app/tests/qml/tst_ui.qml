@@ -2205,6 +2205,42 @@ TestCase {
         popPage()
     }
 
+    // Search: a word of a Shinki Toho comment finds the technique and opens the comment; a word of a
+    // course note finds the entry and opens its notebook.
+    function test_9_search_comments_courses() {
+        failOnWarning(/SearchPage.qml.*TypeError/)
+        const course = Courses.create("Winterlehrgang", "2026-01-10", "2026-01-11", "", "")
+        verify(Courses.addEntry(course, "Erste Zeile\nSchwebende Hüftdrehung geübt"))
+        const page = push("SearchPage")
+        const field = findChild(page, "searchField")
+
+        field.text = "hochst angespannte"                // höchst without umlaut
+        tryVerify(() => page.comments.length > 0, 2000)
+        compare(page.courseEntries.length, 0)
+        const hit = findChild(page, "commentResult")
+        tryVerify(() => hit !== null && hit.visible)
+        verify(hit.subtitle.indexOf("höchst") >= 0, hit.subtitle)
+        shot("9-search-comments")
+        mouseClick(hit, hit.width / 3, hit.height / 2)
+        tryVerify(() => window.pageStack.currentItem !== page, 2000)
+        verify(window.pageStack.currentItem.entry.comment.text.indexOf("höchst") >= 0)
+        popPage()
+
+        field.text = "schwebende hüftdrehung"
+        tryVerify(() => page.courseEntries.length === 1, 2000)
+        compare(page.comments.length, 0)
+        const entry = findChild(page, "courseEntryResult")
+        tryVerify(() => entry !== null && entry.visible)
+        compare(entry.text, "Schwebende Hüftdrehung geübt")
+        verify(entry.subtitle.indexOf("Winterlehrgang") === 0, entry.subtitle)
+        shot("9-search-course-notes")
+        mouseClick(entry, entry.width / 3, entry.height / 2)
+        tryVerify(() => window.pageStack.currentItem !== page, 2000)
+        compare(window.pageStack.currentItem.uid, course)
+        popPage()
+        verify(Courses.remove(course))
+    }
+
     // Courses: the coming dates from the calendar (a local file in this test), a date's notebook
     // with an entry, a course of one's own, deleting a notebook.
     function test_9m_courses() {

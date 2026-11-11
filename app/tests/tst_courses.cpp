@@ -212,6 +212,37 @@ private slots:
         QVERIFY(book.linkedEntries(u"aikido/t2"_s).isEmpty());
     }
 
+    // The search finds an entry by its words (accents, case), with its course; a deleted entry or
+    // course, and a changed text, follow at once.
+    void searchesEntries()
+    {
+        const auto c = made(u"search-entries"_s);
+        const QString uid = c->create(u"Sommer"_s, u"2026-07-04"_s, u"2026-07-05"_s, {}, {});
+        QVERIFY(c->addEntry(uid, u"Erste Zeile\nHüftwurf mit Tenkan geübt"_s));
+        QVERIFY(c->addEntry(uid, u"Nur Atmung"_s));
+
+        const QVariantList found = c->searchEntries(u"HUFTWURF tenkan"_s);
+        QCOMPARE(found.size(), 1);
+        const QVariantMap hit = found.first().toMap();
+        QCOMPARE(hit.value(u"course"_s).toString(), uid);
+        QCOMPARE(hit.value(u"title"_s).toString(), u"Sommer"_s);
+        QCOMPARE(hit.value(u"first"_s).toString(), u"2026-07-04"_s);
+        QCOMPARE(hit.value(u"excerpt"_s).toString(), u"Hüftwurf mit Tenkan geübt"_s);
+        QVERIFY(c->searchEntries(u"hüftwurf zzz"_s).isEmpty());
+        QVERIFY(c->searchEntries({}).isEmpty());
+        QCOMPARE(c->searchEntries(u"a"_s, 1).size(), 1);
+
+        QVERIFY(c->changeEntry(hit.value(u"uid"_s).toString(), u"Kote-gaeshi"_s));
+        QVERIFY(c->searchEntries(u"hüftwurf"_s).isEmpty());
+        QCOMPARE(c->searchEntries(u"kote gaeshi"_s).size(), 1);
+
+        QVERIFY(c->deleteEntry(c->searchEntries(u"kote"_s).first().toMap().value(u"uid"_s).toString()));
+        QVERIFY(c->searchEntries(u"kote"_s).isEmpty());
+        QCOMPARE(c->searchEntries(u"atmung"_s).size(), 1);
+        QVERIFY(c->remove(uid));
+        QVERIFY(c->searchEntries(u"atmung"_s).isEmpty());
+    }
+
     // The service: entries() names the links; a link is only made when asked (a text naming a
     // technique alone links nothing).
     void linksThroughTheService()

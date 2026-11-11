@@ -6,6 +6,7 @@
 #include <QtQml/qqmlregistration.h>
 
 #include <functional>
+#include <optional>
 
 #include "catalog.h"
 #include "searchkey.h"
@@ -62,6 +63,10 @@ public:
     // `groupName` (Tachi-waza · Mae-seme …). The techniques of the installed Lernpakete follow the
     // programme's, as Lessons has them (`disciplineName` the package's title, `gradeName` empty).
     Q_INVOKABLE QVariantList search(const QString &query, int limit = 50) const;
+    // The techniques whose Shinki Toho comment (title and text) holds every word of the query, rows
+    // as in search() plus `excerpt`: the comment's line with the words, shortened around them. Same
+    // rules and language as search(), at most `limit`.
+    Q_INVOKABLE QVariantList searchComments(const QString &query, int limit = 50) const;
     // Builds what search() compares (16 ms), when the search opens, not on the first letter.
     Q_INVOKABLE void prepareSearch() const { searchRows(); }
     // The techniques a text names (a course note), best first, at most `limit`, leaving out the ids
@@ -110,6 +115,7 @@ private:
     struct SearchRow {
         QVariantMap row;
         SearchText text;
+        std::optional<SearchText> comment;  // title and text of the Shinki Toho comment, if any
     };
     const QList<SearchRow> &searchRows() const;
     QVariantList shinkiTohoEntries(const QVariantMap &discipline, const QString &grade) const;

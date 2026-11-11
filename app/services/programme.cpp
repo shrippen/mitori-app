@@ -447,6 +447,27 @@ QVariantList Programme::search(const QString &query, int limit) const
     return result;
 }
 
+QVariantList Programme::searchComments(const QString &query, int limit) const
+{
+    QVariantList result;
+    const QStringList words = searchWords(query);
+    if (words.isEmpty()) {
+        return result;
+    }
+    for (const SearchRow &r : searchRows()) {
+        if (!r.comment || !r.comment->matches(words)) {
+            continue;
+        }
+        QVariantMap row = r.row;
+        row[QStringLiteral("excerpt")] = searchExcerpt(r.row.value(QStringLiteral("comment")).toMap().value(QStringLiteral("text")).toString(), words);
+        result << row;
+        if (result.size() >= limit) {
+            break;
+        }
+    }
+    return result;
+}
+
 const QList<Programme::SearchRow> &Programme::searchRows() const
 {
     // The language checked here, as in entry(); also the Lernpakete.
@@ -471,7 +492,12 @@ const QList<Programme::SearchRow> &Programme::searchRows() const
         for (const QVariant &step : row.value(QStringLiteral("steps")).toList()) {
             stepFields << step.toMap().value(QStringLiteral("title")).toString() << step.toMap().value(QStringLiteral("jp")).toString();
         }
-        m_searchRows.append({row, SearchText((fields + stepFields).join(u' '))});
+        std::optional<SearchText> comment;
+        const QVariantMap c = row.value(QStringLiteral("comment")).toMap();
+        if (!c.isEmpty()) {
+            comment.emplace(c.value(QStringLiteral("titel")).toString() + u' ' + c.value(QStringLiteral("text")).toString());
+        }
+        m_searchRows.append({row, SearchText((fields + stepFields).join(u' ')), comment});
         return true;
     });
     return m_searchRows;

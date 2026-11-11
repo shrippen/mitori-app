@@ -11,6 +11,7 @@
 #include "coursebook.h"
 #include "devicecalendar.h"
 #include "icsreader.h"
+#include "searchkey.h"
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -118,6 +119,9 @@ public:
     Q_INVOKABLE QVariantMap nextExam(const QString &discipline = {}) const;
 
     Q_INVOKABLE QVariantList entries(const QString &course) const;
+    // The entries whose text holds every word of the query (SearchText rules), newest first, at most
+    // `limit`: {uid, text, excerpt (the line with the words, shortened), created, course, title, first, last}.
+    Q_INVOKABLE QVariantList searchEntries(const QString &query, int limit = 50) const;
     // Every notebook's entries, newest first, and the notebooks' titles by uid (C++ only: AllNotes).
     QList<CourseBook::Entry> allEntries() const;
     QHash<QString, QString> courseTitles() const;
@@ -193,6 +197,13 @@ private:
     // A notebook's entries with their techniques' names, for the export.
     QList<CourseBook::Entry> namedEntries(const QString &course) const;
 
+    // Every entry with what searchEntries() compares: read once per revision (it asks on every keystroke).
+    struct EntryText {
+        CourseBook::Entry entry;
+        SearchText text;
+    };
+    const QList<EntryText> &entryTexts() const;
+
     Catalog m_catalog;
     Catalog::Language m_language;
 
@@ -206,4 +217,6 @@ private:
     QString m_error;
     bool m_open = false;
     int m_revision = 0;
+    mutable QList<EntryText> m_entryTexts;
+    mutable int m_entryTextsRevision = -1;
 };

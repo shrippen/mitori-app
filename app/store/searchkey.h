@@ -338,3 +338,59 @@ private:
     QList<qsizetype> m_spaces;      // where a space (not a hyphen) was
     mutable QString m_kanji;
 };
+
+inline constexpr qsizetype kExcerptLength = 140;
+inline constexpr qsizetype kExcerptBefore = 40;
+
+// The part of a comment to show for a query: the first line that holds every word (else one that
+// holds the first word, else the first line), shortened to about kExcerptLength letters around the
+// first word found in it, with "…" where it was cut.
+//   searchExcerpt("Intro\nDer Hüftwurf folgt …", {"huftwurf"})  →  "Der Hüftwurf folgt …"
+inline QString searchExcerpt(const QString &text, const QStringList &words)
+{
+    const QStringList lines = text.split(u'\n', Qt::SkipEmptyParts);
+    QString line;
+    for (const QString &l : lines) {
+        if (SearchText(l).matches(words)) {
+            line = l;
+            break;
+        }
+    }
+    for (const QString &l : lines) {
+        if (!line.isEmpty()) {
+            break;
+        }
+        if (SearchText(l).matches({words.first()})) {
+            line = l;
+        }
+    }
+    if (line.isEmpty() && !lines.isEmpty()) {
+        line = lines.first();
+    }
+    line = line.simplified();
+    if (line.size() <= kExcerptLength) {
+        return line;
+    }
+
+    // Where the first word stands as typed (accents and case as in the text); else the start.
+    qsizetype at = 0;
+    for (const QString &w : words) {
+        at = line.indexOf(w, 0, Qt::CaseInsensitive);
+        if (at >= 0) {
+            break;
+        }
+    }
+    qsizetype from = std::max<qsizetype>(0, at - kExcerptBefore);
+    if (from > 0) {
+        // Start at a word, not in the middle of one.
+        const qsizetype space = line.indexOf(u' ', from);
+        from = space >= 0 && space < at ? space + 1 : from;
+    }
+    QString part = line.mid(from, kExcerptLength);
+    const bool cutEnd = from + kExcerptLength < line.size();
+    if (cutEnd) {
+        const qsizetype space = part.lastIndexOf(u' ');
+        part = space > kExcerptLength / 2 ? part.left(space) : part;
+    }
+    return (from > 0 ? QStringLiteral("…") : QString()) + part + (cutEnd ? QStringLiteral("…") : QString());
+}

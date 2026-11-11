@@ -326,6 +326,49 @@ QVariantList Courses::entries(const QString &course) const
     return result;
 }
 
+QVariantList Courses::searchEntries(const QString &query, int limit) const
+{
+    QVariantList result;
+    const QStringList words = searchWords(query);
+    if (!m_open || words.isEmpty()) {
+        return result;
+    }
+    QHash<QString, CourseBook::Course> courses;
+    for (const CourseBook::Course &c : m_book->courses()) {
+        courses.insert(c.uid, c);
+    }
+    for (const EntryText &e : entryTexts()) {
+        if (!e.text.matches(words)) {
+            continue;
+        }
+        const CourseBook::Course c = courses.value(e.entry.course);
+        result << QVariantMap{{QStringLiteral("uid"), e.entry.uid},
+                              {QStringLiteral("text"), e.entry.text},
+                              {QStringLiteral("excerpt"), searchExcerpt(e.entry.text, words)},
+                              {QStringLiteral("created"), e.entry.created.toLocalTime()},
+                              {QStringLiteral("course"), e.entry.course},
+                              {QStringLiteral("title"), c.title},
+                              {QStringLiteral("first"), c.first.toString(Qt::ISODate)},
+                              {QStringLiteral("last"), c.last.toString(Qt::ISODate)}};
+        if (result.size() >= limit) {
+            break;
+        }
+    }
+    return result;
+}
+
+const QList<Courses::EntryText> &Courses::entryTexts() const
+{
+    if (m_entryTextsRevision != m_revision) {
+        m_entryTexts.clear();
+        for (const CourseBook::Entry &e : m_book->allEntries()) {
+            m_entryTexts.append({e, SearchText(e.text)});
+        }
+        m_entryTextsRevision = m_revision;
+    }
+    return m_entryTexts;
+}
+
 QList<CourseBook::Entry> Courses::allEntries() const
 {
     return m_open ? m_book->allEntries() : QList<CourseBook::Entry>();

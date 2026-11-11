@@ -5,18 +5,22 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import Mitori
+import "coursedays.js" as CourseDays
 import "playlists.js" as Playlists
 
 // Glossary and search (clickdummy "Glossar & Suche"). Without a query: the glossary A–Z (word,
 // kanji, translation in the app's language, a speaker button). With a query: techniques of every
 // discipline and grade by name, attack (with its addition), group or Japanese, the glossary (also
-// by the translation's words) and the own notes; the glossary first, as the techniques can be up to 50 rows. Case, accents, hyphens and okurigana do not matter; several words
-// must all match. A technique opens its sheet, a note its notes page.
+// by the translation's words), the own notes, the Shinki Toho comments and the course notebooks'
+// entries; the glossary first, as the techniques can be up to 50 rows. Case, accents, hyphens and
+// okurigana do not matter; several words must all match. A technique opens its sheet, a note its
+// notes page, a comment hit the comment, an entry its notebook (scrolled to the entry).
 //
-//   ListView (virtual: about 300 words, or up to 50 techniques and 50 notes found besides)
+//   ListView (virtual: about 300 words, or up to 50 rows of each other kind found besides)
 //   ├─ header   hints
-//   ├─ rows     the glossary under A … Z headings without a query; with one the words, techniques
-//   │           and notes found, each kind under its heading and with a hint when there are more
+//   ├─ rows     the glossary under A … Z headings without a query; with one the words, techniques,
+//   │           notes, comments and course notes found, each kind under its heading and with a hint
+//   │           when there are more
 //   └─ footer   source of the translations
 Kirigami.ScrollablePage {
     id: page
@@ -36,10 +40,12 @@ Kirigami.ScrollablePage {
     readonly property var found: {
         const query = page.query
         if (query.trim() === "") {
-            return { searching: false, techniques: [], notes: [], glossary: Glossary.words }
+            return { searching: false, techniques: [], notes: [], comments: [], entries: [], glossary: Glossary.words }
         }
         return { searching: true, techniques: Programme.search(query, page.limit + 1),
                  notes: Practice.notesRevision < 0 ? [] : Practice.searchNotes(query, page.limit + 1),
+                 comments: Programme.searchComments(query, page.limit + 1),
+                 entries: Courses.revision < 0 ? [] : Courses.searchEntries(query, page.limit + 1),
                  glossary: Glossary.search(query) }
     }
     readonly property var techniques: found.techniques
@@ -48,6 +54,8 @@ Kirigami.ScrollablePage {
     readonly property var notes: found.notes
     readonly property bool notesMore: notes.length > limit
     readonly property var notesShown: notesMore ? notes.slice(0, limit) : notes
+    readonly property var comments: found.comments
+    readonly property var courseEntries: found.entries
     // The glossary rows: every word, or the words found.
     readonly property var glossary: found.glossary
     readonly property bool canSpeak: Glossary.speech === Glossary.Ready
@@ -67,7 +75,17 @@ Kirigami.ScrollablePage {
             notes.push({ kind: "hint", section: qsTr("Notes"), data: { name: "notesMoreHint",
                         text: qsTr("More than %1 notes found. Add a word to narrow the search.").arg(page.limit) } })
         }
-        return words.concat(techniques, notes)
+        const comments = found.comments.slice(0, page.limit).map(c => ({ kind: "comment", section: qsTr("In comments"), data: c }))
+        if (found.comments.length > page.limit) {
+            comments.push({ kind: "hint", section: qsTr("In comments"), data: { name: "commentsMoreHint",
+                           text: qsTr("More than %1 comments found. Add a word to narrow the search.").arg(page.limit) } })
+        }
+        const entries = found.entries.slice(0, page.limit).map(e => ({ kind: "courseEntry", section: qsTr("In course notes"), data: e }))
+        if (found.entries.length > page.limit) {
+            entries.push({ kind: "hint", section: qsTr("In course notes"), data: { name: "courseEntriesMoreHint",
+                          text: qsTr("More than %1 course notes found. Add a word to narrow the search.").arg(page.limit) } })
+        }
+        return words.concat(techniques, notes, comments, entries)
     }
 
     title: qsTr("Glossary & search")
@@ -132,8 +150,8 @@ Kirigami.ScrollablePage {
         }
         currentIndex: -1
         activeFocusOnTab: true
-        // A–Z headings in the whole glossary; words found stand under "Glossary", then "Techniques"
-        // and "Notes".
+        // A–Z headings in the whole glossary; words found stand under "Glossary", then "Techniques",
+        // "Notes", "In comments" and "In course notes".
         section.property: "section"
         section.delegate: LookSectionLabel {
             required property string section
@@ -219,7 +237,8 @@ Kirigami.ScrollablePage {
                 Layout.fillWidth: true
                 Layout.leftMargin: Kirigami.Units.largeSpacing
                 Layout.rightMargin: Kirigami.Units.largeSpacing
-                visible: page.searching && page.techniques.length === 0 && page.notes.length === 0 && page.glossary.length === 0
+                visible: page.searching && page.techniques.length === 0 && page.notes.length === 0 && page.comments.length === 0
+                         && page.courseEntries.length === 0 && page.glossary.length === 0
                 text: qsTr("Nothing found for “%1”.").arg(page.query.trim())
                 color: Look.mutedTextColor
                 wrapMode: Text.Wrap
@@ -244,12 +263,14 @@ Kirigami.ScrollablePage {
                     readonly property var found: rowLoader.modelData.data
                     readonly property string kind: rowLoader.modelData.kind
 
-                    objectName: kind === "word" ? "glossaryRow" : kind === "technique" ? "techniqueResult" : "noteResult"
+                    objectName: kind === "word" ? "glossaryRow" : kind === "technique" ? "techniqueResult"
+                                : kind === "comment" ? "commentResult" : kind === "courseEntry" ? "courseEntryResult" : "noteResult"
                     // The list is one Tab stop; Up and Down move in it.
                     activeFocusOnTab: false
                     focusOnClick: false
                     selected: rowLoader.ListView.isCurrentItem && list.activeFocus
                     leadingText: kind === "technique" && found.nr ? String(found.nr) : ""
+                    meta: kind === "comment" ? found.gradeName : ""
                     // From the row itself, kind and data together: a reused row gets both at once.
                     text: page.rowText(rowLoader.modelData)
                     subtitle: page.rowSubtitle(rowLoader.modelData)
@@ -315,6 +336,12 @@ Kirigami.ScrollablePage {
         if (row.kind === "technique") {
             return found.title + (found.extra && !found.nr ? " (" + found.extra + ")" : "") + (found.jp ? "  " + found.jp : "")
         }
+        if (row.kind === "comment") {
+            return found.title
+        }
+        if (row.kind === "courseEntry") {
+            return found.excerpt
+        }
         return row.kind === "note" ? found.text.replace(/\s+/g, " ") : ""
     }
 
@@ -328,6 +355,12 @@ Kirigami.ScrollablePage {
                     (found.attack || "") + (found.attackExtra ? " (" + found.attackExtra + ")" : ""),
                     found.nr ? found.extra : ""].filter(x => x).join(" · ")
         }
+        if (row.kind === "comment") {
+            return found.excerpt
+        }
+        if (row.kind === "courseEntry") {
+            return [found.title, CourseDays.range(found.first, found.last)].filter(x => x).join(" · ")
+        }
         if (row.kind !== "note") {
             return ""
         }
@@ -340,7 +373,8 @@ Kirigami.ScrollablePage {
         return found.id ? found : { id: id, title: qsTr("Technique no longer in the programme") }
     }
 
-    // A word is said, a technique opens its sheet, a note its technique's notes.
+    // A word is said, a technique opens its sheet, a note its technique's notes, a comment hit the
+    // comment, a course note its notebook at that entry.
     function openRow(row) {
         if (!row) {
             return
@@ -351,6 +385,10 @@ Kirigami.ScrollablePage {
             sheet.entry = row.data
             sheet.playable = !!row.data.video && Videos.available(row.data.video.video)
             sheet.open()
+        } else if (row.kind === "comment") {
+            page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: row.data })
+        } else if (row.kind === "courseEntry") {
+            page.Kirigami.PageStack.push(Qt.resolvedUrl("CoursePage.qml"), { uid: row.data.course, entryUid: row.data.uid })
         } else if (row.kind === "note") {
             page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: page.noteEntry(row.data.entry) })
         }
