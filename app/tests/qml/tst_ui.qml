@@ -2513,6 +2513,11 @@ TestCase {
         verify(!bar().indeterminate)
         compare(bar().value, 0.42)
         compare(odometer().value, 42)
+        // Kante's counter rolls Live (1): Show restarts its staggered roll on each new value, and a
+        // download's 250 ms steps left the later reels behind (review of #137). Shinki rolls at once.
+        if (!uiShinki) {
+            compare(odometer().pace, 1, "KanteOdometer.Pace.Live")
+        }
         compare(counter().Accessible.name, qsTr("loading %1 %").arg(42))
         verify(!findChild(row(), "bundleState").visible)
         shot("15c-videos-downloading")
