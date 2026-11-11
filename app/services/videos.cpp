@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QLocale>
 #include <QFileInfo>
+#include <QHash>
 #include <QSettings>
 #include <QTimer>
 
@@ -17,6 +18,26 @@ namespace {
 constexpr auto kOldFolderKey = "videos/folder";
 // The start is over by then (0.5 s on a desktop): the backend does not compete with it.
 constexpr int kDecoderPauseMs = 2000;
+
+// A language's own name without a region: the name most of its locales carry. The language's
+// default locale names its region ("en" is en_US, "American English"; "es" is "español de
+// España"), most others say "English", "español".
+QString languageName(const QString &code)
+{
+    const QLocale::Language language = QLocale(code).language();
+    QHash<QString, int> counts;
+    for (const QLocale &locale : QLocale::matchingLocales(language, QLocale::AnyScript, QLocale::AnyTerritory)) {
+        ++counts[locale.nativeLanguageName()];
+    }
+
+    QString name = QLocale(code).nativeLanguageName();
+    for (auto it = counts.cbegin(); it != counts.cend(); ++it) {
+        if (it.value() > counts.value(name)) {
+            name = it.key();
+        }
+    }
+    return name;
+}
 }
 
 Videos::Videos(QObject *parent)
@@ -101,7 +122,9 @@ QVariantList Videos::subtitles(const QString &video) const
     QVariantList tracks;
     const QMap<QString, QString> found = BundleShelf::shared().subtitles(video);
     for (auto it = found.cbegin(); it != found.cend(); ++it) {
-        tracks << QVariantMap{{QStringLiteral("language"), it.key()}, {QStringLiteral("source"), QUrl::fromLocalFile(it.value())}};
+        tracks << QVariantMap{{QStringLiteral("language"), it.key()},
+                              {QStringLiteral("name"), languageName(it.key())},
+                              {QStringLiteral("source"), QUrl::fromLocalFile(it.value())}};
     }
     return tracks;
 }
