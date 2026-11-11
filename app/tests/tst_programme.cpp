@@ -916,6 +916,71 @@ private slots:
         QCOMPARE(steps.at(15).toMap().value(QStringLiteral("title")).toString(), QStringLiteral("Tsuki (right foot forward)"));
     }
 
+    // Comments are searched with the rules of search(): accents and case do not matter, every word
+    // must occur. A hit carries the line with the words, shortened.
+    void searchesComments()
+    {
+        const QVariantList found = programme.searchComments(QStringLiteral("HOCHST angespannte MOMENT"), 1000);
+        QVERIFY(!found.isEmpty());
+        for (const QVariant &f : found) {
+            const QVariantMap hit = f.toMap();
+            QVERIFY(!hit.value(QStringLiteral("comment")).toMap().isEmpty());
+            QVERIFY(!hit.value(QStringLiteral("gradeName")).toString().isEmpty());
+            const QString excerpt = hit.value(QStringLiteral("excerpt")).toString();
+            QVERIFY2(excerpt.contains(QStringLiteral("höchst")), qPrintable(excerpt));
+            QVERIFY2(excerpt.size() <= 142, qPrintable(excerpt));
+        }
+        // Every word: one that is not there leaves nothing; no query finds nothing.
+        QVERIFY(programme.searchComments(QStringLiteral("höchst angespannte zzzqqq")).isEmpty());
+        QVERIFY(programme.searchComments(QString()).isEmpty());
+        // A technique's name alone, not in a comment, is not a hit of its own.
+        QCOMPARE(programme.searchComments(QStringLiteral("höchst"), 1).size(), 1);
+    }
+
+    // The excerpt holds the word found, also one with accents (the query's words are keys without
+    // them) far into a long line, and never cuts a character in two.
+    void excerptAroundTheWord()
+    {
+        const QString filler = QStringLiteral("Den rechten Fuß nach vorne setzen und das Schwert ziehen. ").repeated(4);
+        const QString line = filler + QStringLiteral("Dann die Hüfte führen.");
+        const QString excerpt = searchExcerpt(line, searchWords(QStringLiteral("fuhren")));
+        QVERIFY2(excerpt.contains(QStringLiteral("führen")), qPrintable(excerpt));
+
+        // As SearchText matches: across hyphens and spaces, while typing, and without okurigana.
+        const QList<std::pair<QString, QString>> found{{QStringLiteral("Dann Shihô-nage omote."), QStringLiteral("shihon")},
+                                                      {QStringLiteral("Dann Shihô-nage omote."), QStringLiteral("shihonage")},
+                                                      {QStringLiteral("Dann Shiho nage omote."), QStringLiteral("shiho-nage")},
+                                                      {QStringLiteral("正面打ち 切り落し 正面"), QStringLiteral("切り落とし")}};
+        for (const auto &[end, query] : found) {
+            const QString cut = searchExcerpt(filler + end, searchWords(query));
+            const QString shown = end.split(u' ').at(1);
+            QVERIFY2(cut.contains(shown), qPrintable(query + u" → " + cut));
+        }
+
+        // Where SearchText matches, not an earlier place it rules out: parts of a hyphenated word
+        // each from a word's start (not in Kai-hanmi), across a space only to a word's end (not
+        // "mit Tenkan").
+        struct Hit {
+            QString line;
+            QString query;
+            QString shown;
+        };
+        const QList<Hit> hits{{filler + QStringLiteral("Dann Ikkyo und dann irimi weiter."), QStringLiteral("ikkyo-irimi"), QStringLiteral("Ikkyo")},
+                              {QStringLiteral("mit Tenkan ") + filler + QStringLiteral("die Mitte halten"), QStringLiteral("mitte"), QStringLiteral("Mitte")},
+                              {QStringLiteral("Kai-hanmi ") + filler + QStringLiteral("dann ai hanmi"), QStringLiteral("ai-hanmi"), QStringLiteral("ai hanmi")}};
+        for (const Hit &hit : hits) {
+            const QString cut = searchExcerpt(hit.line, searchWords(hit.query));
+            QVERIFY2(cut.contains(hit.shown), qPrintable(hit.query + u" → " + cut));
+        }
+
+        // A character beyond the BMP (two UTF-16 units) right at a cut stays whole.
+        const QString wide = QString(kExcerptLength - 1, u'x') + QString::fromUcs4(U"\U00020B9F") + QStringLiteral(" Ende");
+        const QString cut = searchExcerpt(wide, searchWords(QStringLiteral("xyz")));
+        for (qsizetype i = 0; i < cut.size(); ++i) {
+            QVERIFY2(!cut.at(i).isHighSurrogate() || (i + 1 < cut.size() && cut.at(i + 1).isLowSurrogate()), "a half character");
+        }
+    }
+
     // The search looks in what the rows show: English with English on, German with German; the
     // Japanese names in both.
     void searchInLanguage()
