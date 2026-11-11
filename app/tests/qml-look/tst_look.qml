@@ -439,10 +439,12 @@ TestCase {
         const before = Sync.server
         Sync.enabled = true
         const host = listHost(1280, 800)
-        tryVerify(() => paneOf(host).item && paneOf(host).item.title === "Videos", 5000)
-        mouseClick(findChild(host, "backupButton"))
-        tryVerify(() => paneOf(host).item && paneOf(host).item.title === "Backup and sync", 5000)
-        const field = findChild(paneOf(host).item, "syncServer")
+        // The pane once: the backup page holds a pane of its own by that name.
+        const pane = paneOf(host)
+        tryVerify(() => pane.item && pane.item.title === "Videos", 5000)
+        verify(host.show("BackupPage.qml", {}))
+        tryVerify(() => pane.item && pane.item.title === "Backup and sync", 5000)
+        const field = findChild(pane.item, "syncServer")
         const server = "https://daneben.example.org/"
         window.requestActivate()
         tryVerify(() => window.active)
