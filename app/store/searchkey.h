@@ -342,6 +342,25 @@ private:
 inline constexpr qsizetype kExcerptLength = 140;
 inline constexpr qsizetype kExcerptBefore = 40;
 
+// Where a word of a query (a key: no accents, lower case) stands in a text as written, or -1:
+// the first letter from which the text's key begins with it.
+//   keyIndex("Die Hüfte führen", "fuhren")  →  10
+inline qsizetype keyIndex(const QString &text, const QString &word)
+{
+    const bool hyphens = word.contains(u'-');
+    // Enough of the text for the word: folding can make a letter two (ß) or none (an accent).
+    const qsizetype window = word.size() * 2 + 8;
+    for (qsizetype i = 0; i < text.size(); ++i) {
+        if (!text.at(i).isLetterOrNumber() && !text.at(i).isHighSurrogate()) {
+            continue;
+        }
+        if (searchKey(text.mid(i, window), hyphens).startsWith(word)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 // The part of a comment to show for a query: the first line that holds every word (else one that
 // holds the first word, else the first line), shortened to about kExcerptLength letters around the
 // first word found in it, with "…" where it was cut.
@@ -372,22 +391,31 @@ inline QString searchExcerpt(const QString &text, const QStringList &words)
         return line;
     }
 
-    // Where the first word stands as typed (accents and case as in the text); else the start.
+    // Where the first word found stands in the line as written; else the start.
     qsizetype at = 0;
     for (const QString &w : words) {
-        at = line.indexOf(w, 0, Qt::CaseInsensitive);
+        at = keyIndex(line, w);
         if (at >= 0) {
             break;
         }
     }
+    at = std::max<qsizetype>(0, at);
     qsizetype from = std::max<qsizetype>(0, at - kExcerptBefore);
     if (from > 0) {
         // Start at a word, not in the middle of one.
         const qsizetype space = line.indexOf(u' ', from);
         from = space >= 0 && space < at ? space + 1 : from;
     }
-    QString part = line.mid(from, kExcerptLength);
-    const bool cutEnd = from + kExcerptLength < line.size();
+    // Cuts between characters, not inside one of two UTF-16 units (𠮟, an emoji).
+    if (from > 0 && line.at(from).isLowSurrogate()) {
+        --from;
+    }
+    qsizetype length = kExcerptLength;
+    if (from + length < line.size() && line.at(from + length - 1).isHighSurrogate()) {
+        ++length;
+    }
+    QString part = line.mid(from, length);
+    const bool cutEnd = from + length < line.size();
     if (cutEnd) {
         const qsizetype space = part.lastIndexOf(u' ');
         part = space > kExcerptLength / 2 ? part.left(space) : part;

@@ -937,6 +937,23 @@ private slots:
         QCOMPARE(programme.searchComments(QStringLiteral("höchst"), 1).size(), 1);
     }
 
+    // The excerpt holds the word found, also one with accents (the query's words are keys without
+    // them) far into a long line, and never cuts a character in two.
+    void excerptAroundTheWord()
+    {
+        const QString filler = QStringLiteral("Den rechten Fuß nach vorne setzen und das Schwert ziehen. ").repeated(4);
+        const QString line = filler + QStringLiteral("Dann die Hüfte führen.");
+        const QString excerpt = searchExcerpt(line, searchWords(QStringLiteral("fuhren")));
+        QVERIFY2(excerpt.contains(QStringLiteral("führen")), qPrintable(excerpt));
+
+        // A character beyond the BMP (two UTF-16 units) right at a cut stays whole.
+        const QString wide = QString(kExcerptLength - 1, u'x') + QString::fromUcs4(U"\U00020B9F") + QStringLiteral(" Ende");
+        const QString cut = searchExcerpt(wide, searchWords(QStringLiteral("xyz")));
+        for (qsizetype i = 0; i < cut.size(); ++i) {
+            QVERIFY2(!cut.at(i).isHighSurrogate() || (i + 1 < cut.size() && cut.at(i + 1).isLowSurrogate()), "a half character");
+        }
+    }
+
     // The search looks in what the rows show: English with English on, German with German; the
     // Japanese names in both.
     void searchInLanguage()
