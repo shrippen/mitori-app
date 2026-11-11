@@ -32,7 +32,7 @@ jobs:
     if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
     container: archlinux:latest
-    timeout-minutes: 30
+    timeout-minutes: 45   # the whole run takes about 30 minutes (11.11.2026)
     outputs:
       started: ${{ steps.start.outputs.t }}
     steps:
