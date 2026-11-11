@@ -143,13 +143,11 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
   beobachten.
 
 ### Look / Shinki
-- LookPageTitle ungenutzt (seit dem Shinki-Kopf): entfernen oder einsetzen.
 - Stand im Grad-Chip: Token `chipStandSize` nutzt noch kein Baustein (#52).
 - ExamBoard Grundgröße 10 unter Shinki (Größe aus ShinkiStyle); ShinkiSettingRow/KanteSettingRow resetText
   deutsch fest (#55).
 - Karten-Innenabstand als Look-Rolle (Shinki cardSpace 12) statt largeSpacing (#57).
 - Diagramm-Auslese hell (paper 92 %) gegen Bibel (Tooltip ink 92 %): angleichen (#60).
-- qmllint: „not declared as singleton in qmldir“ für Look.qml, +shinki/Look.qml, ShinkiStyle.qml (#50).
 - ctest-Lauf ui_shinki zusätzlich unter org.kde.desktop + BreezeDark (Kontrast im Dialog, #56).
 
 ### Kante
@@ -160,7 +158,6 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
   (Fusion, Dialog ohne Inhalt); KanteDialogSkin/SheetSkin Scope als Eigenschaft ohne Fenster (#119).
 
 ### Aufräumen
-- ExamEndPage.qml:84 `contentHeight` am discardDialog überflüssig seit Kante 1.71 (#63).
 - daten.py `korrekturen()`: Tabelle mit ID-Kopf ohne Spalte „Status“ eigens melden (#65).
 
 ### Von früher

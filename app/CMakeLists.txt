@@ -149,7 +149,6 @@ qt_add_qml_module(mitori_app
         qml/Look/LookSpinBox.qml
         qml/Look/LookSwitch.qml
         qml/Look/LookSettingRow.qml
-        qml/Look/LookPageTitle.qml
         qml/Look/LookDialog.qml
         qml/Look/LookCard.qml
         qml/Look/LookDateField.qml
