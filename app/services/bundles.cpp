@@ -70,6 +70,8 @@ Bundles::Bundles(QObject *parent)
     watchLanguage();
     watchNetwork();
     loadCache();
+    // The videos moved (Storage): their size and the free space are another disk's.
+    connect(&BundleShelf::notifier(), &BundleShelfNotifier::changed, this, &Bundles::changed);
 }
 
 Bundles::Bundles(const QUrl &manifest, const QString &root, QObject *parent)
@@ -219,12 +221,17 @@ bool Bundles::onWifi()
 // The manifest as last loaded: the list and the codes' entries also offline.
 void Bundles::loadCache()
 {
+    const QDir videos(m_shelf->videoRoot());
     const QString suffix = QStringLiteral(".old");
-    for (const QString &name : QDir(m_shelf->root()).entryList({QLatin1Char('*') + suffix}, QDir::Dirs | QDir::NoDotAndDotDot)) {
+    for (const QString &name : videos.entryList({QLatin1Char('*') + suffix}, QDir::Dirs | QDir::NoDotAndDotDot)) {
         const QString id = name.chopped(suffix.size());
         if (BundleShelf::validId(id)) {
             cleanOld(id);
         }
+    }
+    // A download the app did not finish: nothing loads yet, so its part goes (Storage waits for none).
+    for (const QString &name : videos.entryList({QStringLiteral("*.part")}, QDir::Dirs | QDir::NoDotAndDotDot)) {
+        QDir(videos.filePath(name)).removeRecursively();
     }
     QFile file(QDir(m_shelf->root()).filePath(kManifestFile));
     if (!file.open(QIODevice::ReadOnly)) {
@@ -434,7 +441,7 @@ void Bundles::load(const QString &id, Network network)
     Kind kind = Kind::Exam;
     const QJsonObject b = manifestBundle(id, &kind);
     const BundleShelf::Bundle shelf = m_shelf->bundle(id);
-    if (b.isEmpty() || shelf.key.isEmpty() || m_jobs.contains(id)) {
+    if (b.isEmpty() || shelf.key.isEmpty() || m_jobs.contains(id) || m_shelf->moving()) {
         return;
     }
     // A content format this version does not know: the page asks for an update (State::Unsupported).
@@ -665,7 +672,7 @@ void Bundles::cancel(const QString &id)
 
 bool Bundles::remove(const QString &id)
 {
-    if (!BundleShelf::validId(id)) {
+    if (!BundleShelf::validId(id) || m_shelf->moving()) {
         return false;
     }
     cancel(id);
@@ -677,7 +684,7 @@ bool Bundles::remove(const QString &id)
 qint64 Bundles::freeSpace() const
 {
     // The shelf's folder comes with the first bundle: until then the nearest that exists.
-    QString path = QDir::cleanPath(m_shelf->root());
+    QString path = QDir::cleanPath(m_shelf->videoRoot());
     while (!QFileInfo::exists(path) && QFileInfo(path).absolutePath() != path) {
         path = QFileInfo(path).absolutePath();
     }

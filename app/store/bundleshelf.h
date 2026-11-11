@@ -9,12 +9,13 @@
 
 #include <optional>
 
-// The video bundles on this device: a folder with one subfolder per bundle (the decrypted videos)
-// and shelf.json with what belongs to each. A removed bundle keeps its code and key, so it loads
-// again without the code (also when the code was blocked since).
+// The video bundles on this device: shelf.json with what belongs to each, and one folder per bundle
+// with its decrypted videos. A removed bundle keeps its code and key, so it loads again without the
+// code (also when the code was blocked since). The videos may lie elsewhere (videoRoot: an SD card,
+// a folder the user chose); codes, keys and contents always stay in the app's own data (root).
 //
 //   <root>/shelf.json                 {"aikido-kyu": {"code", "key", "version", "videos": {"aikido/k5":
-//   <root>/aikido-kyu/aikido-k5.v2.mkv                 {"file", "cropped", "cuts": {"<technique>": [von, bis]}}}}}
+//   <videoRoot>/aikido-kyu/aikido-k5.v2.mkv            {"file", "cropped", "cuts": {"<technique>": [von, bis]}}}}}
 //   <root>/manifest.json              the manifest as last loaded (Bundles)
 //   <root>/shirakawa-1.inhalt.json    a Lernpaket's content (its techniques, tools/paket.py): the bundle
 //                                     "has content", that is what makes it a lesson (no extra field in
@@ -51,9 +52,16 @@ public:
         Cuts cuts;                  // from the manifest of the loaded version, so they fit its files
     };
 
-    explicit BundleShelf(const QString &root);
+    // Without a videoRoot the videos lie in root, as before there was a choice.
+    explicit BundleShelf(const QString &root, const QString &videoRoot = {});
 
     QString root() const { return m_root; }
+    // Where the bundles' folders lie. A move (Storage) copies them first, then sets the new place.
+    QString videoRoot() const { return m_videoRoot; }
+    void setVideoRoot(const QString &videoRoot);
+    // While the videos move, nothing may load or remove (Bundles asks).
+    bool moving() const { return m_moving; }
+    void setMoving(bool moving) { m_moving = moving; }
     // The shelf's bundles by id (unlocked ones, loaded or not).
     QHash<QString, Bundle> bundles() const { return m_bundles; }
     Bundle bundle(const QString &id) const { return m_bundles.value(id); }
@@ -72,7 +80,7 @@ public:
     QString folder(const QString &id) const;
     // Whether an id (from the manifest) can name a folder: "aikido-kyu", not "..", "/x" or "a/b".
     static bool validId(const QString &id);
-    // The file of a video from a loaded bundle, or "" (then the video folder of the settings counts).
+    // The file of a video from a loaded bundle, or "".
     QString path(const QString &video) const;
     bool cropped(const QString &video) const;
     // A technique's place in the file path(video) gives, if the bundle names one.
@@ -88,6 +96,9 @@ public:
 
     // The default place: "bundles" in the app's data folder.
     static QString defaultRoot();
+    // The videos' place the user chose (Storage), or "" for root.
+    static QString chosenVideoRoot();
+    static void chooseVideoRoot(const QString &videoRoot);
 
 private:
     void load();
@@ -97,6 +108,8 @@ private:
     void restoreContent(const QString &id, const std::optional<QJsonObject> &content);
 
     QString m_root;
+    QString m_videoRoot;
+    bool m_moving = false;
     QHash<QString, Bundle> m_bundles;
     QHash<QString, QJsonObject> m_content;
     quint64 m_lessonRevision = 0;

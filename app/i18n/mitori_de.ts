@@ -2438,6 +2438,33 @@
     </message>
 </context>
 <context>
+    <name>Storage</name>
+    <message>
+        <source>On this device</source>
+        <translation>Auf diesem Gerät</translation>
+    </message>
+    <message>
+        <source>SD card</source>
+        <translation>SD-Karte</translation>
+    </message>
+    <message>
+        <source>Videos are loading. Move them once the download is done.</source>
+        <translation>Gerade laden Videos. Verschiebe sie, wenn der Download fertig ist.</translation>
+    </message>
+    <message>
+        <source>The videos&apos; place is not there (a card taken out?). Put it back first.</source>
+        <translation>Der Speicherort der Videos fehlt (Karte entnommen?). Setze sie zuerst wieder ein.</translation>
+    </message>
+    <message>
+        <source>Not enough space there: the videos need %1 MB.</source>
+        <translation>Dort ist nicht genug Platz: Die Videos brauchen %1 MB.</translation>
+    </message>
+    <message>
+        <source>The videos could not be moved: %1</source>
+        <translation>Die Videos ließen sich nicht verschieben: %1</translation>
+    </message>
+</context>
+<context>
     <name>Sync</name>
     <message>
         <source>Enter the server, user and app password first.</source>
@@ -2807,6 +2834,18 @@
         <translation>Mitori darf die Kamera nicht benutzen. Den Code eintippen oder es in den Systemeinstellungen erlauben.</translation>
     </message>
     <message>
+        <source>Folder for the videos</source>
+        <translation>Ordner für die Videos</translation>
+    </message>
+    <message>
+        <source>Move</source>
+        <translation>Verschieben</translation>
+    </message>
+    <message>
+        <source>%1 of videos move to %2. Until they are there, nothing loads.</source>
+        <translation>%1 Videos ziehen nach %2. Bis sie dort sind, lädt nichts.</translation>
+    </message>
+    <message>
         <source>The exam videos come with the DVDs of the Shinkiryu association: each DVD has a code that loads its videos onto this device.</source>
         <translation>Die Prüfungsvideos gibt es mit den DVDs des Shinkiryu-Verbands: Jede DVD hat einen Code, der ihre Videos auf dieses Gerät lädt.</translation>
     </message>
@@ -2954,16 +2993,24 @@
         <translation>Entfernen gibt den Platz frei; der Code bleibt gespeichert, die Videos lassen sich ohne ihn neu laden.</translation>
     </message>
     <message>
-        <source>Video folder</source>
-        <translation>Videoordner</translation>
+        <source>%1 free</source>
+        <translation>%1 frei</translation>
     </message>
     <message>
-        <source>Without a bundle: a folder with the videos, folders and names as on the DVDs: Aikido/5. Kyu.mkv, Daitoryu/1. Dan.mkv, Shinki Toho/Shoden.mkv …</source>
-        <translation>Ohne Paket: ein Ordner mit den Videos, Ordner und Namen wie auf den DVDs: Aikido/5. Kyu.mkv, Daitoryu/1. Dan.mkv, Shinki Toho/Shoden.mkv …</translation>
+        <source>in use</source>
+        <translation>in Gebrauch</translation>
     </message>
     <message>
-        <source>The Flatpak can read folders under ~/Videos only.</source>
-        <translation>Das Flatpak liest nur Ordner unter ~/Videos.</translation>
+        <source>Choose folder …</source>
+        <translation>Ordner wählen …</translation>
+    </message>
+    <message>
+        <source>The videos&apos; place is not there (a card taken out?). Put it back to play them.</source>
+        <translation>Der Speicherort der Videos fehlt (Karte entnommen?). Setze sie wieder ein, um sie abzuspielen.</translation>
+    </message>
+    <message>
+        <source>Moving the videos … %1 %</source>
+        <translation>Videos werden verschoben … %1 %</translation>
     </message>
 </context>
 <context>

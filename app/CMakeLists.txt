@@ -228,6 +228,12 @@ qt_add_qml_module(mitori_app
         store/bundlecrypto.cpp
         store/bundleshelf.h
         store/bundleshelf.cpp
+        store/videomove.h
+        store/videomove.cpp
+        platform/storageplaces.h
+        platform/storageplaces.cpp
+        services/storage.h
+        services/storage.cpp
         services/bundles.h
         services/bundles.cpp
         services/library.h
@@ -628,6 +634,14 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     target_link_libraries(tst_bundles PRIVATE Qt6::Core Qt6::Qml Qt6::Network Qt6::Concurrent Qt6::Test monocypher)
     set_target_properties(tst_bundles PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
     add_test(NAME bundles COMMAND tst_bundles)
+
+    qt_add_executable(tst_storage tests/tst_storage.cpp services/storage.cpp services/storage.h
+        store/videomove.cpp store/videomove.h store/bundleshelf.cpp store/bundleshelf.h
+        platform/storageplaces.cpp platform/storageplaces.h)
+    target_include_directories(tst_storage PRIVATE services store platform)
+    target_link_libraries(tst_storage PRIVATE Qt6::Core Qt6::Qml Qt6::Test)
+    set_target_properties(tst_storage PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
+    add_test(NAME storage COMMAND tst_storage)
 
     qt_add_executable(tst_lessons tests/tst_lessons.cpp catalog/lessons.cpp catalog/lessons.h
         services/library.cpp services/library.h services/videos.cpp services/videos.h catalog/catalog.cpp catalog/catalog.h

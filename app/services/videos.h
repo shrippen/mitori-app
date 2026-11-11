@@ -7,18 +7,17 @@
 
 #include "catalog.h"
 
-// The exam videos on this device. For now from a local folder with the layout of
-// "Mitori Videos" (Aikido/5. Kyu.mkv …); video bundles will fill the same folder later.
-// The folder: the setting videos/folder, else MITORI_VIDEOS, else "videos" in the app's data
-// locations (Android: also the app's external files folder, reachable with adb).
+// The videos on this device: those of the loaded bundles (BundleShelf). Only for development and
+// the UI test also a folder with the layout of "Mitori Videos" (Aikido/5. Kyu.mkv …), from
+// MITORI_VIDEOS: one's own files rarely fit the bundles' cut points, so users get no such folder.
 class Videos : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
+    // MITORI_VIDEOS, or "" (tests set another). Bindings that ask available() read it: its signal
+    // also says that a bundle's videos came or went.
     Q_PROPERTY(QString folder READ folder WRITE setFolder NOTIFY folderChanged)
-    // Inside a Flatpak sandbox, which reads only ~/Videos (packaging/flatpak).
-    Q_PROPERTY(bool sandboxed READ sandboxed CONSTANT)
     // The video decoders are tried (prepareDecoders()).
     Q_PROPERTY(bool decodersReady READ decodersReady NOTIFY decodersReadyChanged)
 
@@ -28,7 +27,6 @@ public:
 
     QString folder() const { return m_folder; }
     void setFolder(const QString &folder);
-    bool sandboxed() const { return qEnvironmentVariableIsSet("FLATPAK_ID"); }
     bool decodersReady() const;
 
     // Whether the file of a video key ("aikido/k5") is on the device.

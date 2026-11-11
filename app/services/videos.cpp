@@ -7,11 +7,11 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QSettings>
-#include <QStandardPaths>
 #include <QTimer>
 
 namespace {
-constexpr auto kFolderKey = "videos/folder";
+// The folder setting of 0.3 and before (own DVD files): gone, see videos.h.
+constexpr auto kOldFolderKey = "videos/folder";
 // The start is over by then (0.5 s on a desktop): the backend does not compete with it.
 constexpr int kDecoderPauseMs = 2000;
 }
@@ -24,8 +24,9 @@ Videos::Videos(QObject *parent)
 Videos::Videos(const Catalog &catalog, QObject *parent)
     : QObject(parent)
     , m_catalog(catalog)
-    , m_folder(QSettings().value(QLatin1String(kFolderKey), defaultFolder()).toString())
+    , m_folder(defaultFolder())
 {
+    QSettings().remove(QLatin1String(kOldFolderKey));
     // Videos of a bundle came or went: bindings that ask available() follow (they read folder).
     connect(&BundleShelf::notifier(), &BundleShelfNotifier::changed, this, &Videos::folderChanged);
     connect(&Decoders::shared(), &Decoders::ready, this, &Videos::decodersReadyChanged);
@@ -43,24 +44,7 @@ void Videos::prepareDecoders()
 
 QString Videos::defaultFolder()
 {
-    const QString fromEnv = qEnvironmentVariable("MITORI_VIDEOS");
-    if (!fromEnv.isEmpty()) {
-        return fromEnv;
-    }
-    const QStringList locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
-    for (const QString &location : locations) {
-        const QString candidate = QDir(location).filePath(QStringLiteral("videos"));
-        if (QFileInfo(candidate).isDir()) {
-            return candidate;
-        }
-    }
-#ifdef Q_OS_ANDROID
-    // Android lists the external files folder last: there adb can put the videos.
-    return locations.isEmpty() ? QString() : QDir(locations.last()).filePath(QStringLiteral("videos"));
-#else
-    // The first is the user's own (the others are the system's, say /usr/share).
-    return locations.isEmpty() ? QString() : QDir(locations.first()).filePath(QStringLiteral("videos"));
-#endif
+    return qEnvironmentVariable("MITORI_VIDEOS");
 }
 
 void Videos::setFolder(const QString &folder)
@@ -69,7 +53,6 @@ void Videos::setFolder(const QString &folder)
         return;
     }
     m_folder = folder;
-    QSettings().setValue(QLatin1String(kFolderKey), folder);
     emit folderChanged();
 }
 
@@ -81,7 +64,7 @@ QString Videos::path(const QString &video) const
         return bundled;
     }
     const QString file = m_catalog.videos().value(video).toMap().value(QStringLiteral("datei")).toString();
-    return file.isEmpty() ? QString() : QDir(m_folder).filePath(file);
+    return file.isEmpty() || m_folder.isEmpty() ? QString() : QDir(m_folder).filePath(file);
 }
 
 bool Videos::available(const QString &video) const
