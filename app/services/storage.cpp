@@ -12,6 +12,8 @@
 namespace {
 // The folder the videos get on a card: beside what else the app may keep there one day.
 const QString kCardFolder = QStringLiteral("bundles");
+// The folder the videos get in a folder the user picks: the app's own, nothing else in it is touched.
+const QString kPickedFolder = QStringLiteral("Mitori");
 // Space kept free beyond the videos: a full card fails late and slowly.
 constexpr qint64 kReserve = 200LL * 1024 * 1024;
 
@@ -112,7 +114,7 @@ void Storage::moveTo(const QString &path)
         return;
     }
     if (!reachable()) {
-        fail(tr("The videos' place is not there (a card taken out?). Put it back first."));
+        abandon(path);
         return;
     }
 
@@ -199,9 +201,33 @@ void Storage::fail(const QString &why)
     emit changed();
 }
 
-// A download writes into <id>.part beside the bundles' folders.
+// A download writes into <id>.part beside its bundle's folder (only the shelf's ids: a picked
+// folder may hold others).
 bool Storage::downloading() const
 {
-    const QDir root(m_shelf.videoRoot());
-    return !root.entryList({QStringLiteral("*.part")}, QDir::Dirs | QDir::NoDotAndDotDot).isEmpty();
+    const auto bundles = m_shelf.bundles();
+    for (auto it = bundles.cbegin(); it != bundles.cend(); ++it) {
+        if (QFileInfo(m_shelf.folder(it.key()) + QStringLiteral(".part")).isDir()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The place is gone for good (a lost card): the new one starts empty. The bundles count as
+// removed; codes and keys stay, so they load again there.
+void Storage::abandon(const QString &to)
+{
+    const auto bundles = m_shelf.bundles();
+    for (auto it = bundles.cbegin(); it != bundles.cend(); ++it) {
+        if (it->version > 0) {
+            m_shelf.remove(it.key());
+        }
+    }
+    finish(int(VideoMove::Result::Done), to, {});
+}
+
+QString Storage::folderPath(const QUrl &folder) const
+{
+    return QDir(folder.toLocalFile()).filePath(kPickedFolder);
 }

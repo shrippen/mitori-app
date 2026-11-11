@@ -90,7 +90,7 @@ Kirigami.ScrollablePage {
     // Another place: with videos on the device it asks first (they move, which takes a while).
     property var pendingMove: null
     function askMove(path, name) {
-        if (Bundles.size === 0) {
+        if (Bundles.size === 0 && Storage.reachable) {
             Storage.moveTo(path)
             return
         }
@@ -378,8 +378,9 @@ Kirigami.ScrollablePage {
 
             LookLabel {
                 Layout.fillWidth: true
-                text: page.pendingMove ? qsTr("%1 of videos move to %2. Until they are there, nothing loads.")
-                                         .arg(page.amount(Bundles.size)).arg(page.pendingMove.name) : ""
+                text: !page.pendingMove ? ""
+                    : !Storage.reachable ? qsTr("The videos stay behind at the missing place; at %1 they load again.").arg(page.pendingMove.name)
+                    : qsTr("%1 of videos move to %2. Until they are there, nothing loads.").arg(page.amount(Bundles.size)).arg(page.pendingMove.name)
                 wrapMode: Text.Wrap
             }
             RowLayout {
@@ -404,7 +405,7 @@ Kirigami.ScrollablePage {
             objectName: "storageMissing"
             Layout.fillWidth: true
             visible: !Storage.reachable
-            text: qsTr("The videos' place is not there (a card taken out?). Put it back to play them.")
+            text: qsTr("The videos' place is not there (a card taken out?). Put it back to play them, or choose another place: the videos then load again there.")
             color: Look.negativeTextColor
             wrapMode: Text.Wrap
         }

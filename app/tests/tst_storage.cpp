@@ -3,6 +3,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUrl>
 
 #include "bundleshelf.h"
 #include "storage.h"
@@ -133,7 +134,7 @@ private slots:
     {
         const QString root = shelfWithBundle(u"busy"_s);
         BundleShelf shelf(root);
-        QDir().mkpath(root + u"/other.part"_s);
+        QDir().mkpath(root + u"/aikido-kyu.part"_s);
         Storage storage(shelf);
         storage.moveTo(m_dir.filePath(u"busy-elsewhere"_s));
         QCOMPARE(storage.state(), Storage::State::Failed);
@@ -142,7 +143,8 @@ private slots:
         QVERIFY(QFileInfo::exists(root + u"/aikido-kyu/k5.mkv"_s));
     }
 
-    // A place that is gone (a card taken out) says so.
+    // A place that is gone (a card taken out) says so. Gone for good, another place takes over
+    // without the videos: the bundles count as removed, their codes stay, so they load again.
     void storageMissingPlace()
     {
         const QString root = shelfWithBundle(u"gone"_s);
@@ -150,6 +152,35 @@ private slots:
         Storage storage(shelf);
         QVERIFY(!storage.reachable());
         QVERIFY(shelf.path(u"aikido/k5"_s).isEmpty());
+
+        storage.moveTo(root);
+        QCOMPARE(storage.state(), Storage::State::Idle);
+        QCOMPARE(shelf.videoRoot(), root);
+        QVERIFY(storage.reachable());
+        QCOMPARE(shelf.bundle(m_id).version, 0);
+        QCOMPARE(shelf.bundle(m_id).key, QByteArray("key"));
+    }
+
+    // A folder the user picks gets a folder of the app's own: nothing else in it is touched.
+    void pickedFolderOwnFolder()
+    {
+        BundleShelf shelf(m_dir.filePath(u"picked"_s));
+        Storage storage(shelf);
+        const QString picked = m_dir.filePath(u"Videos"_s);
+        QCOMPARE(storage.folderPath(QUrl::fromLocalFile(picked)), picked + u"/Mitori"_s);
+    }
+
+    // A folder ending in .part that is not a bundle's download does not hold a move up.
+    void storageIgnoresForeignPart()
+    {
+        const QString root = shelfWithBundle(u"foreign"_s);
+        BundleShelf shelf(root);
+        QDir().mkpath(root + u"/Schnitt.part"_s);
+        Storage storage(shelf);
+        QSignalSpy moved(&storage, &Storage::moved);
+        storage.moveTo(m_dir.filePath(u"foreign-elsewhere"_s));
+        QCOMPARE(storage.state(), Storage::State::Moving);
+        QVERIFY(moved.wait(10000));
     }
 };
 

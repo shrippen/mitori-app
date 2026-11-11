@@ -221,17 +221,13 @@ bool Bundles::onWifi()
 // The manifest as last loaded: the list and the codes' entries also offline.
 void Bundles::loadCache()
 {
-    const QDir videos(m_shelf->videoRoot());
-    const QString suffix = QStringLiteral(".old");
-    for (const QString &name : videos.entryList({QLatin1Char('*') + suffix}, QDir::Dirs | QDir::NoDotAndDotDot)) {
-        const QString id = name.chopped(suffix.size());
-        if (BundleShelf::validId(id)) {
-            cleanOld(id);
-        }
-    }
-    // A download the app did not finish: nothing loads yet, so its part goes (Storage waits for none).
-    for (const QString &name : videos.entryList({QStringLiteral("*.part")}, QDir::Dirs | QDir::NoDotAndDotDot)) {
-        QDir(videos.filePath(name)).removeRecursively();
+    // Only the shelf's own bundles: the videos' place may be a folder the user picked, with other
+    // folders whose names merely look like an update's or a download's leftovers.
+    const auto bundles = m_shelf->bundles();
+    for (auto it = bundles.cbegin(); it != bundles.cend(); ++it) {
+        cleanOld(it.key());
+        // A download the app did not finish: nothing loads yet, so its part goes (Storage waits for none).
+        QDir(m_shelf->folder(it.key()) + QStringLiteral(".part")).removeRecursively();
     }
     QFile file(QDir(m_shelf->root()).filePath(kManifestFile));
     if (!file.open(QIODevice::ReadOnly)) {

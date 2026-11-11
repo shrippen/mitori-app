@@ -784,6 +784,21 @@ private slots:
         QCOMPARE(first(exam).value(u"kind"_s).value<Bundles::Kind>(), Bundles::Kind::Exam);
     }
 
+    // The start tidies up only the bundles' own leftovers: a chosen place may hold other folders
+    // with names like a download's part or an update's old folder.
+    void startKeepsForeignFolders()
+    {
+        const QString root = m_dir.filePath(u"foreign-shelf"_s);
+        for (const QString &name : {u"urlaub-2024.old"_s, u"Schnitt.part"_s}) {
+            QVERIFY(QDir().mkpath(root + u"/"_s + name));
+            QFile f(root + u"/"_s + name + u"/clip.mkv"_s);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+        }
+        Bundles b(publish(u"foreign"_s), root);
+        QVERIFY(QFileInfo::exists(root + u"/urlaub-2024.old/clip.mkv"_s));
+        QVERIFY(QFileInfo::exists(root + u"/Schnitt.part/clip.mkv"_s));
+    }
+
     // Loading installs the videos and keeps the content outside the bundle's folder.
     void lessonLoadsContent()
     {

@@ -12,12 +12,13 @@
 class BundleShelf;
 
 // Where the loaded videos lie, for QML (the videos page): the app's own data folder, a card
-// (Android), or a folder the user picks (Linux). A new place takes the videos along (VideoMove,
+// (Android), or a folder "Mitori" in a folder the user picks (Linux). A new place takes the videos along (VideoMove,
 // in a thread of its own); while they move nothing loads. Codes, keys and contents stay in the
 // app's data (BundleShelf).
 //
 //   moveTo(path) ── no download running, room enough ──► Moving … progress … Idle at the new place
 //                                                    └─► Failed (errorString), the old place stays
+//                └─ the old place is gone ──► Idle at the new place, the bundles removed (codes stay)
 class Storage : public QObject
 {
     Q_OBJECT
@@ -55,8 +56,8 @@ public:
 
     // Moves the videos to `path` (one of places, or a folder the user picked).
     Q_INVOKABLE void moveTo(const QString &path);
-    // The path of the folder dialog's answer.
-    Q_INVOKABLE QString folderPath(const QUrl &folder) const { return folder.toLocalFile(); }
+    // Where the videos go in the folder the dialog answered: a folder "Mitori" in it.
+    Q_INVOKABLE QString folderPath(const QUrl &folder) const;
     Q_INVOKABLE void cancel();
 
 signals:
@@ -69,6 +70,7 @@ private:
     void fail(const QString &why);
     void finish(int result, const QString &to, const QString &why);
     void report(qint64 done);
+    void abandon(const QString &to);
     bool downloading() const;
 
     BundleShelf &m_shelf;

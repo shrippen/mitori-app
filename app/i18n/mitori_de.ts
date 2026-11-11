@@ -2452,10 +2452,6 @@
         <translation>Gerade laden Videos. Verschiebe sie, wenn der Download fertig ist.</translation>
     </message>
     <message>
-        <source>The videos&apos; place is not there (a card taken out?). Put it back first.</source>
-        <translation>Der Speicherort der Videos fehlt (Karte entnommen?). Setze sie zuerst wieder ein.</translation>
-    </message>
-    <message>
         <source>Not enough space there: the videos need %1 MB.</source>
         <translation>Dort ist nicht genug Platz: Die Videos brauchen %1 MB.</translation>
     </message>
@@ -2838,6 +2834,10 @@
         <translation>Ordner für die Videos</translation>
     </message>
     <message>
+        <source>The videos stay behind at the missing place; at %1 they load again.</source>
+        <translation>Die Videos bleiben am fehlenden Ort zurück; unter %1 laden sie neu.</translation>
+    </message>
+    <message>
         <source>Move</source>
         <translation>Verschieben</translation>
     </message>
@@ -3005,8 +3005,8 @@
         <translation>Ordner wählen …</translation>
     </message>
     <message>
-        <source>The videos&apos; place is not there (a card taken out?). Put it back to play them.</source>
-        <translation>Der Speicherort der Videos fehlt (Karte entnommen?). Setze sie wieder ein, um sie abzuspielen.</translation>
+        <source>The videos&apos; place is not there (a card taken out?). Put it back to play them, or choose another place: the videos then load again there.</source>
+        <translation>Der Speicherort der Videos fehlt (Karte entnommen?). Setze sie wieder ein, um sie abzuspielen, oder wähle einen anderen Ort: Dort laden die Videos dann neu.</translation>
     </message>
     <message>
         <source>Moving the videos … %1 %</source>
