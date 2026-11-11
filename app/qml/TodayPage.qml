@@ -85,10 +85,12 @@ Kirigami.ScrollablePage {
             text: qsTr("Today I practise")
         }
         LookSegmented {
+            objectName: "todayDiscipline"
             Layout.fillWidth: true
             model: Programme.disciplines.map(d => d.kurzname)
             currentIndex: Programme.disciplines.findIndex(d => d.id === page.discipline)
-            onActivated: index => page.discipline = Programme.disciplines[index].id
+            // The discipline chosen last, as on the programme page: kept for the next time.
+            onActivated: index => Programme.discipline = Programme.disciplines[index].id
             Accessible.name: qsTr("Discipline")
         }
         Flow {

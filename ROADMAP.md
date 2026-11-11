@@ -217,7 +217,7 @@ Offen, größer (Vorschläge im Artefakt „Mitori: Nachtschicht“):
 - Kante: Kopf beim ersten Bild hell. Die globale Kopfleiste trägt jetzt Kantes Farben (`KanteWindowScope`, Kante 1.78); ob das erste Bild beim Kaltstart stimmt, am Gerät prüfen.
 
 Offen, klein:
-- Treffer in Kommentaren und Lehrgangsnotizen, Heute merkt die Sparte, Kurzname auf der Programm-Kachel,
+- Treffer in Kommentaren und Lehrgangsnotizen,
   Kommentar mit Gruppe und Kanji.
 - Barrierefreiheit: Kontrast der leeren Bewertungskästchen 1,36:1, Fortschrittsspur 1,07:1, Fokusring 2,05:1;
   Fokus nach Dialogen und Zurück, Tastaturweg zum Player (29 Tabs).

@@ -195,6 +195,10 @@ TestCase {
             const a = at(items[i - 1]), b = at(items[i])
             verify(b.y > a.y || (b.y === a.y && b.x > a.x), order[i - 1] + " before " + order[i])
         }
+        // The discipline by its short name (clickdummy: "Aikido · 5. Kyu · 7 of 20 exam-ready").
+        const short = Programme.disciplines.find(d => d.id === Programme.discipline).kurzname
+        verify(findChild(start, "programmeTile").hint.startsWith(short + " · "), findChild(start, "programmeTile").hint)
+        verify(findChild(start, "todayTile").hint.endsWith(" · " + short), findChild(start, "todayTile").hint)
         shot("1-start")
     }
 
@@ -1633,6 +1637,22 @@ TestCase {
         }
         compare(page.due.length, 0, "everything practised for today")
         popPage()
+    }
+
+    // The discipline chosen for today is kept: the next time, and the start tiles, follow it.
+    function test_7_today_keeps_discipline() {
+        Programme.discipline = "aikido"
+        const page = push("TodayPage")
+        const choice = findChild(page, "todayDiscipline")
+        const daitoryu = Programme.disciplines.findIndex(d => d.id === "daitoryu")
+        choice.activated(daitoryu)
+        compare(page.discipline, "daitoryu")
+        compare(Programme.discipline, "daitoryu", "the choice is kept")
+        popPage()
+        const again = push("TodayPage")
+        compare(again.discipline, "daitoryu")
+        popPage()
+        Programme.discipline = "aikido"
     }
 
     // The page is drawn before its due rows and interval fields: they come in the next frames
