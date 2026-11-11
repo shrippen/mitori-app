@@ -2837,9 +2837,15 @@ TestCase {
         compare(findChild(menu.contentItem, "subtitleOff").text, qsTr("Off"))
         shot("16h-subtitles-menu", true)
         const german = findChildren(menu.contentItem, "subtitleLanguage")[0]
-        german.triggered()
-        menu.close()
+        mouseClick(german)
+        tryVerify(() => !menu.opened)
         compare(Videos.subtitleLanguage(video), "de")
+        // The chosen entry tapped (it was the default already) keeps its tick; a checkable entry
+        // toggled itself off after triggered and lost it. Tick: 2 On, 1 Off.
+        const ticked = () => findChildren(menu.contentItem, "subtitleLanguage")[0]
+        compare(ticked().tick, 2, "Deutsch ticked")
+        compare(findChildren(menu.contentItem, "subtitleLanguage")[1].tick, 1)
+        compare(findChild(menu.contentItem, "subtitleOff").tick, 1)
         const severalTrack = findChild(several, "subtitleTrack")
         severalTrack.position = 1500
         tryVerify(() => findChild(several, "subtitleText").visible)

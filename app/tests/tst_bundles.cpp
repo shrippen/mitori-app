@@ -1048,6 +1048,7 @@ private slots:
     {
         BundleShelf &shelf = BundleShelf::shared();
         const QString id = u"subs-test"_s;
+        shelf.remove(id);       // a run that failed half-way left it on the shared shelf
         QVERIFY(QDir().mkpath(shelf.folder(id)));
         for (const QString &name : {u"v.mkv"_s, u"v.mkv.en.vtt"_s, u"v.mkv.de.vtt"_s}) {
             QFile file(QDir(shelf.folder(id)).filePath(name));
@@ -1064,6 +1065,16 @@ private slots:
         QCOMPARE(tracks.at(0).toMap().value(u"language"_s).toString(), u"de"_s);
         QCOMPARE(tracks.at(1).toMap().value(u"source"_s).toUrl(),
                  QUrl::fromLocalFile(QDir(shelf.folder(id)).filePath(u"v.mkv.en.vtt"_s)));
+
+        // The default track follows the app's language (Catalog), not the system's: an English app on a
+        // French system shows the English track, not the first one (de).
+        const QLocale system;
+        QLocale::setDefault(QLocale(u"fr_FR"_s));
+        Catalog::setLanguage(Catalog::Language::English);
+        QCOMPARE(videos.subtitleLanguage(u"subs/v"_s), u"en"_s);
+        Catalog::setLanguage(Catalog::Language::German);
+        QCOMPARE(videos.subtitleLanguage(u"subs/v"_s), u"de"_s);
+        QLocale::setDefault(system);
 
         QVERIFY(shelf.remove(id));
         QVERIFY(videos.subtitles(u"subs/v"_s).isEmpty());

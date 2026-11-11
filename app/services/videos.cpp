@@ -116,9 +116,10 @@ QString Videos::subtitleLanguage(const QString &video) const
         return m_subtitleChoice;
     }
 
-    // The app's language: "de" matches "de_CH" as well.
+    // The app's language (Catalog: German or English, whatever the system's), "de" also as "de_CH".
+    const QLocale::Language app = Catalog::language() == Catalog::Language::German ? QLocale::German : QLocale::English;
     const auto same = std::find_if(languages.cbegin(), languages.cend(),
-                                   [](const QString &code) { return QLocale(code).language() == QLocale().language(); });
+                                   [app](const QString &code) { return QLocale(code).language() == app; });
     return same != languages.cend() ? *same : languages.first();
 }
 

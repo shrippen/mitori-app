@@ -394,8 +394,7 @@ Item {
             LookMenuItem {
                 objectName: "subtitleOff"
                 text: qsTr("Off")
-                checkable: true
-                checked: page.subtitleLanguage === ""
+                tick: page.subtitleLanguage === "" ? LookMenuItem.Tick.On : LookMenuItem.Tick.Off
                 onTriggered: Videos.hideSubtitles()
             }
             Repeater {
@@ -406,8 +405,7 @@ Item {
 
                     objectName: "subtitleLanguage"
                     text: Qt.locale(modelData.language).nativeLanguageName
-                    checkable: true
-                    checked: page.subtitleLanguage === modelData.language
+                    tick: page.subtitleLanguage === modelData.language ? LookMenuItem.Tick.On : LookMenuItem.Tick.Off
                     onTriggered: Videos.chooseSubtitles(modelData.language)
                 }
             }
