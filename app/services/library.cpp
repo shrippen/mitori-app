@@ -41,6 +41,11 @@ QVariantList Library::rows(const QString &package) const
     return m_lessons.rows(package);
 }
 
+QVariantList Library::related(const QString &programmeId) const
+{
+    return m_lessons.related(programmeId);
+}
+
 QVariantMap Library::around(const QString &id) const
 {
     const QVariantMap entry = m_lessons.entry(id);

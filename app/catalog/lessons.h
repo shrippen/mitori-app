@@ -44,6 +44,9 @@ public:
     QVariantList rows(const QString &package) const;
     // One technique by id (the row of rows()), or an empty map.
     QVariantMap entry(const QString &id) const;
+    // The entries of the installed packages that name this exam-programme technique in `wie`, by
+    // package title and in the package's order; empty for any other id.
+    QVariantList related(const QString &programmeId) const;
     // A lesson video's picture area {hoehe, y, h, verhaeltnis} as in the catalog's videos; empty if none.
     QVariantMap crop(const QString &video) const;
     // Grows when a lesson came, went or changed (not for every save of the shelf).
@@ -69,4 +72,5 @@ private:
     mutable QList<Package> m_packages;                  // installed, by title
     mutable QHash<QString, QVariantMap> m_entries;
     mutable QHash<QString, QVariantMap> m_crops;
+    mutable QHash<QString, QVariantList> m_related;     // programme id → entries of installed packages
 };

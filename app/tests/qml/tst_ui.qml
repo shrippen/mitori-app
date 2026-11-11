@@ -2542,6 +2542,16 @@ TestCase {
         tryVerify(() => sheet.entry.id === same)
         verify(!findChild(sheet, "sheetLessonText").visible, "an exam entry has no description")
         tryVerify(() => !programmeLink())
+
+        // The way back: the exam entry names the lesson's technique, a tap shows it again.
+        const lessonLink = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!lessonLink())
+        compare(lessonLink().text, "In the learning videos: " + Library.packages[0].title + " · " + row.entry.title + " (" + row.entry.extra + ")")
+        shot("16e-lessons-reverse", true)
+        mouseClick(lessonLink())
+        tryVerify(() => sheet.entry.id === row.entry.id)
+        verify(sheet.playable, "its video is on the device")
+        tryVerify(() => !lessonLink())
         sheet.close()
         tryVerify(() => !sheet.opened)
 
@@ -2589,6 +2599,42 @@ TestCase {
         tryVerify(() => !link())
         sheet.close()
         tryVerify(() => !sheet.opened)
+        popPage()
+    }
+
+    // An exam entry's sheet shows the learning-video techniques that name it, only while the package is
+    // installed; the chip follows install and remove.
+    function test_9p_lessons_reverse() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        const page = push("SearchPage")
+        findChild(page, "searchField").text = Programme.entry(same).title
+        const result = () => findChildren(page, "techniqueResult").find(r => r.found.id === same)
+        tryVerify(() => !!result(), 2000)
+        slidIn()
+        mouseClick(result())
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, same)
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        verify(!link(), "no package, no chip")
+
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryVerify(() => !!link())
+        // The sheet grew under the chip: the tap itself is the main case's; here the signal.
+        link().clicked()
+        tryVerify(() => sheet.entry.id === "lern/" + lessonId + "/irimi")
+        verify(sheet.playable)
+        sheet.close()
+        tryVerify(() => !sheet.opened)
+
+        sheet.entry = Programme.entry(same)
+        sheet.open()
+        tryVerify(() => sheet.opened)
+        tryVerify(() => !!link())
+        verify(uiCatalog.removeLesson(lessonId))
+        tryVerify(() => !link())
+        sheet.close()
         popPage()
     }
 

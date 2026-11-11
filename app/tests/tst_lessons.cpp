@@ -157,6 +157,32 @@ private slots:
         QCOMPARE(lessons.packages().size(), 1);
     }
 
+    // The reverse of `wie`: installed packages' entries by the programme id; follows remove and language.
+    void related()
+    {
+        const QString same = u"aikido/k5/irimi-nage-2"_s;
+        const Library library;
+        QVERIFY(library.related(same).isEmpty());
+
+        install();
+        QVariantList rows = library.related(same);
+        QCOMPARE(rows.size(), 1);
+        QCOMPARE(rows.first().toMap().value(u"id"_s).toString(), u"lern/test-lesson/irimi"_s);
+        QCOMPARE(rows.first().toMap().value(u"disciplineName"_s).toString(), u"Lernpaket"_s);
+        QCOMPARE(rows.first().toMap().value(u"extra"_s).toString(), u"Variante"_s);
+        QVERIFY(library.related(u"aikido/k5/other"_s).isEmpty());
+        QVERIFY(library.related(u"lern/test-lesson/irimi"_s).isEmpty());
+
+        Catalog::setLanguage(Catalog::Language::English);
+        rows = library.related(same);
+        QCOMPARE(rows.first().toMap().value(u"disciplineName"_s).toString(), u"Lesson pack"_s);
+        QCOMPARE(rows.first().toMap().value(u"extra"_s).toString(), u"variant"_s);
+        Catalog::setLanguage(Catalog::Language::German);
+
+        QVERIFY(BundleShelf::shared().remove(m_id));
+        QVERIFY(library.related(same).isEmpty());
+    }
+
     // The content of another package under this name is not used.
     void contentOfAnotherPackage()
     {
