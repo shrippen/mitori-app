@@ -19,6 +19,7 @@ ShinkiLegend 1.0 ShinkiLegend.qml
 ShinkiLevelDots 1.0 ShinkiLevelDots.qml
 ShinkiLevelPicker 1.0 ShinkiLevelPicker.qml
 ShinkiListRow 1.0 ShinkiListRow.qml
+ShinkiOdometer 1.0 ShinkiOdometer.qml
 ShinkiOptionTile 1.0 ShinkiOptionTile.qml
 ShinkiPageTitle 1.0 ShinkiPageTitle.qml
 ShinkiPlayButton 1.0 ShinkiPlayButton.qml
