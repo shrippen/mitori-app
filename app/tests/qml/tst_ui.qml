@@ -15,8 +15,9 @@ TestCase {
     when: windowShown
 
     property var window: null
-    // The video folder while a case uses the stand-ins.
-    property string realFolder: ""
+    // The video folder before a case put stand-ins in its place; null: nothing to put back ("" is
+    // one too: none, without MITORI_VIDEOS).
+    property var realFolder: null
 
     // A run stays in one day: the course calendar is written at its start, ratings count per day.
     // In America/Los_Angeles, midnight during a run (08:00 UTC in winter): test_9m_courses 11 days
@@ -66,9 +67,9 @@ TestCase {
         window.height = 800
         while (window.pageStack.depth > 1)
             popPage()
-        if (realFolder !== "") {
+        if (realFolder !== null) {
             Videos.folder = realFolder
-            realFolder = ""
+            realFolder = null
         }
         // A case that failed with a Lernpaket on the shelf leaves none to the next ones.
         uiCatalog.removeLesson(lessonId)
@@ -1482,8 +1483,8 @@ TestCase {
         verify(!hint.visible)
         popPage()
 
-        const settings = push("VideosPage")
-        const label = allChildren(settings).filter(c => c.text === qsTr("Video folder") && c.font !== undefined)[0]
+        const settings = push("BackupPage")
+        const label = allChildren(settings).filter(c => c.text === qsTr("Folder on the server") && c.font !== undefined)[0]
         compare(label.font.capitalization, Font.AllUppercase)
         popPage()
 
@@ -2568,6 +2569,36 @@ TestCase {
         popPage()
     }
 
+    // Where the videos lie: the app's own folder in use, a folder of one's own to pick (Linux); no
+    // field for a folder of one's own videos any more.
+    function test_9n_videos_storage() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const page = push("VideosPage")
+        compare(findChild(page, "videoFolder"), null)
+        const places = findChildren(page, "storagePlace")
+        verify(places.length >= 1)
+        compare(places[0].text, qsTr("On this device"))
+        verify(places[0].selected)
+        verify(findChild(page, "storageFolder").visible)
+        verify(!findChild(page, "storageMissing").visible)
+        verify(!findChild(page, "storageMoving").visible)
+        verify(!findChild(page, "storageError").visible)
+        // Another place with videos on the device: the page asks under the places, Cancel keeps all.
+        const confirm = findChild(page, "storageConfirm")
+        verify(!confirm.visible)
+        page.pendingMove = { path: uiDataDir + "/card", name: "SD card" }
+        tryVerify(() => confirm.visible)
+        page.flickable.contentY = Math.max(0, page.flickable.contentHeight - page.flickable.height)
+        wait(50)
+        shot("15f-videos-storage-ask")
+        page.pendingMove = null
+        tryVerify(() => !confirm.visible)
+        page.flickable.contentY = Math.max(0, page.flickable.contentHeight - page.flickable.height)
+        wait(50)
+        shot("15e-videos-storage")
+        popPage()
+    }
+
     // Learning videos (Lernpakete): without a package no tile (a code on the videos page brings one);
     // the page, still open when the last package goes, explains them and shows the way to the code.
     readonly property string lessonId: "test-lesson"
@@ -3172,6 +3203,8 @@ TestCase {
         findChild(aikido, "gradePlace").text = "Mainz"
         const add = findChild(aikido, "addGrade")
         slidIn()
+        // The page's columns settle a moment after the slide: a click before that misses the button.
+        tryVerify(() => add.mapToItem(page, 0, 0).x + add.width <= page.width, 3000, "the button inside the page")
         const at = add.mapToItem(page, 0, 0)
         mouseClick(add)
         tryVerify(() => Courses.grades.length === 1, 3000,
@@ -4115,7 +4148,7 @@ TestCase {
 
     // Another video folder for this case; cleanup() brings the real one back.
     function useFolder(folder) {
-        if (realFolder === "") {
+        if (realFolder === null) {
             realFolder = Videos.folder
         }
         Videos.folder = folder
@@ -6713,28 +6746,25 @@ TestCase {
     }
 
     // Fields typed beside the list come through a turn: the page stays in sight, the field keeps
-    // the focus; left, the folder is saved. A code stays in its field, also behind the row.
+    // the focus. A code stays in its field, also behind the row.
     function test_8s_fields_survive_turn() {
-        const folder = Videos.folder
         const host = listHost("SettingsPage.qml", 1280, 800)
         const pane = findChild(host, "pagePane")
         tryVerify(() => pane.item && pane.item.title === "Videos")
         const videos = pane.item
-        findChild(videos, "codeField").text = "ABCDE"
-        const field = findChild(videos, "videoFolder")
+        const field = findChild(videos, "codeField")
         field.forceActiveFocus()
         tryVerify(() => field.activeFocus)
-        field.text = "/nirgends/videos"
+        field.text = "ABCDE"
         turn(800, 1280)
         tryVerify(() => !host.wide)
         wait(200)
         compare(pane.item, videos)
         verify(host.showsPage, "in use: in sight")
         verify(field.activeFocus)
-        compare(field.text, "/nirgends/videos")
+        compare(field.text, "ABCDE")
         window.pageStack.goBack()
         tryVerify(() => !host.showsPage)
-        compare(Videos.folder, "/nirgends/videos", "saved on leaving the field")
         mouseClick(findChild(host, "videosButton"))
         tryVerify(() => host.showsPage)
         compare(pane.item, videos, "the row finds the same page")
@@ -6763,7 +6793,6 @@ TestCase {
         compare(pane.item, backup)
         compare(server.text, "https://halb.example.org/")
         Sync.enabled = false
-        Videos.folder = folder
         popPage()
     }
     function test_8s_courses_only_list_data() {
@@ -7186,11 +7215,6 @@ TestCase {
         verify(!open.visible)
         tryVerify(() => findChild(page, "applyRound").enabled)
         popPage()
-    }
-
-    // Not a system folder (Linux lists /usr/share last, where nobody can put videos).
-    function test_8w_default_video_folder_is_the_users() {
-        verify(!/^\/(usr|etc|opt)\//.test(Videos.defaultFolder()), Videos.defaultFolder())
     }
 
     function test_8w_voice_hint_only_with_the_glossary() {

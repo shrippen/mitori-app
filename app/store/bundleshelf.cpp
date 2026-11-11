@@ -9,23 +9,47 @@
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSettings>
 #include <QStandardPaths>
 
 namespace {
 const QString kShelf = QStringLiteral("shelf.json");
 const QString kContentSuffix = QStringLiteral(".inhalt.json");
+constexpr auto kVideoRootKey = "videos/storage";
 }
 
-BundleShelf::BundleShelf(const QString &root)
+BundleShelf::BundleShelf(const QString &root, const QString &videoRoot)
     : m_root(root)
+    , m_videoRoot(videoRoot.isEmpty() ? root : videoRoot)
 {
     load();
 }
 
 BundleShelf &BundleShelf::shared()
 {
-    static BundleShelf shelf(defaultRoot());
+    static BundleShelf shelf(defaultRoot(), chosenVideoRoot());
     return shelf;
+}
+
+QString BundleShelf::chosenVideoRoot()
+{
+    return QSettings().value(QLatin1String(kVideoRootKey)).toString();
+}
+
+void BundleShelf::chooseVideoRoot(const QString &videoRoot)
+{
+    QSettings settings;
+    if (videoRoot.isEmpty()) {
+        settings.remove(QLatin1String(kVideoRootKey));
+        return;
+    }
+    settings.setValue(QLatin1String(kVideoRootKey), videoRoot);
+}
+
+void BundleShelf::setVideoRoot(const QString &videoRoot)
+{
+    m_videoRoot = videoRoot.isEmpty() ? m_root : videoRoot;
+    emit notifier().changed();
 }
 
 BundleShelfNotifier &BundleShelf::notifier()
@@ -206,7 +230,7 @@ bool BundleShelf::remove(const QString &id)
 QString BundleShelf::folder(const QString &id) const
 {
     Q_ASSERT(validId(id));
-    return QDir(m_root).filePath(id);
+    return QDir(m_videoRoot).filePath(id);
 }
 
 // Lower case letters, digits and hyphens, as tools/bundle.py makes them.

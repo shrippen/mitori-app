@@ -2,14 +2,15 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import Mitori
 
 // Videos (clickdummy "Videos", "Code"): the code of a DVD unlocks its bundle, which then loads
 // onto the device; each bundle loads, updates and goes on its own. A removed bundle keeps its
-// code. Downloads wait for Wi-Fi unless the user says otherwise. At the end a folder with exam
-// videos of one's own.
+// code. Downloads wait for Wi-Fi unless the user says otherwise. At the end where the videos lie
+// (Storage): the app's folder, a card, or a folder of one's own.
 //
 //   CODE OF THE DVD   [7KQ2M-X9HDV-3TAPR-WE6YT] [Unlock] [Scan code]
 //   Aikido · all Kyu   5 videos · 600 MB · version 2       loaded       [Remove]
@@ -85,6 +86,24 @@ Kirigami.ScrollablePage {
         codeField.text = code
         unlockButton.clicked()
     }
+
+    // Another place: with videos on the device it asks first (they move, which takes a while).
+    property var pendingMove: null
+    function askMove(path, name) {
+        if (Bundles.size === 0 && Storage.reachable) {
+            Storage.moveTo(path)
+            return
+        }
+        page.pendingMove = { path: path, name: name }
+    }
+
+    FolderDialog {
+        id: folderDialog
+
+        title: qsTr("Folder for the videos")
+        onAccepted: page.askMove(Storage.folderPath(selectedFolder), Storage.folderPath(selectedFolder))
+    }
+
 
     // The rows' model: a change of the list (progress, state) changes a row in place, so a press
     // on its button meets the same button when it is let go.
@@ -353,25 +372,108 @@ Kirigami.ScrollablePage {
             wrapMode: Text.Wrap
         }
 
-        // A folder with exam videos of one's own, without a bundle.
-        LookFormRow {
-            label: qsTr("Video folder")
-            LookTextField {
-                id: folderField
+        // Where the videos lie: the app's folder, a card (Android) or a folder of one's own (Linux).
+        // Another place takes the loaded videos along.
+        LookSectionLabel {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.largeSpacing
+            text: qsTr("Storage")
+        }
+        Repeater {
+            model: Storage.places
 
-                objectName: "videoFolder"
+            LookListRow {
+                required property var modelData
+
+                objectName: "storagePlace"
                 Layout.fillWidth: true
-                text: Videos.folder
-                onEditingFinished: Videos.folder = text
+                text: modelData.name
+                subtitle: qsTr("%1 free").arg(page.amount(modelData.free))
+                meta: modelData.current ? qsTr("in use") : ""
+                selected: modelData.current
+                enabled: Storage.state !== Storage.State.Moving
+                onClicked: page.askMove(modelData.path, modelData.name)
+            }
+        }
+        LookButton {
+            objectName: "storageFolder"
+            visible: Storage.picksFolder
+            enabled: Storage.state !== Storage.State.Moving
+            text: qsTr("Choose folder …")
+            onClicked: folderDialog.open()
+        }
+        // The question before a move, under the places.
+        ColumnLayout {
+            objectName: "storageConfirm"
+            Layout.fillWidth: true
+            visible: page.pendingMove !== null
+            spacing: Kirigami.Units.smallSpacing
+
+            LookLabel {
+                Layout.fillWidth: true
+                text: !page.pendingMove ? ""
+                    : !Storage.reachable ? qsTr("The videos stay behind at the missing place; at %1 they load again.").arg(page.pendingMove.name)
+                    : qsTr("%1 of videos move to %2. Until they are there, nothing loads.").arg(page.amount(Bundles.size)).arg(page.pendingMove.name)
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                spacing: Kirigami.Units.smallSpacing
+
+                LookButton {
+                    objectName: "storageMoveNow"
+                    role: LookButton.Role.Primary
+                    text: qsTr("Move")
+                    onClicked: {
+                        Storage.moveTo(page.pendingMove.path)
+                        page.pendingMove = null
+                    }
+                }
+                LookButton {
+                    text: qsTr("Cancel")
+                    onClicked: page.pendingMove = null
+                }
             }
         }
         LookLabel {
+            objectName: "storageMissing"
             Layout.fillWidth: true
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 30
+            visible: !Storage.reachable
+            text: qsTr("The videos' place is not there (a card taken out?). Put it back to play them, or choose another place: the videos then load again there.")
+            color: Look.negativeTextColor
             wrapMode: Text.Wrap
-            color: Look.disabledTextColor
-            text: qsTr("Without a bundle: a folder with the videos, folders and names as on the DVDs: Aikido/5. Kyu.mkv, Daitoryu/1. Dan.mkv, Shinki Toho/Shoden.mkv …")
-                  + (Videos.sandboxed ? " " + qsTr("The Flatpak can read folders under ~/Videos only.") : "")
+        }
+        RowLayout {
+            objectName: "storageMoving"
+            Layout.fillWidth: true
+            visible: Storage.state === Storage.State.Moving
+            spacing: Kirigami.Units.largeSpacing
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                LookLabel {
+                    Layout.fillWidth: true
+                    text: qsTr("Moving the videos … %1 %").arg(Math.floor(Storage.progress * 100))
+                    color: Look.mutedTextColor
+                }
+                LookProgressBar {
+                    Layout.fillWidth: true
+                    value: Storage.progress
+                }
+            }
+            LookButton {
+                text: qsTr("Cancel")
+                onClicked: Storage.cancel()
+            }
+        }
+        LookLabel {
+            objectName: "storageError"
+            Layout.fillWidth: true
+            visible: Storage.state === Storage.State.Failed
+            text: Storage.errorString
+            color: Look.negativeTextColor
+            wrapMode: Text.Wrap
         }
     }
 }

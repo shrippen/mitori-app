@@ -415,38 +415,48 @@ TestCase {
     }
 
     // A text still in focus when the style changes is saved: the window takes the focus first.
+    // The sync server's field saves on leaving it.
     function test_settings_field_kept() {
-        const videos = push("VideosPage")
-        const field = findChild(videos, "videoFolder")
-        const before = Videos.folder
-        const folder = uiDataDir + "/some-folder"
+        const before = Sync.server
+        Sync.enabled = true
+        const backup = push("BackupPage")
+        const field = findChild(backup, "syncServer")
+        const server = "https://feld.example.org/"
         window.requestActivate()
         tryVerify(() => window.active)
         field.forceActiveFocus()
         tryVerify(() => field.activeFocus)
-        field.text = folder
+        field.text = server
 
         toStyle(otherStyle)
-        compare(Videos.folder, folder)
-        Videos.folder = before
+        compare(Sync.server, server)
+        Sync.setAccount(before, Sync.user, "", Sync.deviceName)
+        Sync.enabled = false
     }
 
     // The same beside the list.
     function test_field_kept_beside_list() {
+        const before = Sync.server
+        Sync.enabled = true
         const host = listHost(1280, 800)
-        tryVerify(() => paneOf(host).item && paneOf(host).item.title === "Videos", 5000)
-        const field = findChild(paneOf(host).item, "videoFolder")
-        const before = Videos.folder
-        const folder = uiDataDir + "/some-folder-beside"
+        // The pane once, and the page through show(), the row's own way: after a click on the row
+        // the pane was no longer found here (cause not known; tst_ui covers the click).
+        const pane = paneOf(host)
+        tryVerify(() => pane.item && pane.item.title === "Videos", 5000)
+        verify(host.show("BackupPage.qml", {}))
+        tryVerify(() => pane.item && pane.item.title === "Backup and sync", 5000)
+        const field = findChild(pane.item, "syncServer")
+        const server = "https://daneben.example.org/"
         window.requestActivate()
         tryVerify(() => window.active)
         field.forceActiveFocus()
         tryVerify(() => field.activeFocus)
-        field.text = folder
+        field.text = server
 
         toStyle(otherStyle)
-        compare(Videos.folder, folder)
-        Videos.folder = before
+        compare(Sync.server, server)
+        Sync.setAccount(before, Sync.user, "", Sync.deviceName)
+        Sync.enabled = false
     }
 
     function paneOf(host) {
