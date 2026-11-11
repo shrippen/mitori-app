@@ -136,6 +136,7 @@ qt_add_qml_module(mitori_app
         qml/Look/LookToolButton.qml
         qml/Look/LookLevelPicker.qml
         qml/Look/LookProgressBar.qml
+        qml/Look/LookOdometer.qml
         qml/Look/LookLegend.qml
         qml/Look/LookHeading.qml
         qml/Look/LookSectionLabel.qml

@@ -2486,6 +2486,56 @@ TestCase {
         popPage()
     }
 
+    // A download shows its percentage as a counter and a bar under the row; waiting for Wi-Fi shows the
+    // bar indeterminate; other states show neither. The rows are made up: a real download ends too fast.
+    function test_9n_videos_download() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const page = push("VideosPage")
+        tryCompare(Bundles, "manifestState", Bundles.ManifestState.Ready, 5000)
+        tryVerify(() => findChildren(page, "bundleRow").length === 1)
+        const model = findChild(page, "bundleModel")
+        const real = Bundles.bundles[0]
+        const fake = (st, pr) => { model.rows = [Object.assign({}, real, { state: st, progress: pr })] }
+        const row = () => findChildren(page, "bundleRow")[0]
+        const counter = () => findChild(row().parent, "bundleCounter")
+        const bar = () => findChild(row().parent, "bundleBar")
+        const odometer = () => findChild(row().parent, "bundleOdometer")
+
+        slidIn()
+        fake(Bundles.State.Unlocked, 0)
+        tryVerify(() => row().bundleState === Bundles.State.Unlocked)
+        verify(!counter().visible)
+        verify(!bar().visible)
+        verify(findChild(row(), "bundleState").visible)
+
+        fake(Bundles.State.Downloading, 0.42)
+        tryVerify(() => counter().visible)
+        verify(bar().visible)
+        verify(!bar().indeterminate)
+        compare(bar().value, 0.42)
+        compare(odometer().value, 42)
+        // Kante's counter rolls Live (1): Show restarts its staggered roll on each new value, and a
+        // download's 250 ms steps left the later reels behind (review of #137). Shinki rolls at once.
+        if (!uiShinki) {
+            compare(odometer().pace, 1, "KanteOdometer.Pace.Live")
+        }
+        compare(counter().Accessible.name, qsTr("loading %1 %").arg(42))
+        verify(!findChild(row(), "bundleState").visible)
+        shot("15c-videos-downloading")
+
+        fake(Bundles.State.Waiting, 0)
+        tryVerify(() => !counter().visible)
+        verify(bar().visible)
+        verify(bar().indeterminate)
+        compare(findChild(row(), "bundleState").text, qsTr("waits for Wi-Fi"))
+        shot("15d-videos-waiting")
+
+        fake(Bundles.State.Installed, 1)
+        tryVerify(() => !bar().visible)
+        verify(!counter().visible)
+        popPage()
+    }
+
     // The Lernpakete in the list: none before its code (or on the device), then under their own head;
     // one in a format this version cannot read asks for an update, and can still be removed.
     readonly property string unsupportedId: "test-unsupported"

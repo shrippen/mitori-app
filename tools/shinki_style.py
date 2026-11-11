@@ -108,7 +108,8 @@ def generate(tokens):
     lines.append(f"    readonly property int focusWidth: {scaled(tokens['focusWidth'])}")
 
     lines.append("")
-    lines.append("    // Motion (ms) and opacities (section 4).")
+    lines.append("    // Motion (ms) and opacities (section 4). Without platform animations (\"reduce motion\") nothing moves.")
+    lines.append("    readonly property bool animate: Kirigami.Units.longDuration > 0")
     for name, value in tokens["motion"].items():
         lines.append(f"    readonly property int {name}Duration: {value}")
     for name, value in tokens["opacity"].items():

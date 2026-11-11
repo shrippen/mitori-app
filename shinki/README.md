@@ -141,6 +141,7 @@ Zahlen in Tabellen, Zeiten und Zählern stehen in Tabellenziffern.
   - Sie erscheint auf Seiten mit Kopf, nicht im Player, nicht in Blättern.
 - **Bewegung.**
   - Kurz und gerade: 150 ms für Zustände, 200 ms für Blätter, ohne Federn.
+  - Was ohne Ende läuft (die Stand-Leiste, solange sie wartet): gleichmäßig, ein Durchlauf 1200 ms (`sweep`).
   - Die Speicherbestätigung blitzt einmal in 14 % Rot auf und verblasst.
   - Die Systemeinstellung „Bewegung reduzieren“ schaltet die Bewegungen aus.
 
@@ -208,6 +209,11 @@ Clickdummy nicht zeigt (Schalter, Fokus, Tooltip, Toast), legt diese Bibel fest;
   - Der Schieber hat eine Bahn von 4 px in `line`, der Fortschritt ist rot, dazu der Punkt.
   - Der Abspielknopf ist ein roter Kreis.
   - Das gewählte Tempo ist `ink` gefüllt und weiß beschriftet; so liegt es nicht in Konkurrenz zum Rot.
+- **Stand-Leiste und Zähler** (Download eines Pakets)
+  - Die Leiste füllt sich rot auf `line`; solange der Stand offen ist (wartet auf WLAN), läuft ein rotes Stück
+    von einem Viertel der Breite durch. Ohne Bewegung steht es in der Mitte.
+  - Der Zähler zeigt die Prozent in PT Sans Narrow fett; jede Ziffer rollt in 150 ms gerade auf ihren Wert, alle
+    zugleich.
 - **Diagramme**
   - Kalender und gestapelte Balken in den Stufenfarben; eine einzelne Reihe (Durchschnitt im Prüfungsmodus) in
     `inkMuted`, damit ein Balken nie als Stufe gelesen wird (Owner, 03.11.2026). Achsen und Legende in 11 px `inkMuted`.
