@@ -92,8 +92,11 @@ void Bundles::watchLanguage()
     }
 }
 
-// A crash during an update's swap may leave `<id>.old`: it is the loaded version if `<id>` is
-// gone, else a leftover.
+// A crash during an update's swap or its undoing may leave `<id>.old`. The shelf decides which
+// folder holds the loaded version: the files it names.
+//   in <id>        .old is a leftover and goes
+//   only in .old   <id> is an unnamed new version (or half of one): .old comes back
+//   in neither     nothing is touched (a removed bundle's .old goes)
 void Bundles::cleanOld(const QString &id)
 {
     const QString folder = m_shelf->folder(id);
@@ -101,11 +104,28 @@ void Bundles::cleanOld(const QString &id)
     if (!QFileInfo::exists(oldDir)) {
         return;
     }
-    if (QFileInfo::exists(folder)) {
+
+    const BundleShelf::Bundle loaded = m_shelf->bundle(id);
+    const auto holds = [&loaded](const QString &dir) {
+        if (loaded.version == 0 || loaded.files.isEmpty()) {
+            return false;
+        }
+        for (const QString &file : loaded.files) {
+            if (!QFileInfo::exists(QDir(dir).filePath(file))) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (loaded.version == 0 || holds(folder)) {
         QDir(oldDir).removeRecursively();
         return;
     }
-    QDir().rename(oldDir, folder);
+    if (holds(oldDir)) {
+        QDir(folder).removeRecursively();
+        QDir().rename(oldDir, folder);
+    }
 }
 
 // Wi-Fi or a cable may come after a bundle began to wait for it (State::Waiting).

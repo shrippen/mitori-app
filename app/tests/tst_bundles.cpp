@@ -228,6 +228,13 @@ private slots:
         QVERIFY(m_dir.isValid());
     }
 
+    // What a case set and could not reset after a failure: the next case starts clean.
+    void cleanup()
+    {
+        qunsetenv("MITORI_WIFI");
+        Catalog::setLanguage(Catalog::Language::German);
+    }
+
     // The storage bar: free space also before the shelf's folder and its parents exist.
     void freeSpaceWithoutFolder()
     {
@@ -598,6 +605,33 @@ private slots:
         Bundles again(manifest, root);
         QCOMPARE(BundleShelf(root).path(u"test/v"_s), before);
         QVERIFY(!QFileInfo::exists(folder + u".old"_s));
+    }
+
+    // A crash after the new version moved in but before the shelf named it: the shelf's version
+    // (in <id>.old) is the one that counts and comes back; the unnamed new one goes.
+    void crashAfterSwapKeepsTheShelfsVersion()
+    {
+        const QString root = m_dir.filePath(u"crash-shelf"_s);
+        const QUrl manifest = publish(u"crash"_s);
+        {
+            Bundles b(manifest, root);
+            install(b);
+        }
+        const QString before = BundleShelf(root).path(u"test/v"_s);
+        QVERIFY(QFile::exists(before));
+
+        const QString folder = BundleShelf(root).folder(u"test-bundle"_s);
+        QVERIFY(QDir().rename(folder, folder + u".old"_s));
+        QVERIFY(QDir().mkpath(folder));
+        QFile newer(folder + u"/test-v.v2.mkv"_s);
+        QVERIFY(newer.open(QIODevice::WriteOnly));
+        newer.close();
+
+        Bundles again(manifest, root);
+        QCOMPARE(BundleShelf(root).path(u"test/v"_s), before);
+        QVERIFY(QFile::exists(before));
+        QVERIFY(!QFileInfo::exists(folder + u".old"_s));
+        QVERIFY(!QFileInfo::exists(folder + u"/test-v.v2.mkv"_s));
     }
 
     // A server's error page is no video: "gone" counts, not "damaged", and the manifest is read again.

@@ -151,12 +151,18 @@ bool BundleShelf::installed(const QString &id, int version, const QHash<QString,
     if (m_content.contains(id)) {
         ++m_lessonRevision;
     }
+    // Not saved, not installed: the shelf keeps naming the loaded version (Bundles puts it back).
+    const Bundle before = m_bundles.value(id);
     Bundle &b = m_bundles[id];
     b.version = version;
     b.files = files;
     b.cropped = cropped;
     b.cuts = cuts;
-    return save();
+    if (save()) {
+        return true;
+    }
+    m_bundles[id] = before;
+    return false;
 }
 
 bool BundleShelf::remove(const QString &id)
