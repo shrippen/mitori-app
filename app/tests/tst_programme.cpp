@@ -946,6 +946,17 @@ private slots:
         const QString excerpt = searchExcerpt(line, searchWords(QStringLiteral("fuhren")));
         QVERIFY2(excerpt.contains(QStringLiteral("führen")), qPrintable(excerpt));
 
+        // As SearchText matches: across hyphens and spaces, while typing, and without okurigana.
+        const QList<std::pair<QString, QString>> found{{QStringLiteral("Dann Shihô-nage omote."), QStringLiteral("shihon")},
+                                                      {QStringLiteral("Dann Shihô-nage omote."), QStringLiteral("shihonage")},
+                                                      {QStringLiteral("Dann Shiho nage omote."), QStringLiteral("shiho-nage")},
+                                                      {QStringLiteral("正面打ち 切り落し 残心"), QStringLiteral("切り落とし")}};
+        for (const auto &[end, query] : found) {
+            const QString cut = searchExcerpt(filler + end, searchWords(query));
+            const QString shown = end.split(u' ').at(1);
+            QVERIFY2(cut.contains(shown), qPrintable(query + u" → " + cut));
+        }
+
         // A character beyond the BMP (two UTF-16 units) right at a cut stays whole.
         const QString wide = QString(kExcerptLength - 1, u'x') + QString::fromUcs4(U"\U00020B9F") + QStringLiteral(" Ende");
         const QString cut = searchExcerpt(wide, searchWords(QStringLiteral("xyz")));

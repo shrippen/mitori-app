@@ -343,18 +343,29 @@ inline constexpr qsizetype kExcerptLength = 140;
 inline constexpr qsizetype kExcerptBefore = 40;
 
 // Where a word of a query (a key: no accents, lower case) stands in a text as written, or -1:
-// the first letter from which the text's key begins with it.
+// the first letter from which the text's key begins with it, compared as SearchText matches:
+// without spaces and hyphens (shihon in Shihô-nage), with kanji also without okurigana.
 //   keyIndex("Die Hüfte führen", "fuhren")  →  10
 inline qsizetype keyIndex(const QString &text, const QString &word)
 {
-    const bool hyphens = word.contains(u'-');
-    // Enough of the text for the word: folding can make a letter two (ß) or none (an accent).
-    const qsizetype window = word.size() * 2 + 8;
+    const bool kanji = hasKanji(word);
+    const auto bare = [kanji](QString key) {
+        key.remove(u' ');
+        key.remove(u'-');
+        return kanji ? withoutHiragana(key) : key;
+    };
+    const QString target = bare(word);
+    if (target.isEmpty()) {
+        return -1;
+    }
+    // Enough of the text for the word: folding can make a letter two (ß) or none (an accent,
+    // a hyphen, okurigana).
+    const qsizetype window = word.size() * 3 + 16;
     for (qsizetype i = 0; i < text.size(); ++i) {
         if (!text.at(i).isLetterOrNumber() && !text.at(i).isHighSurrogate()) {
             continue;
         }
-        if (searchKey(text.mid(i, window), hyphens).startsWith(word)) {
+        if (bare(searchKey(text.mid(i, window), true)).startsWith(target)) {
             return i;
         }
     }
