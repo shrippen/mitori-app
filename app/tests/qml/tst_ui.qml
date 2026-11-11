@@ -608,6 +608,57 @@ TestCase {
         popPage()
     }
 
+    // Keys reach the page only in an active window with the focus on the page.
+    function activate(page) {
+        window.requestActivate()
+        tryVerify(() => window.active)
+        page.forceActiveFocus()
+    }
+
+    // Escape goes back one page, like the Back key, from any page above the start page.
+    function test_2i_escape_back() {
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        compare(window.pageStack.depth, 2)
+        slidIn()
+        activate(page)
+        keyClick(Qt.Key_Escape)
+        tryCompare(window.pageStack, "depth", 1, 5000, "Escape leaves the programme")
+
+        const entry = Programme.entry("shinkitoho/odachi/1")
+        push("CommentPage", { entry: entry })
+        compare(window.pageStack.depth, 2)
+        slidIn()
+        activate(window.pageStack.currentItem)
+        keyClick(Qt.Key_Escape)
+        tryCompare(window.pageStack, "depth", 1, 5000, "Escape leaves the comment")
+
+        // On the start page there is nothing to leave.
+        keyClick(Qt.Key_Escape)
+        wait(200)
+        compare(window.pageStack.depth, 1)
+    }
+
+    // An open sheet takes the Escape; the page stays until the next one.
+    function test_2i_escape_sheet_first() {
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        slidIn()
+        activate(page)
+        page.open(page.rows.find(r => r.kind === "entry" && r.attack))
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        keyClick(Qt.Key_Escape)
+        tryVerify(() => !sheet.opened, 5000, "Escape closes the sheet")
+        wait(300)
+        compare(window.pageStack.depth, 2)
+        activate(page)
+        keyClick(Qt.Key_Escape)
+        tryCompare(window.pageStack, "depth", 1, 5000, "the next Escape leaves the page")
+    }
+
     function test_3_comment() {
         const entry = Programme.entry("shinkitoho/odachi/1")
         verify(entry.comment)

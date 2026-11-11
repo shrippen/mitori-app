@@ -230,7 +230,7 @@ Offen, klein:
 Abschlussrunde auf `main` (06.11.2026, ohne Videos): behoben sind Kopf des Trainings unter Kante, Titel und ✕ des Blatts. Offen:
 - Kopf der Startseite unter Kante ohne System-Farbschema beim Kaltstart hell (`globalToolBar.colorSet` und späteres Erzeugen des Kopfs wirken nicht).
 - Englisch: Bedeutungen und Glossar deutsch: erledigt (Programmdaten auf Englisch).
-- Esc verlässt nur den Player, nicht Kommentar oder Programm. Quer am Telefon bleiben im Programm rund 140 px für die Liste.
+- Quer am Telefon bleiben im Programm rund 140 px für die Liste.
 - „Abbrechen“ im Dialog „Runde verwerfen?“ ist doppeldeutig (Knopf aus dem Standard).
 - `ScrollBar.qml:51` meldet Warnungen im Journal (59×); „not placed in the graphics scene“ je Seite.
 ## Kante-Bedarf
