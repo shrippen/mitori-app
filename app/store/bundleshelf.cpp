@@ -136,6 +136,10 @@ bool BundleShelf::installed(const QString &id, int version, const QHash<QString,
     }
 
     // Before shelf.json says "installed": a lesson without its content would show no techniques.
+    // Not saved, not installed: the shelf keeps naming the loaded version and its content
+    // (Bundles puts its files back).
+    const Bundle before = m_bundles.value(id);
+    const std::optional<QJsonObject> contentBefore = m_content.contains(id) ? std::optional(m_content.value(id)) : std::nullopt;
     if (!content.isEmpty()) {
         QDir().mkpath(m_root);
         QSaveFile out(contentPath(id));
@@ -156,7 +160,30 @@ bool BundleShelf::installed(const QString &id, int version, const QHash<QString,
     b.files = files;
     b.cropped = cropped;
     b.cuts = cuts;
-    return save();
+    if (save()) {
+        return true;
+    }
+    m_bundles[id] = before;
+    if (!content.isEmpty()) {
+        restoreContent(id, contentBefore);
+    }
+    return false;
+}
+
+// A lesson's content as it was before a failed install: written back, or gone if there was none.
+void BundleShelf::restoreContent(const QString &id, const std::optional<QJsonObject> &content)
+{
+    if (!content) {
+        QFile::remove(contentPath(id));
+        m_content.remove(id);
+        return;
+    }
+    QSaveFile out(contentPath(id));
+    if (out.open(QIODevice::WriteOnly)) {
+        out.write(QJsonDocument(*content).toJson(QJsonDocument::Compact));
+        out.commit();
+    }
+    m_content.insert(id, *content);
 }
 
 bool BundleShelf::remove(const QString &id)

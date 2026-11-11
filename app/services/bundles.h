@@ -14,6 +14,7 @@
 
 #include "bundlecrypto.h"
 #include "bundleshelf.h"
+#include "catalog.h"
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -71,6 +72,8 @@ public:
     Bundles(const QUrl &manifest, const QString &root, QObject *parent = nullptr);
     ~Bundles() override;
 
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
     QVariantList bundles() const;
     ManifestState manifestState() const { return m_manifestState; }
     bool unlocking() const { return m_unlocking; }
@@ -104,6 +107,10 @@ signals:
     // A bundle's videos are on the device (Videos re-reads its files).
     void installed(const QString &id);
 
+private slots:
+    // The network changed: what waits for Wi-Fi loads if it is one now.
+    void networkChanged();
+
 private:
     struct Job {
         QString id;
@@ -123,6 +130,9 @@ private:
         QElapsedTimer shown;        // since the last progress report
     };
 
+    void watchLanguage();
+    void watchNetwork();
+    void cleanOld(const QString &id);
     void loadCache();
     void received(QNetworkReply *reply);
     // The manifest's entry of a bundle or Lernpaket (`kind` tells which list); empty for an unknown id.
@@ -139,6 +149,7 @@ private:
     QJsonObject m_manifest;
     QDateTime m_loaded;
     ManifestState m_manifestState = ManifestState::Empty;
+    Catalog::Language m_language;               // the titles' language, as last shown
     QHash<QString, std::shared_ptr<Job>> m_jobs;
     QHash<QString, State> m_failed;     // Failed or Waiting, until the next load
     bool m_unlocking = false;

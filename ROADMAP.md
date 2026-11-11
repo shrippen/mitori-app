@@ -170,9 +170,7 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
   auf 0..1 begrenzen; Linux: Solid-Aufrufe asynchron, `brightnessMax` einmal je Wisch; beim Verlassen nicht
   zurücksetzen, wenn die Helligkeit inzwischen mit den Tasten geändert wurde.
 
-- **Video-Bundles** (Review #33): ein Update tauscht die Ordner über `.old` statt erst zu löschen; „wartet auf
-  WLAN“ startet beim Wechsel ins WLAN von selbst (oder anderer Text); HTTP-Status vor dem Entschlüsseln prüfen
-  (sonst „beschädigt“ statt „nicht gefunden“); `tools/bundle.py hochladen` als Stream.
+- **Video-Bundles** (Review #33): `tools/bundle.py hochladen` als Stream (anderes Repo).
 
 ## QA gegen den Clickdummy (02.11.2026)
 

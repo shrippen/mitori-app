@@ -228,6 +228,13 @@ private slots:
         QVERIFY(m_dir.isValid());
     }
 
+    // What a case set and could not reset after a failure: the next case starts clean.
+    void cleanup()
+    {
+        qunsetenv("MITORI_WIFI");
+        Catalog::setLanguage(Catalog::Language::German);
+    }
+
     // The storage bar: free space also before the shelf's folder and its parents exist.
     void freeSpaceWithoutFolder()
     {
@@ -557,6 +564,78 @@ private slots:
         QVERIFY(!QFile::exists(before));
     }
 
+    // An update that cannot take its place (the new folder is gone before the swap) leaves the old
+    // version installed; a `.old` left by a crash is cleaned at the next load.
+    void failedSwapKeepsTheOld()
+    {
+        const QString root = m_dir.filePath(u"swap-shelf"_s);
+        const QUrl manifest = publish(u"swap"_s);
+        Bundles b(manifest, root);
+        install(b);
+        const QString before = BundleShelf(root).path(u"test/v"_s);
+        QVERIFY(QFile::exists(before));
+        editManifest(manifest, [](QJsonObject &o) {
+            QJsonArray list = o.value(u"bundles"_s).toArray();
+            QJsonObject bundle = list.first().toObject();
+            bundle.insert(u"version"_s, 2);
+            list[0] = bundle;
+            o.insert(u"bundles"_s, list);
+        });
+        waitReady(b);
+        b.reload();
+        QTRY_COMPARE_WITH_TIMEOUT(state(b), Bundles::State::Update, 5000);
+
+        // A crash's leftover: no part of the new version, and gone after the next load.
+        const QString folder = BundleShelf(root).folder(u"test-bundle"_s);
+        QVERIFY(QDir().mkpath(folder + u".old"_s));
+        QFile(folder + u".old/stale"_s).open(QIODevice::WriteOnly);
+        b.load(u"test-bundle"_s, Bundles::Network::Any);
+        QVERIFY(!QFileInfo::exists(folder + u".old"_s));
+        // The download runs on: the new folder vanishes before it is complete.
+        QVERIFY(QDir(folder + u".part"_s).removeRecursively());
+        QTRY_COMPARE_WITH_TIMEOUT(state(b), Bundles::State::Failed, 10000);
+        QVERIFY(!b.errorString().isEmpty());
+        QVERIFY(QFile::exists(before));
+        QCOMPARE(BundleShelf(root).path(u"test/v"_s), before);
+        QCOMPARE(BundleShelf(root).bundle(u"test-bundle"_s).version, 1);
+        QVERIFY(!QFileInfo::exists(folder + u".old"_s));
+
+        // A crash between the two renames: the old version is all there is, and comes back at the start.
+        QVERIFY(QDir().rename(folder, folder + u".old"_s));
+        Bundles again(manifest, root);
+        QCOMPARE(BundleShelf(root).path(u"test/v"_s), before);
+        QVERIFY(!QFileInfo::exists(folder + u".old"_s));
+    }
+
+    // A crash after the new version moved in but before the shelf named it: the shelf's version
+    // (in <id>.old) is the one that counts and comes back; the unnamed new one goes.
+    void crashAfterSwapKeepsTheShelfsVersion()
+    {
+        const QString root = m_dir.filePath(u"crash-shelf"_s);
+        const QUrl manifest = publish(u"crash"_s);
+        {
+            Bundles b(manifest, root);
+            install(b);
+        }
+        const QString before = BundleShelf(root).path(u"test/v"_s);
+        QVERIFY(QFile::exists(before));
+
+        const QString folder = BundleShelf(root).folder(u"test-bundle"_s);
+        QVERIFY(QDir().rename(folder, folder + u".old"_s));
+        QVERIFY(QDir().mkpath(folder));
+        // The name a loaded file gets on the device carries its version (plainName): test.mvb → test.v2.mkv.
+        QCOMPARE(QFileInfo(before).fileName(), u"test.v1.mkv"_s);
+        QFile newer(folder + u"/test.v2.mkv"_s);
+        QVERIFY(newer.open(QIODevice::WriteOnly));
+        newer.close();
+
+        Bundles again(manifest, root);
+        QCOMPARE(BundleShelf(root).path(u"test/v"_s), before);
+        QVERIFY(QFile::exists(before));
+        QVERIFY(!QFileInfo::exists(folder + u".old"_s));
+        QVERIFY(!QFileInfo::exists(folder + u"/test.v2.mkv"_s));
+    }
+
     // A server's error page is no video: "gone" counts, not "damaged", and the manifest is read again.
     void errorPageIsNoDamagedVideo()
     {
@@ -772,6 +851,53 @@ private slots:
         QCOMPARE(b.updates(), 0);
         QVERIFY(!QFileInfo::exists(BundleShelf(root).folder(m_lesson) + u".part"_s));
         QCOMPARE(BundleShelf(root).bundle(m_lesson).version, 0);
+    }
+
+    // The titles follow the app's language: a LanguageChange to another data language is a change.
+    void titlesFollowLanguage()
+    {
+        Bundles b(publishLesson(u"language"_s), m_dir.filePath(u"language-shelf"_s));
+        waitReady(b);
+        QSignalSpy changed(&b, &Bundles::changed);
+        const auto languageChange = [] {
+            QEvent event(QEvent::LanguageChange);
+            QCoreApplication::sendEvent(QCoreApplication::instance(), &event);
+        };
+
+        languageChange();
+        QCOMPARE(changed.count(), 0);       // the data's language is the same
+        Catalog::setLanguage(Catalog::Language::English);
+        languageChange();
+        languageChange();
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(first(b).value(u"title"_s).toString(), u"Lesson package"_s);
+        Catalog::setLanguage(Catalog::Language::German);
+        languageChange();
+        QCOMPARE(changed.count(), 2);
+        QCOMPARE(first(b).value(u"title"_s).toString(), u"Lernpaket"_s);
+    }
+
+    // Waiting for Wi-Fi ends by itself: when the network turns to one that fits, the bundle loads.
+    void waitingStartsOnWifi()
+    {
+        qputenv("MITORI_WIFI", "0");
+        Bundles b(publish(u"waiting"_s), m_dir.filePath(u"waiting-shelf"_s));
+        waitReady(b);
+        QSignalSpy unlocked(&b, &Bundles::unlocked);
+        b.unlock(m_code);
+        QVERIFY(unlocked.wait(10000));
+        QSignalSpy installed(&b, &Bundles::installed);
+        b.load(u"test-bundle"_s);
+        QCOMPARE(state(b), Bundles::State::Waiting);
+
+        QVERIFY(QMetaObject::invokeMethod(&b, "networkChanged"));      // still no Wi-Fi
+        QCOMPARE(state(b), Bundles::State::Waiting);
+        qputenv("MITORI_WIFI", "1");
+        QVERIFY(QMetaObject::invokeMethod(&b, "networkChanged"));
+        QCOMPARE(state(b), Bundles::State::Downloading);
+        QVERIFY(installed.wait(10000));
+        QCOMPARE(state(b), Bundles::State::Installed);
+        qunsetenv("MITORI_WIFI");
     }
 
     // File names from the manifest may not leave the bundle's folder.
