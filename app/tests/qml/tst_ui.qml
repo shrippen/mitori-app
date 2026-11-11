@@ -4357,7 +4357,9 @@ TestCase {
     // The tablet sizes: discipline and grades with the rows, the player's parts as in the
     // clickdummy, all of it inside the pane without scrolling.
     function test_2v_c_tablet_layout_data() {
-        return [ { tag: "1280x800", width: 1280, height: 800 }, { tag: "1024x768", width: 1024, height: 768 } ]
+        // 1920×1080: under Shinki the controls once scrolled 7 px there (Review #64).
+        return [ { tag: "1920x1080", width: 1920, height: 1080 }, { tag: "1280x800", width: 1280, height: 800 },
+                 { tag: "1024x768", width: 1024, height: 768 } ]
     }
     function test_2v_c_tablet_layout(data) {
         const page = tabletProgramme()
