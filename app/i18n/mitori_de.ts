@@ -1087,6 +1087,10 @@
         <translation>Verwerfen</translation>
     </message>
     <message>
+        <source>Keep the round</source>
+        <translation>Runde behalten</translation>
+    </message>
+    <message>
         <source>Your ratings of this round are not kept.</source>
         <translation>Deine Einschätzungen dieser Runde werden nicht übernommen.</translation>
     </message>
@@ -1201,6 +1205,10 @@
     <message>
         <source>Discard</source>
         <translation>Verwerfen</translation>
+    </message>
+    <message>
+        <source>Keep the round</source>
+        <translation>Runde behalten</translation>
     </message>
     <message>
         <source>You are at point %1 of %2. Nothing has been rated yet, the round is simply dropped.</source>

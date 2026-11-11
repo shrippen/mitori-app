@@ -2,7 +2,7 @@ import QtQuick
 import Kante
 
 // A dialog: `span` Fit, Small, Medium, Large (the width by step), `destructive`, `acceptText` (the
-// main button's word), standardButtons as QQC2.Dialog. Kante: KanteDialog. Under Shinki
+// main button's word), `rejectText` (Cancel's, where Cancel is ambiguous), standardButtons as QQC2.Dialog. Kante: KanteDialog. Under Shinki
 // +shinki/LookDialog.qml (ShinkiDialog).
 KanteDialog {
     enum Span {

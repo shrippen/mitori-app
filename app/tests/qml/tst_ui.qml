@@ -7113,6 +7113,7 @@ TestCase {
         tryVerify(() => dialog.opened)
         compare(window.pageStack.currentItem, page)
         compare(dialog.acceptText, qsTr("Discard"), "Cancel in a dialog about cancelling says nothing")
+        compare(dialog.standardButton(QQC2.Dialog.Cancel).text, qsTr("Keep the round"), "its way out says where it goes")
         dialog.reject()
         tryVerify(() => !dialog.visible)
         window.back()
