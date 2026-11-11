@@ -14,7 +14,7 @@ application-menu dialog-close edit-clear go-up go-down open-menu-symbolic overfl
 overflow-menu-left overflow-menu-right search arrow-left arrow-right window-close window-close-symbolic dialog-cancel
 view-calendar internet-services view-refresh camera-photo audio-input-microphone insert-image media-record
 media-playback-stop document-export document-share document-open dialog-warning document-edit view-fullscreen view-restore
-audio-volume-high audio-volume-muted brightness-high view-barcode-qr"
+audio-volume-high audio-volume-muted brightness-high view-barcode-qr media-view-subtitles-symbolic"
 
 SRC="${BREEZE:-/usr/share/icons/breeze}"
 OUT=app/icons/breeze-mitori

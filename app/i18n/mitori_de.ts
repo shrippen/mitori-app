@@ -1791,6 +1791,14 @@
         <translation>Vollbild beenden</translation>
     </message>
     <message>
+        <source>Subtitles</source>
+        <translation>Untertitel</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
         <source>Full screen</source>
         <translation>Vollbild</translation>
     </message>

@@ -53,29 +53,15 @@ public:
 
     // A Lernpaket on the device, as Bundles leaves it (tests/data/bundle/inhalt.json): its first video's
     // file (empty: pages take it for a video, nothing plays) and its content on the shelf. Its first
-    // technique is the programme's `same` (a real id of the catalog).
+    // technique is the programme's `same` (a real id of the catalog). The first video has the test
+    // subtitle track (English); installLessonTracks() gives it a German one too.
     Q_INVOKABLE bool installLesson(const QString &id, const QString &same)
     {
-        BundleShelf &shelf = BundleShelf::shared();
-        QDir().mkpath(shelf.folder(id));
-        QFile video(QDir(shelf.folder(id)).filePath(QStringLiteral("v.mkv")));
-        QFile content(QStringLiteral(TEST_BUNDLE_DIR "/inhalt.json"));
-        if (!video.open(QIODevice::WriteOnly) || !content.open(QIODevice::ReadOnly)) {
-            return false;
-        }
-        QJsonObject json = QJsonDocument::fromJson(content.readAll()).object();
-        json.insert(QStringLiteral("id"), id);
-        QJsonArray sections = json.value(QStringLiteral("abschnitte")).toArray();
-        QJsonObject first = sections.at(0).toObject();
-        QJsonArray techniques = first.value(QStringLiteral("techniken")).toArray();
-        QJsonObject technique = techniques.at(0).toObject();
-        technique.insert(QStringLiteral("wie"), QJsonArray{same});
-        techniques.replace(0, technique);
-        first.insert(QStringLiteral("techniken"), techniques);
-        sections.replace(0, first);
-        json.insert(QStringLiteral("abschnitte"), sections);
-        return shelf.installed(id, 1, {{QStringLiteral("lern-test/v1"), QStringLiteral("v.mkv")}},
-                               {QStringLiteral("lern-test/v1")}, {}, json);
+        return install(id, same, {QStringLiteral("en")});
+    }
+    Q_INVOKABLE bool installLessonTracks(const QString &id, const QString &same)
+    {
+        return install(id, same, {QStringLiteral("en"), QStringLiteral("de")});
     }
     Q_INVOKABLE bool removeLesson(const QString &id) { return BundleShelf::shared().remove(id); }
 
@@ -294,6 +280,46 @@ public slots:
     }
 
 private:
+    // The lesson with a WebVTT track per language on its first video ("<video file>.<language>.vtt";
+    // the German one says "Hallo" where the test track says "Hello").
+    bool install(const QString &id, const QString &same, const QStringList &languages)
+    {
+        BundleShelf &shelf = BundleShelf::shared();
+        QDir().mkpath(shelf.folder(id));
+        const QString videoFile = QStringLiteral("v.mkv");
+        QFile video(QDir(shelf.folder(id)).filePath(videoFile));
+        QFile content(QStringLiteral(TEST_BUNDLE_DIR "/inhalt.json"));
+        QFile track(QStringLiteral(TEST_BUNDLE_DIR "/test.en.vtt"));
+        if (!video.open(QIODevice::WriteOnly) || !content.open(QIODevice::ReadOnly) || !track.open(QIODevice::ReadOnly)) {
+            return false;
+        }
+        const QByteArray cues = track.readAll();
+        QMap<QString, QString> tracks;
+        for (const QString &language : languages) {
+            const QString name = videoFile + QLatin1Char('.') + language + QStringLiteral(".vtt");
+            QFile out(QDir(shelf.folder(id)).filePath(name));
+            if (!out.open(QIODevice::WriteOnly)) {
+                return false;
+            }
+            out.write(language == QLatin1String("de") ? QByteArray(cues).replace("Hello", "Hallo") : cues);
+            tracks.insert(language, name);
+        }
+
+        QJsonObject json = QJsonDocument::fromJson(content.readAll()).object();
+        json.insert(QStringLiteral("id"), id);
+        QJsonArray sections = json.value(QStringLiteral("abschnitte")).toArray();
+        QJsonObject first = sections.at(0).toObject();
+        QJsonArray techniques = first.value(QStringLiteral("techniken")).toArray();
+        QJsonObject technique = techniques.at(0).toObject();
+        technique.insert(QStringLiteral("wie"), QJsonArray{same});
+        techniques.replace(0, technique);
+        first.insert(QStringLiteral("techniken"), techniques);
+        sections.replace(0, first);
+        json.insert(QStringLiteral("abschnitte"), sections);
+        return shelf.installed(id, 1, {{QStringLiteral("lern-test/v1"), videoFile}},
+                               {QStringLiteral("lern-test/v1")}, {}, json, {{QStringLiteral("lern-test/v1"), tracks}});
+    }
+
     QTranslator m_german;
     QList<QPointer<QObject>> m_watched;
 };

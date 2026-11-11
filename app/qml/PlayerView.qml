@@ -36,6 +36,14 @@ Item {
     // when a bundle comes or goes, picture, times and cut change together.
     readonly property url file: Videos.folder !== undefined ? Videos.source(video) : ""
     readonly property bool hasVideo: video !== "" && file.toString() !== ""
+    // The subtitle tracks of the video's bundle ([{language, source}]), shown on by default: the
+    // user's choice (off, or a language) lives in Videos and holds over all videos of the run.
+    readonly property var subtitleTracks: Videos.folder !== undefined && hasVideo ? Videos.subtitles(video) : []
+    // The language shown, "" for none (off, or the video has no track). The choice's signal and the
+    // tracks make the binding read it anew.
+    readonly property string subtitleLanguage: Videos.subtitlesOn !== undefined && Videos.subtitleChoice !== undefined
+                                               && subtitleTracks.length >= 0 ? Videos.subtitleLanguage(video) : ""
+    readonly property real subtitlePlateAlpha: 0.75
     // Where the technique stands: attack · addition · grade · position ("Shomen-uchi · 5. Kyu · 3 / 8").
     readonly property string placeText: [current.attack, current.attackExtra, current.gradeName,
                                          playlist.length > 1 ? (index + 1) + " / " + playlist.length : ""]
@@ -355,6 +363,57 @@ Item {
         }
     }
 
+    // The subtitles' switch: one track toggles, several open a menu (Off, then each language by
+    // its own name). Only for a video that has tracks.
+    component SubtitleSwitch: LookToggle {
+        id: sw
+
+        objectName: "subtitleButton"
+        readonly property bool several: page.subtitleTracks.length > 1
+        visible: page.subtitleTracks.length > 0
+        checkable: false
+        checked: page.subtitleLanguage !== ""
+        icon.name: "media-view-subtitles-symbolic"
+        Accessible.name: qsTr("Subtitles")
+        onClicked: {
+            if (several) {
+                menu.open()
+            } else if (checked) {
+                Videos.hideSubtitles()
+            } else {
+                Videos.showSubtitles()
+            }
+        }
+
+        LookMenu {
+            id: menu
+
+            objectName: "subtitleMenu"
+            // The entries' width follows the menu's (they fill it): the menu itself needs one.
+            width: Look.unit(180)
+            LookMenuItem {
+                objectName: "subtitleOff"
+                text: qsTr("Off")
+                checkable: true
+                checked: page.subtitleLanguage === ""
+                onTriggered: Videos.hideSubtitles()
+            }
+            Repeater {
+                model: sw.several ? page.subtitleTracks : []
+
+                LookMenuItem {
+                    required property var modelData
+
+                    objectName: "subtitleLanguage"
+                    text: Qt.locale(modelData.language).nativeLanguageName
+                    checkable: true
+                    checked: page.subtitleLanguage === modelData.language
+                    onTriggered: Videos.chooseSubtitles(modelData.language)
+                }
+            }
+        }
+    }
+
     // Sideways everything stands on the dark ground (the clickdummy's `.qrail`, `.qbands`).
     Rectangle {
         anchors.fill: parent
@@ -459,6 +518,46 @@ Item {
                     height: page.crop.hoehe ? page.crop.hoehe * factor : picture.height
                     y: page.crop.y ? -page.crop.y * factor : 0
                     fillMode: VideoOutput.Stretch
+                }
+
+                // The subtitle at the foot of the visible picture (this item is it: the bars are
+                // clipped). The text on a plate of the stage's ground, so that it reads on any frame.
+                // On the rail the timeline and the time lie over the picture's foot; upright the
+                // full-screen button lies at its corner: the plate keeps clear of both.
+                SubtitleTrack {
+                    id: subtitle
+
+                    objectName: "subtitleTrack"
+                    source: page.subtitleLanguage !== "" ? page.subtitleTracks.find(t => t.language === page.subtitleLanguage).source : ""
+                    position: player.position
+                }
+                Rectangle {
+                    id: subtitlePlate
+
+                    objectName: "subtitlePlate"
+                    readonly property real inset: Look.unit(8)
+                    readonly property real corner: fullButton.visible && !page.onRail ? fullButton.width + Look.unit(16) : 0
+                    visible: subtitle.text !== ""
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: page.onRail ? Look.unit(64) : Look.unit(10)
+                    width: Math.min(subtitleText.implicitWidth, maxWidth - 2 * inset) + 2 * inset
+                    height: subtitleText.height + 2 * inset
+                    readonly property real maxWidth: Math.min(parent.width * 0.9, parent.width - 2 * corner)
+                    color: Qt.alpha(Look.stageColor, page.subtitlePlateAlpha)
+
+                    LookLabel {
+                        id: subtitleText
+
+                        objectName: "subtitleText"
+                        x: subtitlePlate.inset
+                        y: subtitlePlate.inset
+                        width: subtitlePlate.width - 2 * subtitlePlate.inset
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        text: subtitle.text
+                        color: Look.stageTextColor
+                    }
                 }
             }
 
@@ -582,6 +681,8 @@ Item {
 
             // Into full screen (the clickdummy's `.fs`); on the rail the time holds that corner.
             RailButton {
+                id: fullButton
+
                 objectName: "fullButton"
 
                 visible: !page.big
@@ -674,7 +775,7 @@ Item {
                 onClicked: page.step(1)
             }
             GridLayout {
-                columns: page.bands ? 3 : 1
+                columns: page.bands ? 4 : 1
                 Layout.alignment: Qt.AlignCenter
                 Layout.fillWidth: page.bands
                 Layout.preferredWidth: page.bands ? 0 : -1
@@ -709,6 +810,12 @@ Item {
                     checkable: false
                     checked: page.looping
                     onClicked: page.looping = !page.looping
+                }
+                SubtitleSwitch {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: page.bands ? -1 : Look.unit(52)
+                    onStage: true
+                    text: page.bands ? qsTr("Subtitles") : ""
                 }
             }
         }
@@ -892,6 +999,9 @@ Item {
                             icon.name: "brightness-high"
                             text: qsTr("Screen on")
                             onClicked: Levels.setAwake(Levels.awake ? Levels.Switch.Off : Levels.Switch.On)
+                        }
+                        SubtitleSwitch {
+                            text: qsTr("Subtitles")
                         }
                     }
                 }
