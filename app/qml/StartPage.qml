@@ -233,7 +233,8 @@ Kirigami.ScrollablePage {
                 onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("SearchPage.qml"))
             }
 
-            // The Lernpakete: video bundles with techniques of their own (not part of any exam).
+            // The Lernpakete: video bundles with techniques of their own (not part of any exam). Only
+            // with a package: before its code the app shows nothing of them.
             LookTile {
                 objectName: "lessonsTile"
 
@@ -243,15 +244,12 @@ Kirigami.ScrollablePage {
                 Layout.preferredWidth: 1          // equal columns
                 // Last of an odd number of small tiles on the phone: over both columns, no gap.
                 Layout.columnSpan: !page.wide && tiles.smallTiles % 2 === 1 ? 2 : 1
+                visible: Library.packages.length > 0
                 glyph: "学"
                 text: qsTr("Learning videos")
-                hint: Library.packages.length > 0
-                      ? qsTr("%n package(s)", "", Library.packages.length) + " · " + qsTr("%n technique(s)", "", techniques)
-                      : qsTr("Unlock with a code")
-                // Beside its package on a tablet; without one only the explanation (a page of its own).
-                onClicked: Library.packages.length > 0
-                           ? page.Kirigami.PageStack.push(Qt.resolvedUrl("ListAndPage.qml"), { listSource: "LessonsPage.qml" })
-                           : page.Kirigami.PageStack.push(Qt.resolvedUrl("LessonsPage.qml"))
+                hint: qsTr("%n package(s)", "", Library.packages.length) + " · " + qsTr("%n technique(s)", "", techniques)
+                // Beside its package on a tablet.
+                onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("ListAndPage.qml"), { listSource: "LessonsPage.qml" })
             }
         }
     }

@@ -2288,10 +2288,6 @@
         </translation>
     </message>
     <message>
-        <source>Unlock with a code</source>
-        <translation>Mit einem Code freischalten</translation>
-    </message>
-    <message>
         <source>Statistics</source>
         <translation>Statistik</translation>
     </message>

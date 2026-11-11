@@ -241,8 +241,9 @@ Kirigami.ScrollablePage {
 
                 required property var row
                 required property int index
-                // The exam bundles come first, then the Lernpakete (Bundles): each kind has its head.
-                readonly property bool firstOfKind: index === 0 || bundleModel.rows[index - 1].kind !== row.kind
+                // The exam bundles come first, then the Lernpakete (Bundles): each kind has its head. A row
+                // that went (a removed Lernpaket) may leave a stale index for a moment.
+                readonly property bool firstOfKind: index === 0 || bundleModel.rows[index - 1]?.kind !== row.kind
 
                 Layout.fillWidth: true
                 spacing: 0

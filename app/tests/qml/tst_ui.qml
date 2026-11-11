@@ -188,7 +188,7 @@ TestCase {
         compare(window.pageStack.currentItem.title, "Mitori 見取り")
         // The tiles in the decided order: Today, Exam, Statistics, Courses (clickdummy "Startmenü").
         const start = window.pageStack.currentItem
-        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "lessonsTile"]
+        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile"]
         const items = order.map(n => findChild(start, n))
         const at = it => it.mapToItem(start, 0, 0)
         for (let i = 1; i < items.length; i++) {
@@ -2451,7 +2451,7 @@ TestCase {
         failOnWarning(/ReferenceError|TypeError|Binding loop/)
         const page = push("VideosPage")
         tryCompare(Bundles, "manifestState", Bundles.ManifestState.Ready, 5000)
-        tryVerify(() => findChildren(page, "bundleRow").length === 3)
+        tryVerify(() => findChildren(page, "bundleRow").length === 1)
         const row = () => findChildren(page, "bundleRow")[0]
         compare(row().bundleState, Bundles.State.Locked)
         // A change of the list changes the row in place (a press on Cancel during a download
@@ -2474,7 +2474,7 @@ TestCase {
         verify(Videos.available("test/v"), "the bundle's video is on the device")
         compare(Videos.crop("test/v").h, undefined, "a bundle's file is cut already")
         verify(Bundles.size > 0)
-        compare(findChildren(page, "bundleRow").length, 3)
+        compare(findChildren(page, "bundleRow").length, 1)
         verify(row() === first, "the row stays through unlocking and loading")
         tryVerify(() => findChild(row(), "bundleAction").text === qsTr("Remove"))
         shot("15b-videos-loaded")
@@ -2485,55 +2485,52 @@ TestCase {
         popPage()
     }
 
-    // The Lernpakete in the list: under their own head; one in a format this version cannot read
-    // asks for an update, and can still be removed once it is on the device.
+    // The Lernpakete in the list: none before its code (or on the device), then under their own head;
+    // one in a format this version cannot read asks for an update, and can still be removed.
     readonly property string unsupportedId: "test-unsupported"
     function test_9n_videos_lessons() {
         failOnWarning(/ReferenceError|TypeError|Binding loop/)
         const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
         const page = push("VideosPage")
         tryCompare(Bundles, "manifestState", Bundles.ManifestState.Ready, 5000)
-        tryVerify(() => findChildren(page, "bundleRow").length === 3)
-        compare(findChildren(page, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos", "Learning videos"])
+        tryVerify(() => findChildren(page, "bundleRow").length === 1)
+        compare(findChildren(page, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos"])
         const rowOf = id => findChildren(page, "bundleRow").find(r => r.row.id === id)
-        compare(rowOf(lessonId).bundleState, Bundles.State.Locked)
-        compare(rowOf(unsupportedId).bundleState, Bundles.State.Unsupported)
-        compare(findChild(rowOf(unsupportedId), "bundleState").text, qsTr("Needs a newer Mitori"))
-        verify(!findChild(rowOf(unsupportedId), "bundleAction").visible, "not on the device: nothing to do")
+        compare(rowOf(lessonId), undefined)
+        compare(rowOf(unsupportedId), undefined)
 
         verify(uiCatalog.installLesson(unsupportedId, same))
         Bundles.reload()
-        tryVerify(() => Bundles.bundles.find(b => b.id === unsupportedId).installed > 0)
+        tryVerify(() => rowOf(unsupportedId) !== undefined)
+        compare(findChildren(page, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos", "Learning videos"])
         compare(rowOf(unsupportedId).bundleState, Bundles.State.Unsupported)
+        compare(findChild(rowOf(unsupportedId), "bundleState").text, qsTr("Needs a newer Mitori"))
         const action = findChild(rowOf(unsupportedId), "bundleAction")
         tryVerify(() => action.visible, 3000, "its videos can be removed")
         compare(action.text, qsTr("Remove"))
         // The list is taller than the window under Shinki: the row into view first.
-        page.flickable.contentY = action.mapToItem(page.flickable.contentItem, 0, 0).y - page.flickable.height / 2
+        page.flickable.contentY = Math.max(0, action.mapToItem(page.flickable.contentItem, 0, 0).y - page.flickable.height / 2)
         wait(50)
         mouseClick(action)
-        tryVerify(() => Bundles.bundles.find(b => b.id === unsupportedId).installed === 0)
-        tryVerify(() => !findChild(rowOf(unsupportedId), "bundleAction").visible)
+        tryVerify(() => Bundles.bundles.every(b => b.id !== unsupportedId), 3000, "removed")
+        // Removed and never unlocked (the test puts it on the shelf without a code): gone again.
+        tryVerify(() => rowOf(unsupportedId) === undefined)
         popPage()
     }
 
-    // Learning videos (Lernpakete): without a package the explanation and the way to the code; the
-    // tile says so. The last small tile on the phone spans both columns (an odd number of tiles).
+    // Learning videos (Lernpakete): without a package no tile (a code on the videos page brings one);
+    // the page, still open when the last package goes, explains them and shows the way to the code.
     readonly property string lessonId: "test-lesson"
     function test_9p_lessons_empty() {
         failOnWarning(/ReferenceError|TypeError|Binding loop/)
         const start = window.pageStack.items[0]
-        const tile = findChild(start, "lessonsTile")
         tryCompare(Library.packages, "length", 0)
-        compare(tile.hint, "Unlock with a code")
-        // 7 small tiles in 2 columns: the last one fills its row.
+        verify(!findChild(start, "lessonsTile").visible)
+        // 6 small tiles in 2 columns: none spans both.
         const tiles = findChild(start, "tiles")
-        compare(tiles.smallTiles, 7)
-        compare(tile.width, tiles.width)
-        const glossary = findChild(start, "glossaryTile")
-        verify(glossary.width < tiles.width)
-        slidIn()
-        clickTile(tile)
+        compare(tiles.smallTiles, 6)
+        verify(findChild(start, "glossaryTile").width < tiles.width)
+        push("LessonsPage")
         tryVerify(() => window.pageStack.depth === 2)
         slidIn()
         const page = window.pageStack.currentItem
@@ -2546,7 +2543,7 @@ TestCase {
         // Exam bundles under their own head.
         const videos = window.pageStack.currentItem
         tryVerify(() => findChildren(videos, "bundleKind").some(h => h.visible))
-        compare(findChildren(videos, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos", "Learning videos"])
+        compare(findChildren(videos, "bundleKind").filter(h => h.visible).map(h => h.text), ["Exam videos"])
         popPage()
     }
 
@@ -2559,6 +2556,11 @@ TestCase {
         tryCompare(Library.packages, "length", 1)
         const start = window.pageStack.items[0]
         const tile = findChild(start, "lessonsTile")
+        tryVerify(() => tile.visible)
+        // Last of 7 small tiles on the phone: after the glossary, over both columns.
+        const glossary = findChild(start, "glossaryTile")
+        verify(tile.mapToItem(start, 0, 0).y > glossary.mapToItem(start, 0, 0).y)
+        compare(tile.width, findChild(start, "tiles").width)
         compare(tile.hint, qsTr("%n package(s)", "", 1) + " · " + qsTr("%n technique(s)", "", 4))
         slidIn()
         clickTile(tile)
