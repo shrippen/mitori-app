@@ -19,18 +19,18 @@ constexpr auto kOldFolderKey = "videos/folder";
 // The start is over by then (0.5 s on a desktop): the backend does not compete with it.
 constexpr int kDecoderPauseMs = 2000;
 
-// A language's own name without a region: the name most of its locales carry. The language's
-// default locale names its region ("en" is en_US, "American English"; "es" is "español de
-// España"), most others say "English", "español".
+// A language's own name without a region: the name most of its locales in the code's script
+// carry. The language's default locale names its region ("en" is en_US, "American English";
+// "es" is "español de España"), most others say "English", "español".
 QString languageName(const QString &code)
 {
-    const QLocale::Language language = QLocale(code).language();
+    const QLocale own(code);
     QHash<QString, int> counts;
-    for (const QLocale &locale : QLocale::matchingLocales(language, QLocale::AnyScript, QLocale::AnyTerritory)) {
+    for (const QLocale &locale : QLocale::matchingLocales(own.language(), own.script(), QLocale::AnyTerritory)) {
         ++counts[locale.nativeLanguageName()];
     }
 
-    QString name = QLocale(code).nativeLanguageName();
+    QString name = own.nativeLanguageName();
     for (auto it = counts.cbegin(); it != counts.cend(); ++it) {
         if (it.value() > counts.value(name)) {
             name = it.key();

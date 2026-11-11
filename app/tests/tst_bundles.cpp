@@ -1050,7 +1050,7 @@ private slots:
         const QString id = u"subs-test"_s;
         shelf.remove(id);       // a run that failed half-way left it on the shared shelf
         QVERIFY(QDir().mkpath(shelf.folder(id)));
-        for (const QString &name : {u"v.mkv"_s, u"v.mkv.en.vtt"_s, u"v.mkv.de.vtt"_s}) {
+        for (const QString &name : {u"v.mkv"_s, u"v.mkv.en.vtt"_s, u"v.mkv.de.vtt"_s, u"v.mkv.zh_TW.vtt"_s}) {
             QFile file(QDir(shelf.folder(id)).filePath(name));
             QVERIFY(file.open(QIODevice::WriteOnly));
         }
@@ -1059,12 +1059,19 @@ private slots:
         QVERIFY(videos.subtitles(u"subs/v"_s).isEmpty());
 
         QVERIFY(shelf.installed(id, 1, {{u"subs/v"_s, u"v.mkv"_s}}, {}, {}, {},
-                                {{u"subs/v"_s, {{u"en"_s, u"v.mkv.en.vtt"_s}, {u"de"_s, u"v.mkv.de.vtt"_s}, {u"fr"_s, u"gone.vtt"_s}}}}));
+                                {{u"subs/v"_s, {{u"en"_s, u"v.mkv.en.vtt"_s}, {u"de"_s, u"v.mkv.de.vtt"_s}, {u"fr"_s, u"gone.vtt"_s},
+                                                {u"zh_TW"_s, u"v.mkv.zh_TW.vtt"_s}}}}));
         const QVariantList tracks = videos.subtitles(u"subs/v"_s);
-        QCOMPARE(tracks.size(), 2);      // sorted by language; the missing file is no track
+        QCOMPARE(tracks.size(), 3);      // sorted by language; the missing file is no track
         QCOMPARE(tracks.at(0).toMap().value(u"language"_s).toString(), u"de"_s);
         QCOMPARE(tracks.at(1).toMap().value(u"source"_s).toUrl(),
                  QUrl::fromLocalFile(QDir(shelf.folder(id)).filePath(u"v.mkv.en.vtt"_s)));
+
+        // Each language by its own name without a region (en_US would say "American English"),
+        // in the code's script (traditional Chinese stays traditional).
+        QCOMPARE(tracks.at(0).toMap().value(u"name"_s).toString(), u"Deutsch"_s);
+        QCOMPARE(tracks.at(1).toMap().value(u"name"_s).toString(), u"English"_s);
+        QCOMPARE(tracks.at(2).toMap().value(u"name"_s).toString(), u"繁體中文"_s);
 
         // The default track follows the app's language (Catalog), not the system's: an English app on a
         // French system shows the English track, not the first one (de).
