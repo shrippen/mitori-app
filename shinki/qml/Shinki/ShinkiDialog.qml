@@ -6,6 +6,7 @@ import QtQuick.Controls as QQC2
 //   size           Fit (the content's width), Small, Medium, Large: 432, 648, 864 px, at most 90 %
 //                  of the window
 //   acceptText     the main button's text ("Discard" instead of OK)
+//   rejectText     Cancel's text where Cancel is ambiguous ("Keep the round")
 //   destructive    the yes removes something; Shinki marks it by the word, not a second colour
 // Same interface as KanteDialog for these; standardButtons as QQC2.Dialog.
 QQC2.Dialog {
@@ -15,6 +16,7 @@ QQC2.Dialog {
     property int size: ShinkiDialog.Size.Fit
     property bool destructive: false
     property string acceptText: ""
+    property string rejectText: ""
 
     readonly property real stepWidth: size === ShinkiDialog.Size.Small ? ShinkiStyle.dialogSmallSize
         : size === ShinkiDialog.Size.Medium ? ShinkiStyle.dialogMediumSize
@@ -74,14 +76,19 @@ QQC2.Dialog {
         }
     }
 
-    // The main button's word; standard buttons come after the dialog is complete.
+    // The buttons' words; standard buttons come after the dialog is complete.
     function nameAccept() {
         const ok = standardButton(QQC2.Dialog.Ok) || standardButton(QQC2.Dialog.Yes)
         if (ok && acceptText !== "") {
             ok.text = acceptText
         }
+        const cancel = standardButton(QQC2.Dialog.Cancel) || standardButton(QQC2.Dialog.No)
+        if (cancel && rejectText !== "") {
+            cancel.text = rejectText
+        }
     }
     onAcceptTextChanged: nameAccept()
+    onRejectTextChanged: nameAccept()
     onStandardButtonsChanged: Qt.callLater(nameAccept)
     Component.onCompleted: nameAccept()
 }
