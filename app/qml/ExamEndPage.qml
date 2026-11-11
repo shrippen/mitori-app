@@ -81,7 +81,6 @@ Kirigami.ScrollablePage {
         title: qsTr("Discard the round?")
         standardButtons: QQC2.Dialog.Ok | QQC2.Dialog.Cancel
         acceptText: qsTr("Discard")
-        contentHeight: discardText.implicitHeight
         onAccepted: page.Kirigami.PageStack.pop()
 
         LookLabel {
