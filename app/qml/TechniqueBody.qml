@@ -24,6 +24,9 @@ ColumnLayout {
     readonly property string lessonDiscipline: "lern"        // the discipline of a Lernpaket's techniques (Lessons::kDiscipline)
     readonly property bool lesson: entry.discipline === lessonDiscipline
     readonly property var programmeIds: lesson ? (entry.wie || []).filter(id => Programme.techniqueLabel(id) !== "") : []
+    // The learning-video techniques of the installed packages that name this exam entry. Library.packages
+    // stands for Library's changed signal: a package came or went, or the language changed.
+    readonly property var lessonEntries: !lesson && entry.id && Library.packages ? Library.related(entry.id) : []
     readonly property var steps: entry.steps || []
     readonly property var lastNote: Practice.notesRevision >= 0 && entry.id ? Practice.lastNote(entry.id) : ({})
     // Its notes and the course entries linked to it: the notes page shows both.
@@ -39,6 +42,8 @@ ColumnLayout {
     signal notesRequested(var entry)
     // The same technique in the exam programme (its entry): the host shows that one instead.
     signal programmeRequested(var entry)
+    // The same technique in a learning video (its entry): the host shows that one instead.
+    signal lessonRequested(var entry)
     // Without the video on the device: to the videos and DVD codes.
     signal videosRequested()
     // The ✕, or on the way to another page: a dialog closes.
@@ -168,6 +173,26 @@ ColumnLayout {
                 width: Math.min(implicitWidth, parent.width)
                 text: qsTr("In the programme: %1").arg(Programme.techniqueLabel(modelData))
                 onClicked: body.programmeRequested(Programme.entry(modelData))
+            }
+        }
+    }
+    // Where the technique is taught in the learning videos: a tap shows that sheet.
+    Flow {
+        Layout.fillWidth: true
+        spacing: Kirigami.Units.smallSpacing
+        visible: body.lessonEntries.length > 0
+
+        Repeater {
+            model: body.lessonEntries
+
+            LookChip {
+                required property var modelData
+
+                objectName: "sheetLesson"
+                width: Math.min(implicitWidth, parent.width)
+                text: qsTr("In the learning videos: %1 · %2").arg(modelData.disciplineName)
+                      .arg(modelData.extra ? modelData.title + " (" + modelData.extra + ")" : modelData.title)
+                onClicked: body.lessonRequested(modelData)
             }
         }
     }

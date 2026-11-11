@@ -97,6 +97,11 @@ Kirigami.Dialog {
             sheet.entry = entry
             sheet.playable = !!entry.video && Videos.available(entry.video.video)
         }
+        // The same technique in a learning video: likewise.
+        onLessonRequested: entry => {
+            sheet.entry = entry
+            sheet.playable = !!entry.video && Videos.available(entry.video.video)
+        }
         onVideosRequested: sheet.videosRequested()
     }
 }

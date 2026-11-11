@@ -2542,6 +2542,16 @@ TestCase {
         tryVerify(() => sheet.entry.id === same)
         verify(!findChild(sheet, "sheetLessonText").visible, "an exam entry has no description")
         tryVerify(() => !programmeLink())
+
+        // The way back: the exam entry names the lesson's technique, a tap shows it again.
+        const lessonLink = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!lessonLink())
+        compare(lessonLink().text, "In the learning videos: " + Library.packages[0].title + " · " + row.entry.title + " (" + row.entry.extra + ")")
+        shot("16e-lessons-reverse", true)
+        mouseClick(lessonLink())
+        tryVerify(() => sheet.entry.id === row.entry.id)
+        verify(sheet.playable, "its video is on the device")
+        tryVerify(() => !lessonLink())
         sheet.close()
         tryVerify(() => !sheet.opened)
 
@@ -2589,6 +2599,42 @@ TestCase {
         tryVerify(() => !link())
         sheet.close()
         tryVerify(() => !sheet.opened)
+        popPage()
+    }
+
+    // An exam entry's sheet shows the learning-video techniques that name it, only while the package is
+    // installed; the chip follows install and remove.
+    function test_9p_lessons_reverse() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        const page = push("SearchPage")
+        findChild(page, "searchField").text = Programme.entry(same).title
+        const result = () => findChildren(page, "techniqueResult").find(r => r.found.id === same)
+        tryVerify(() => !!result(), 2000)
+        slidIn()
+        mouseClick(result())
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, same)
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        verify(!link(), "no package, no chip")
+
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryVerify(() => !!link())
+        // The sheet grew under the chip: the tap itself is the main case's; here the signal.
+        link().clicked()
+        tryVerify(() => sheet.entry.id === "lern/" + lessonId + "/irimi")
+        verify(sheet.playable)
+        sheet.close()
+        tryVerify(() => !sheet.opened)
+
+        sheet.entry = Programme.entry(same)
+        sheet.open()
+        tryVerify(() => sheet.opened)
+        tryVerify(() => !!link())
+        verify(uiCatalog.removeLesson(lessonId))
+        tryVerify(() => !link())
+        sheet.close()
         popPage()
     }
 
@@ -2653,6 +2699,125 @@ TestCase {
         const tiles = findChild(start, "tiles")
         compare(tiles.smallTiles, 7)
         compare(findChild(start, "lessonsTile").width, findChild(start, "glossaryTile").width)
+    }
+
+    // The chip in the dialog swaps it to the lesson technique; playing it plays that one, in a
+    // player page of its own (the grade's list does not hold it).
+    function test_9p_lessons_chip_play() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        slidIn()
+        page.open(Programme.entry(same))
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!link())
+        link().clicked()
+        const lesson = "lern/" + lessonId + "/irimi"
+        tryVerify(() => sheet.entry.id === lesson)
+        sheet.playRequested(sheet.entry)
+        tryVerify(() => window.pageStack.currentItem !== page)
+        const player = window.pageStack.currentItem
+        verify(player.playlist.length > 0)
+        compare(player.playlist[player.index].id, lesson)
+        popPage()
+        popPage()
+        verify(uiCatalog.removeLesson(lessonId))
+    }
+
+    // The dialog led on to a technique of another grade (lesson chip, then its programme chip): it
+    // plays in its own list, not in this grade's (where it is not: index -1, an empty player).
+    function test_9p_other_grade_play() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        slidIn()
+        page.open(Programme.entries("aikido", "k5").find(r => r.kind === "entry"))
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        const other = Programme.entries("aikido", "k4").find(r => r.kind === "entry" && r.video && Videos.available(r.video.video))
+        verify(!!other)
+        sheet.entry = other
+        sheet.playRequested(other)
+        tryVerify(() => window.pageStack.currentItem !== page)
+        const player = window.pageStack.currentItem
+        verify(player.index >= 0, "the technique is in the player's list")
+        compare(player.playlist[player.index].id, other.id)
+        popPage()
+        popPage()
+    }
+
+    // Turned sideways with a lesson technique in the dialog: it stays there, the pane's state is not its.
+    function test_9p_lessons_chip_turn() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        window.width = 420
+        window.height = 900
+        const page = push("ProgrammePage")
+        slidIn()
+        const sheet = findChild(page, "techniqueSheet")
+        page.showDialog(Programme.entry(same))
+        tryVerify(() => sheet.opened)
+        const link = () => allChildren(sheet.contentItem).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!link())
+        link().clicked()
+        const lesson = "lern/" + lessonId + "/irimi"
+        tryVerify(() => sheet.entry.id === lesson)
+        window.width = 1280
+        window.height = 800
+        tryVerify(() => page.wide)
+        wait(300)
+        verify(sheet.opened, "the dialog stays")
+        compare(sheet.entry.id, lesson)
+        compare(page.sheetId, "")
+        verify(page.lastId !== lesson)
+        sheet.close()
+        popPage()
+        verify(uiCatalog.removeLesson(lessonId))
+    }
+
+    // The chip in the right pane (tablet) opens the lesson technique in the dialog; the pane keeps its own.
+    function test_9p_lessons_chip_pane() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        const page = tabletProgramme()
+        page.sheetId = same
+        const body = () => findChild(page, "paneSheet")
+        tryVerify(() => !!body())
+        const link = () => allChildren(body()).find(i => i.objectName === "sheetLesson" && i.visible)
+        tryVerify(() => !!link())
+        link().clicked()
+        const sheet = findChild(page, "techniqueSheet")
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, "lern/" + lessonId + "/irimi")
+        compare(page.sheetId, same)
+        compare(body().entry.id, same)
+
+        // Turned upright: the open dialog keeps the lesson, the pane's technique does not take its place.
+        window.width = 420
+        window.height = 800
+        tryVerify(() => !page.wide)
+        wait(100)
+        verify(sheet.opened)
+        compare(sheet.entry.id, "lern/" + lessonId + "/irimi", "the lesson stays in the dialog")
+        sheet.close()
+        popPage()
+        verify(uiCatalog.removeLesson(lessonId))
     }
 
     // Scanning (fake frames, no camera): refused without a camera or permission, typing stays;

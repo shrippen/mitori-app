@@ -3,6 +3,7 @@
 #include "bundleshelf.h"
 
 #include <QJsonObject>
+#include <QSet>
 #include <algorithm>
 
 namespace {
@@ -90,6 +91,7 @@ void Lessons::refresh() const
     m_packages.clear();
     m_entries.clear();
     m_crops.clear();
+    m_related.clear();
 
     const QStringList ids = m_shelf.lessonIds();
     for (const QString &id : ids) {
@@ -152,6 +154,21 @@ void Lessons::refresh() const
     std::stable_sort(m_packages.begin(), m_packages.end(), [](const Package &a, const Package &b) {
         return QString::localeAwareCompare(text(a.info, "title"), text(b.info, "title")) < 0;
     });
+
+    // The reverse of `wie`, from the installed packages only.
+    for (const Package &package : std::as_const(m_packages)) {
+        for (const QVariant &v : package.rows) {
+            const QVariantMap row = v.toMap();
+            QSet<QString> seen;     // an id twice in `wie` is one chip
+            for (const QVariant &same : row.value(QStringLiteral("wie")).toList()) {
+                if (seen.contains(same.toString())) {
+                    continue;
+                }
+                seen.insert(same.toString());
+                m_related[same.toString()] << row;
+            }
+        }
+    }
 }
 
 QVariantList Lessons::packages() const
@@ -179,6 +196,12 @@ QVariantMap Lessons::entry(const QString &id) const
 {
     refresh();
     return m_entries.value(id);
+}
+
+QVariantList Lessons::related(const QString &programmeId) const
+{
+    refresh();
+    return m_related.value(programmeId);
 }
 
 QVariantMap Lessons::crop(const QString &video) const

@@ -28,6 +28,8 @@ public:
 
     // The rows of a package in order (group and entry, as Programme::entries()); see Lessons::rows().
     Q_INVOKABLE QVariantList rows(const QString &package) const;
+    // The installed packages' entries that name this exam-programme technique (Lessons::related()).
+    Q_INVOKABLE QVariantList related(const QString &programmeId) const;
     // The player's list around a technique: {playlist, index}, the package's entries whose video is on
     // the device, so that previous and next work. A technique without a video on the device is a
     // list of its own; an unknown id gives an empty list and index -1.

@@ -1,5 +1,6 @@
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
@@ -25,7 +26,7 @@ class TstLessons : public QObject
 
     // The package as Bundles leaves it: the first video's file in the folder, the content next to it.
     void install(const QStringList &cropped = {u"lern-test/v1"_s}, const QString &id = u"test-lesson"_s,
-                 const QString &contentId = u"test-lesson"_s)
+                 const QString &contentId = u"test-lesson"_s, bool doubleWie = false)
     {
         BundleShelf &shelf = BundleShelf::shared();
         QVERIFY(QDir().mkpath(shelf.folder(id)));
@@ -37,6 +38,19 @@ class TstLessons : public QObject
         QVERIFY(file.open(QIODevice::ReadOnly));
         QJsonObject content = QJsonDocument::fromJson(file.readAll()).object();
         content.insert(u"id"_s, contentId);
+        if (doubleWie) {
+            // A `wie` naming one programme id twice.
+            QJsonArray sections = content.value(u"abschnitte"_s).toArray();
+            QJsonObject first = sections.at(0).toObject();
+            QJsonArray techniques = first.value(u"techniken"_s).toArray();
+            QJsonObject technique = techniques.at(0).toObject();
+            const QJsonValue same = technique.value(u"wie"_s).toArray().at(0);
+            technique.insert(u"wie"_s, QJsonArray{same, same});
+            techniques.replace(0, technique);
+            first.insert(u"techniken"_s, techniques);
+            sections.replace(0, first);
+            content.insert(u"abschnitte"_s, sections);
+        }
         QVERIFY(shelf.installed(id, 1, {{m_video, u"v.mkv"_s}}, cropped, {}, content));
     }
 
@@ -155,6 +169,41 @@ private slots:
 
         install();
         QCOMPARE(lessons.packages().size(), 1);
+    }
+
+    // The reverse of `wie`: installed packages' entries by the programme id; follows remove and language.
+    void related()
+    {
+        const QString same = u"aikido/k5/irimi-nage-2"_s;
+        const Library library;
+        QVERIFY(library.related(same).isEmpty());
+
+        install();
+        QVariantList rows = library.related(same);
+        QCOMPARE(rows.size(), 1);
+        QCOMPARE(rows.first().toMap().value(u"id"_s).toString(), u"lern/test-lesson/irimi"_s);
+        QCOMPARE(rows.first().toMap().value(u"disciplineName"_s).toString(), u"Lernpaket"_s);
+        QCOMPARE(rows.first().toMap().value(u"extra"_s).toString(), u"Variante"_s);
+        QVERIFY(library.related(u"aikido/k5/other"_s).isEmpty());
+        QVERIFY(library.related(u"lern/test-lesson/irimi"_s).isEmpty());
+
+        Catalog::setLanguage(Catalog::Language::English);
+        rows = library.related(same);
+        QCOMPARE(rows.first().toMap().value(u"disciplineName"_s).toString(), u"Lesson pack"_s);
+        QCOMPARE(rows.first().toMap().value(u"extra"_s).toString(), u"variant"_s);
+        Catalog::setLanguage(Catalog::Language::German);
+
+        QVERIFY(BundleShelf::shared().remove(m_id));
+        QVERIFY(library.related(same).isEmpty());
+    }
+
+    // A `wie` naming an id twice makes one chip.
+    void relatedOnce()
+    {
+        install({u"lern-test/v1"_s}, m_id, m_id, true);
+        const Library library;
+        QCOMPARE(library.related(u"aikido/k5/irimi-nage-2"_s).size(), 1);
+        QVERIFY(BundleShelf::shared().remove(m_id));
     }
 
     // The content of another package under this name is not used.

@@ -2447,6 +2447,10 @@
         <translation>Im Programm: %1</translation>
     </message>
     <message>
+        <source>In the learning videos: %1 · %2</source>
+        <translation>In den Lernvideos: %1 · %2</translation>
+    </message>
+    <message>
         <source>Uchidachi</source>
         <translation>Uchidachi</translation>
     </message>
