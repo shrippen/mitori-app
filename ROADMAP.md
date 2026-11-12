@@ -186,6 +186,9 @@ Reihenfolge der Kacheln. Offen, nach Gewicht:
 - **Startmenü**: Programm-Kachel mit Stand („Aikido · 5. Kyu · 7 von 20 prüfungsreif“ und Leiste, Kurzname);
   Telefon groß + zwei Spalten statt einer; Tablet die große Kachel 2 × 2; Begrüßung; Heute mit Sparte; Bundle-
   Update mit Namen.
+- **Startmenü Bento** (Owner, 12.11.2026, `entwuerfe/app-entscheidungen.md`): Programm-Kachel immer 2 × 2, Heute 2 × 1,
+  Kacheln mit Inhalt (Gradleiter, „Weiter mit“, Countdown der Prüfung statt Hinweisfeld, 30-Tage-Kalender,
+  Landkarten-Miniatur, Wort des Tages, letzte Notiz), Werte asynchron aus `StartBoard`.
 - **Programm**: Shinki-Toho-Infokarte (Bedeutung, Inhalt, Mindestabstand); Beschreibung von Suburi und
   Kiriotoshi; Lupe im Kopf; Tablet-Liste schneidet lange Ô-dachi-Zeilen ab.
 - **Kommentar**: Fußnoten und Listen setzen; Gruppe und Kanji im Text (Überschriften und ganzer Titel: erledigt).
