@@ -2577,6 +2577,10 @@
         <translation>bis %1</translation>
     </message>
     <message>
+        <source>Grade</source>
+        <translation>Grad</translation>
+    </message>
+    <message>
         <source>No techniques with an attack up to %1.</source>
         <translation>Keine Techniken mit Angriff bis %1.</translation>
     </message>
@@ -2593,12 +2597,24 @@
         <translation>keine solche Kombination</translation>
     </message>
     <message>
+        <source>Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to show the technique.</source>
+        <translation>Zeilen: Technik, Spalten: Angriff. Ein leerer Platz kommt bis %1 nicht vor. Tippen zeigt die Technik.</translation>
+    </message>
+    <message>
         <source>Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to open the technique.</source>
         <translation>Zeilen: Technik, Spalten: Angriff. Ein leerer Platz kommt bis %1 nicht vor. Tippen öffnet die Technik.</translation>
     </message>
     <message>
+        <source>A place per form: its number, after the dot its level (12·3). Tap a place to show the form.</source>
+        <translation>Ein Platz je Form: ihre Nummer, nach dem Punkt ihre Stufe (12·3). Tippen zeigt die Form.</translation>
+    </message>
+    <message>
         <source>A place per form: its number, after the dot its level (12·3). Tap a place to open the form.</source>
         <translation>Ein Platz je Form: ihre Nummer, nach dem Punkt ihre Stufe (12·3). Tippen öffnet die Form.</translation>
+    </message>
+    <message>
+        <source>Tap a place to see it here.</source>
+        <translation>Tippe auf einen Platz, um ihn hier zu sehen.</translation>
     </message>
     <message numerus="yes">
         <source>%n entries</source>
