@@ -9,7 +9,7 @@ import "coursedays.js" as CourseDays
 import "grades.js" as Grades
 import "playlists.js" as Playlists
 
-// Start menu (clickdummy "Startmenü", variant C "Bento"): tiles of different sizes; the programme
+// Start menu, the owner's decision of 12.11.2026 (entwuerfe/app-entscheidungen.md, "Aufbau": Bento): tiles of different sizes; the programme
 // tile is always twice as wide and twice as high as the others. The tiles show what is theirs (the
 // next technique, what is due, the exam's countdown, the last days ...). What they show comes from
 // StartBoard, worked out off the GUI thread: the page draws at once, each tile fills in a moment later.
@@ -214,23 +214,31 @@ Kirigami.ScrollablePage {
                     visible: !!programmeTile.t.next
                     color: Look.ruleColor
                 }
-                Item {
+                QQC2.AbstractButton {
                     id: next
 
                     objectName: "nextTechnique"
                     readonly property var technique: programmeTile.t.next
+                    readonly property string label: technique ? technique.title + (technique.attack ? " · " + technique.attack : "") : ""
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: nextRow.implicitHeight
                     visible: !!technique
-                    Accessible.role: Accessible.Button
-                    Accessible.name: nextText.text
-                    Accessible.onPressAction: page.openTechnique(technique.id)
+                    padding: Look.unit(2)
+                    hoverEnabled: true
+                    focusPolicy: Qt.StrongFocus
+                    // What a screen reader says: "Continue with Ikkyo · Katate-dori".
+                    text: qsTr("Continue with") + " " + label
+                    Accessible.name: text
+                    Keys.onReturnPressed: click()
+                    Keys.onEnterPressed: click()
+                    onClicked: page.openTechnique(technique.id)
 
-                    RowLayout {
-                        id: nextRow
-
-                        width: parent.width
+                    background: Rectangle {
+                        color: "transparent"
+                        border.width: next.visualFocus ? Look.focusWidth : 0
+                        border.color: Look.focusColor
+                    }
+                    contentItem: RowLayout {
                         spacing: Look.unit(8)
 
                         ColumnLayout {
@@ -242,10 +250,8 @@ Kirigami.ScrollablePage {
                                 text: qsTr("Continue with")
                             }
                             LookLabel {
-                                id: nextText
-
                                 Layout.fillWidth: true
-                                text: next.technique ? next.technique.title + (next.technique.attack ? " · " + next.technique.attack : "") : ""
+                                text: next.label
                                 font: Look.headingFont(programmeTile.base * 1.7)
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
@@ -254,14 +260,9 @@ Kirigami.ScrollablePage {
                         }
                         LookLabel {
                             text: qsTr("Open ›")
-                            color: Look.accentColor
+                            color: next.hovered ? Look.textColor : Look.accentColor
                             font.bold: true
                         }
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: page.openTechnique(next.technique.id)
                     }
                 }
                 // The stand at the bottom: the grades, the levels of everything up to the practice

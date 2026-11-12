@@ -5583,6 +5583,22 @@ TestCase {
         tryCompare(tiles, "columns", 2)      // two columns on the phone (the clickdummy)
     }
 
+    // "Continue with" on the programme tile is a control: it takes the focus (Tab), Enter opens the
+    // technique, a screen reader hears what it leads to.
+    function test_1b_continue_is_a_control() {
+        const start = window.pageStack.items[0]
+        const next = findChild(start, "nextTechnique")
+        tryVerify(() => next.visible)
+        compare(next.focusPolicy, Qt.StrongFocus)
+        verify(next.Accessible.name.indexOf(qsTr("Continue with")) === 0, next.Accessible.name)
+        verify(next.Accessible.name.length > qsTr("Continue with").length + 2, next.Accessible.name)
+        next.forceActiveFocus(Qt.TabFocusReason)
+        verify(next.visualFocus)
+        keyClick(Qt.Key_Return)
+        tryCompare(window.pageStack, "depth", 2)
+        popPage()
+    }
+
     // The programme tile is always twice as wide and twice as high as the others (plus the gap
     // between two cells), at every width; each tile's value is there.
     function test_1b_bento_sizes_data() {
