@@ -2152,6 +2152,178 @@ TestCase {
         popPage()
     }
 
+    // Glossary on a tablet sideways: a rail that stays, the list, the detail of the word tapped.
+    function test_9_glossary_wide() {
+        failOnWarning(/SearchPage.qml.*(TypeError|ReferenceError)|WordDetail.qml.*(TypeError|ReferenceError)/)
+        window.width = 1280
+        window.height = 800
+        wait(100)       // the page opens with the keyboard focus on the field: it takes its columns from this size
+        const page = push("SearchPage")
+        tryVerify(() => page.wide)
+        slidIn()
+        const list = findChild(page, "glossaryList")
+        const rail = findChild(page, "letterRail")
+        const detail = findChild(page, "glossaryDetail")
+        tryVerify(() => rail.visible && detail.visible)
+        verify(!findChild(page, "letterRailPhone").visible)
+        tryCompare(list, "count", Glossary.words.length)
+        verify(page.usedLetters.length > 10)
+        verify(page.usedLetters.every(l => page.alphabet.indexOf(l) >= 0), "every section is a letter of A–Z")
+
+        // Before a tap the pane shows the first word.
+        compare(findChild(detail, "detailWord").text, Glossary.words[0].word)
+        compare(findChild(page, "detailKanji").visible, Glossary.words[0].jp !== "")
+
+        // The rail stays in place, and follows the section in view.
+        const before = rail.mapToItem(page, 0, 0)
+        const far = page.usedLetters[Math.floor(page.usedLetters.length * 0.6)]     // the last sections are too short to reach the top
+        list.contentY = list.originY + 3 * list.height
+        waitForRendering(list)
+        const after = rail.mapToItem(page, 0, 0)
+        compare(after.x, before.x)
+        compare(after.y, before.y)
+        verify(rail.current !== "A" && rail.current !== "", "the rail follows the list: " + rail.current)
+        verify(rail.mapToItem(page, 0, 0).x + rail.width <= list.mapToItem(page, 0, 0).x + 0.5, "the rail is left of the list")
+
+        // The rail is for the keyboard and the screen reader too.
+        const letterA = railLetter(rail, page.usedLetters[0])
+        compare(letterA.Accessible.role, Accessible.Button)
+        verify(letterA.Accessible.name.indexOf(page.usedLetters[0]) >= 0, letterA.Accessible.name)
+        rail.forceActiveFocus()
+        tryVerify(() => rail.activeFocus)
+        const here = list.currentSection
+        keyClick(Qt.Key_Down)
+        tryVerify(() => list.currentSection !== here, 1000, "Down goes to the next letter")
+        keyClick(Qt.Key_Up)
+        tryCompare(list, "currentSection", here)
+        list.positionViewAtBeginning()
+
+        // A letter without words is grey and does not react.
+        const none = page.alphabet.find(l => page.usedLetters.indexOf(l) < 0)
+        if (none !== undefined) {
+            verify(!railLetter(rail, none).has)
+            const was = list.contentY
+            mouseClick(railLetter(rail, none))
+            wait(100)
+            compare(list.contentY, was)
+        }
+
+        // A tap on a letter goes to its section; the letter lights up.
+        mouseClick(railLetter(rail, far))
+        tryCompare(list, "currentSection", far)
+        tryCompare(rail, "current", far)
+        verify(railLetter(rail, far).isCurrent)
+        verify(list.contentY > list.height)
+        const idx = page.glossary.findIndex(w => w.letter === far)
+        tryVerify(() => Math.abs(list.itemAtIndex(idx).y - list.contentY) < list.height / 4, 1000, "the section is at the top")
+
+        // A tap on a word shows it in the pane and does not say it.
+        saySpy.clear()
+        list.positionViewAtBeginning()
+        const row = findChildren(list, "glossaryRow").find(r => r.found.word === "Ago")
+        tryVerify(() => !!row)
+        mouseClick(row, row.width / 3, row.height / 2)
+        tryCompare(findChild(page, "detailWord"), "text", "Ago")
+        compare(findChild(page, "detailMeaning").text, row.found.meaning)
+        compare(saySpy.count, 0)
+        // Ago is no whole word of any technique's name: no section.
+        compare(findChildren(page, "detailHit").length, 0)
+        verify(!findChild(page, "detailHitsHead").visible)
+        // The kanji at the row's end are not smaller than the row's word.
+        const kanji = findChild(row, "rowKanji")
+        const name = allChildren(row).find(c => c.text === "Ago" && c.objectName !== "rowKanji")
+        verify(kanji.visible && !!name, "kanji " + kanji.visible + " name " + name + " " + allChildren(row).filter(c => c.text !== undefined).map(c => c.text).join("|"))
+        verify(kanji.font.pixelSize >= name.font.pixelSize && kanji.font.pointSize >= name.font.pointSize,
+               "kanji " + kanji.font.pointSize + "/" + kanji.font.pixelSize + " word " + name.font.pointSize + "/" + name.font.pixelSize)
+        shot("9-glossary-wide")
+        const kiri = Glossary.words.find(w => w.word === "Kiri-otoshi")
+        page.chosen = kiri
+        tryCompare(findChild(page, "detailKanji"), "text", kiri.jp)
+        compare(findChild(page, "detailWord").text, "Kiri-otoshi")
+        tryVerify(() => findChildren(page, "detailHit").length > 0, 2000, "techniques of the word")
+        // All of them, not the first five; none looks like another (the attack tells them apart).
+        const hits = findChildren(page, "detailHit")
+        verify(hits.length >= 10, "every technique named Kiri-otoshi: " + hits.length)
+        // The addition stands once: in the title or, with a form number, in the subtitle.
+        for (const h of hits) {
+            const named = h.text.indexOf("(") >= 0 ? h.text.slice(h.text.indexOf("(") + 1, -1) : ""
+            verify(named === "" || h.subtitle.indexOf(named) < 0, "twice: " + h.text + " / " + h.subtitle)
+        }
+        compare(new Set(hits.map(h => h.leadingText + h.subtitle)).size, hits.length, "subtitles: " + hits.map(h => h.leadingText + h.subtitle))
+        shot("9-glossary-wide-hits")
+
+        // A search keeps working, the rail goes.
+        findChild(page, "searchField").text = "hüftwurf"
+        tryCompare(page, "searching", true)
+        tryVerify(() => !rail.visible)
+        verify(page.glossary.some(w => w.word === "Koshi-nage"))
+        tryCompare(findChild(page, "detailWord"), "text", page.glossary[0].word)
+        popPage()
+    }
+
+    // Glossary on a phone: the rail at the right edge, a tap or a drag over it jumps.
+    function test_9_glossary_phone() {
+        failOnWarning(/SearchPage.qml.*(TypeError|ReferenceError)|LetterRail.qml.*(TypeError|ReferenceError)/)
+        window.width = 360
+        window.height = 800
+        const page = push("SearchPage")
+        slidIn()
+        verify(!page.wide)
+        const list = findChild(page, "glossaryList")
+        const rail = findChild(page, "letterRailPhone")
+        tryVerify(() => rail.visible)
+        verify(!findChild(page, "glossaryDetail").visible)
+        tryCompare(list, "count", Glossary.words.length)
+        tryCompare(page, "width", 360)
+        tryVerify(() => Math.abs(rail.mapToItem(page, rail.width, 0).x - page.width) < 1, 2000,
+                  "the rail at the right edge: " + rail.mapToItem(page, rail.width, 0).x + " of " + page.width)
+        verify(rail.mapToItem(page, 0, 0).x > list.mapToItem(page, 0, 0).x + list.width / 2, "right of the list")
+        verify(findChildren(rail, "railLetter").length === page.alphabet.length, "all letters")
+        verify(list.headerItem.height < list.height / 4, "the hints stay short: " + list.headerItem.height)
+
+        // Pinned heading: the section's letter stays at the top while its rows scroll.
+        const mid = page.usedLetters[Math.floor(page.usedLetters.length / 2)]
+        mouseClick(railLetter(rail, mid))
+        tryCompare(list, "currentSection", mid)
+        list.contentY += list.height / 3
+        waitForRendering(list)
+        compare(list.currentSection, mid)
+        const heads = findChildren(list, "letterHeading").filter(h => h.text === mid)
+        verify(heads.some(h => h.mapToItem(list, 0, 0).y <= 1 && h.mapToItem(list, 0, 0).y >= -1), "the heading is pinned at the top")
+        shot("9-glossary-phone")
+
+        // A drag over the rail jumps, a bubble shows the letter beside the finger.
+        const first = page.usedLetters[0]
+        const last = page.usedLetters[Math.floor(page.usedLetters.length * 0.6)]
+        const start = railLetter(rail, first)
+        const stop = railLetter(rail, last)
+        const bubble = findChild(rail, "railBubble")
+        mousePress(start, start.width / 2, start.height / 2)
+        tryCompare(list, "currentSection", first)
+        verify(bubble.visible, "a bubble while dragging")
+        const sy = start.mapToItem(rail, 0, 0).y
+        const ey = stop.mapToItem(rail, 0, 0).y
+        for (let i = 1; i <= 10; i++) {
+            mouseMove(start, start.width / 2, start.height / 2 + (ey - sy) * i / 10)
+        }
+        tryCompare(list, "currentSection", last)
+        verify(bubble.x + bubble.width <= 0, "the bubble beside the rail")
+        shot("9-glossary-phone-drag")
+        mouseRelease(start, start.width / 2, start.height / 2 + (ey - sy))
+        verify(!bubble.visible)
+
+        // A tap on a word says it, as before.
+        saySpy.clear()
+        list.positionViewAtBeginning()
+        const inView = () => findChildren(list, "glossaryRow").find(r => r.mapToItem(list, 0, 0).y > list.headerItem.height
+                                                                         && r.mapToItem(list, 0, r.height).y < list.height)
+        tryVerify(() => !!inView())
+        const row = inView()
+        mouseClick(row, row.width / 3, row.height / 2)
+        compare(saySpy.count, 1)
+        popPage()
+    }
+
     // Search: techniques across disciplines and own notes; a result opens the sheet.
     function test_9_search() {
         // A reused row between notes, words and techniques reads its kind and data together.
@@ -6545,9 +6717,9 @@ TestCase {
     }
 
     // Single-column pages on a wide window: a page of reading width in the middle, never the whole
-    // window (the composer bars of the notes too).
+    // window (the composer bars of the notes too). Not SearchPage: its glossary has three columns.
     function test_8s_reading_width_data() {
-        return ["ExamPage", "CourseNewPage", "NotebooksPage", "AllNotesPage", "NotesPage", "CoursePage", "SearchPage",
+        return ["ExamPage", "CourseNewPage", "NotebooksPage", "AllNotesPage", "NotesPage", "CoursePage",
                 "VideosPage", "BackupPage", "AppearancePage", "WelcomePage", "YearsPage", "TechniquePickerPage"]
             .map(name => ({ tag: name, name: name }))
     }
@@ -6568,6 +6740,26 @@ TestCase {
         verify(box.right - box.left <= Tablet.pageWidth + 1, data.name + " is " + Math.round(box.right - box.left)
                + " wide, at most " + Math.round(Tablet.pageWidth) + " (" + box.first + " to " + box.last + ")")
         verify(Math.abs(box.left - (window.width - box.right)) < Look.unit(40), "in the middle: " + box.left + " / " + box.right)
+    }
+
+    // The glossary in a broad window that is no tablet sideways (a desktop window, a tablet upright
+    // that is broad): one list, its rows of reading width in the middle.
+    function test_8s_search_reading_width() {
+        window.width = 1000
+        window.height = 1200
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        verify(!page.wide, "wide at " + page.width + "x" + page.height + " in " + window.width + "x" + window.height)
+        const list = findChild(page, "glossaryList")
+        tryCompare(list, "count", Glossary.words.length)
+        const rows = findChildren(list, "glossaryRow")
+        verify(rows.length > 0)
+        const row = rows[0]
+        verify(row.width <= Tablet.pageWidth + 1, "a row is " + Math.round(row.width) + " wide, at most " + Math.round(Tablet.pageWidth))
+        const left = row.mapToItem(list, 0, 0).x
+        verify(Math.abs(left - (list.width - left - row.width)) < 1, "in the middle: " + left)
+        popPage()
     }
 
     // The start menu's tiles use the height of a tablet; a phone keeps its tiles.
@@ -6897,6 +7089,37 @@ TestCase {
         compare(page.wide, data.wide)
         window.height = data.low
         tryVerify(() => page.wide === !data.wide, 2000, "released: the low window counts")
+    }
+
+    // The glossary on a tablet sideways: typing in the search keeps the three parts when the keyboard
+    // shrinks the window.
+    function test_8r_typing_holds_glossary() {
+        window.width = 1280
+        window.height = 800
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        tryVerify(() => page.wide)
+        const field = findChild(page, "searchField")
+        field.forceActiveFocus()
+        tryVerify(() => field.activeFocus)
+        const high = page.height
+        window.height = 450
+        tryVerify(() => page.height < high, 5000, "the page got lower")
+        wait(200)
+        verify(page.wide, "the keyboard leaves the three parts alone")
+        verify(findChild(page, "glossaryDetail").visible)
+        field.text = "kiri"
+        tryVerify(() => page.query === "kiri", 2000)
+        verify(page.wide, "typing keeps them")
+        window.contentItem.forceActiveFocus()
+        tryVerify(() => !field.activeFocus)
+        window.height = 800
+        wait(200)
+        verify(page.wide)
+        window.height = 450
+        tryVerify(() => !page.wide, 2000, "released: the low window counts (holding " + page.hold.holding + ", typing " + page.hold.typing + ", high " + page.hold.high + ", held " + page.hold.heldHeight + " of " + page.height + ", focus " + window.activeFocusItem + ")")
+        popPage()
     }
 
     // Turned with the keyboard open: the tablet's real shape counts, not the low window, also once
@@ -7589,59 +7812,60 @@ TestCase {
         popPage()
     }
 
+    // The letter of the rail, as an item to tap.
+    function railLetter(rail, letter) {
+        return findChildren(rail, "railLetter").find(c => c.modelData === letter)
+    }
+
     function test_8l_glossary_letters_jump() {
         const page = push("SearchPage")
         const list = findChild(page, "glossaryList")
-        const bar = findChild(page, "letterBar")
-        tryVerify(() => bar.visible)
-        const letters = allChildren(bar).filter(c => c.objectName === "letterJump")
-        verify(letters.length > 10)
+        const rail = findChild(page, "letterRailPhone")
+        tryVerify(() => rail.visible)
+        verify(!findChild(page, "letterRail").visible, "the left rail is for a wide window")
         wait(500)
-        const far = letters[letters.length - 1]
-        far.clicked()
-        wait(100)
-        verify(list.contentY > list.height, "jumped to " + far.text + ": " + list.contentY)
+        const far = page.usedLetters[Math.floor(page.usedLetters.length * 0.6)]     // the last sections are too short to reach the top
+        mouseClick(railLetter(rail, far))
+        tryVerify(() => list.contentY > list.height, 1000, "jumped to " + far + ": " + list.contentY)
+        tryCompare(list, "currentSection", far)
 
-        // The head changes height after the jump (here the letters wrap anew in a narrower window;
-        // also the speech hint once the engine has answered): the list stays at the letter.
+        // The head changes height after the jump (the window narrows: texts wrap anew): the list
+        // stays at the letter.
+        window.width = 340
+        waitForRendering(list)
+        verify(list.contentY > list.height, "stays at " + far + " in the narrow window: " + list.contentY)
+        window.width = 420
+        waitForRendering(list)
+        verify(list.contentY > list.height, "stays at " + far + ": " + list.contentY)
+
+        // The head grows (the hints wrap in a narrower window) while the list stands where the wheel
+        // left it (it sets contentY, no flick): it stays there.
         const header = list.headerItem
         const before = header.height
-        window.width = 340
-        tryVerify(() => header.height > before, 1000, "the head grows: " + header.height)
-        waitForRendering(list)
-        const narrow = list.contentY
-        window.width = 420
-        tryVerify(() => header.height === before, 1000, "the head shrinks: " + header.height)
-        waitForRendering(list)
-        verify(narrow > list.height, "stays at " + far.text + " in the narrow window: " + narrow)
-        verify(list.contentY > list.height, "stays at " + far.text + ": " + list.contentY)
-
-        // Back at the top by hand, then down by a wheel (it sets contentY, no flick): the same.
         list.positionViewAtBeginning()
         list.contentY = list.originY + 3 * list.height
         const scrolled = list.contentY
-        window.width = 340
-        tryVerify(() => header.height > before, 1000, "the head grows again: " + header.height)
+        window.width = 320
+        tryVerify(() => header.height > before, 1000, "the head grows: " + header.height)
         waitForRendering(list)
         verify(list.contentY > list.height, "stays where the wheel left it (" + scrolled + "): " + list.contentY)
         window.width = 420
-        tryVerify(() => header.height === before, 1000, "the head shrinks again: " + header.height)
-        waitForRendering(list)
+        tryVerify(() => header.height === before, 1000, "the head shrinks: " + header.height)
 
-        // At the top, the list stays at its top while the head grows (the letters stay in view).
+        // At the top, the list stays at its top while the head grows.
         list.positionViewAtBeginning()
-        window.width = 340
+        window.width = 320
         tryVerify(() => header.height > before, 1000, "the head grows at the top: " + header.height)
         tryVerify(() => list.atYBeginning, 1000, "at the top: " + list.contentY + " from " + list.originY)
         window.width = 420
         tryVerify(() => list.atYBeginning, 1000, "at the top again: " + list.contentY + " from " + list.originY)
 
-        // Far down, then a search: its results from the top.
-        far.clicked()
+        // Far down, then a search: its results from the top, no rail.
+        mouseClick(railLetter(rail, far))
         verify(list.contentY > list.height, "jumped again: " + list.contentY)
         findChild(page, "searchField").text = "ko"
         tryCompare(page, "searching", true)
-        verify(!bar.visible, "words found have no letters")
+        verify(!rail.visible, "words found have no letters")
         tryVerify(() => list.atYBeginning, 1000, "results from the top: " + list.contentY + " from " + list.originY)
         popPage()
     }

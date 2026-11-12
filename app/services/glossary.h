@@ -18,7 +18,7 @@ class Glossary : public QObject
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
-    // Every word, alphabetical: {word, jp, meaning, letter, speech}. `meaning` is the translation
+    // Every word, alphabetical: {word, jp, reading, meaning, letter, speech}. `reading` is the kana ("" without), `meaning` is the translation
     // in the app's language ("" without one), `letter` heads its section (A … Z), `speech` is what
     // the speaker button says (the kanji, else the reading in kana, else the word).
     Q_PROPERTY(QVariantList words READ words NOTIFY wordsChanged)

@@ -67,6 +67,10 @@ public:
     // as in search() plus `excerpt`: the comment's line with the words, shortened around them. Same
     // rules and language as search(), at most `limit`.
     Q_INVOKABLE QVariantList searchComments(const QString &query, int limit = 50) const;
+    // The techniques that hold `word` (a glossary word) as a whole word in their name or attack, at most
+    // `limit`, rows as in search(). Hyphens and spaces do not matter ("Kesagake" names Kesa-gake), a part of a word
+    // is none: "Kote" names Kote-gaeshi, "Ago" nothing.
+    Q_INVOKABLE QVariantList techniquesNamed(const QString &word, int limit = 50) const;
     // Builds what search() compares (16 ms), when the search opens, not on the first letter.
     Q_INVOKABLE void prepareSearch() const { searchRows(); }
     // The techniques a text names (a course note), best first, at most `limit`, leaving out the ids
@@ -116,6 +120,8 @@ private:
         QVariantMap row;
         SearchText text;
         std::optional<SearchText> comment;  // title and text of the Shinki Toho comment, if any
+        QStringList titleWords;             // the words of the name, then of the attack (techniquesNamed)
+        QStringList attackWords;
     };
     const QList<SearchRow> &searchRows() const;
     QVariantList shinkiTohoEntries(const QVariantMap &discipline, const QString &grade) const;

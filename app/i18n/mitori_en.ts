@@ -157,10 +157,10 @@
 <context>
     <name>SearchPage</name>
     <message numerus="yes">
-        <source>%n Japanese term(s), with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</source>
+        <source>%n Japanese term(s), with kanji and translation.</source>
         <translation>
-            <numerusform>%n Japanese term, with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</numerusform>
-            <numerusform>%n Japanese terms, with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</numerusform>
+            <numerusform>%n Japanese term, with kanji and translation.</numerusform>
+            <numerusform>%n Japanese terms, with kanji and translation.</numerusform>
         </translation>
     </message>
 </context>
