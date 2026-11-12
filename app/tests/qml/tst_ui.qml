@@ -593,6 +593,10 @@ TestCase {
         if (item.picked !== undefined && item.focusLevel !== undefined && item.parent.entry === id && item.visible) {
             return item
         }
+        // The ratings of Kino (PlayerRatings): the player's row or column.
+        if (item.picked !== undefined && item.vertical !== undefined && item.entry === id && item.visible) {
+            return item
+        }
         for (let i = 0; i < item.children.length; i++) {
             const found = findPicker(item.children[i], id)
             if (found) {
@@ -1073,11 +1077,18 @@ TestCase {
         const page = push("PlayerPage", { playlist: rows, index: 0 })
         // The page has the bar's style (with Auto it had no head, and no way back, under Kante).
         const bar = window.pageStack.globalToolBar
-        compare(page.globalToolBarStyle, bar.actualStyle)
+        // With a picture (Kino) the dark page has no head of its own.
+        compare(page.globalToolBarStyle, page.kino ? Kirigami.ApplicationHeaderStyle.None : bar.actualStyle)
         verify(!Levels.held, "no video plays: the screen may sleep")
         Levels.setPlayback(Levels.Playback.Playing)     // as the player does while it plays
-        const awake = findChild(page, "awakeSwitch")
-        const sound = findChild(page, "soundSwitch")
+        // With a picture (Kino) the controls are not built at all: the visible switches are the thumb
+        // zone's, and sideways the plate's.
+        if (page.kino) {
+            verify(!findChild(page, "controlsView"), "the old controls are not built")
+            verify(!findChild(page, "awakeSwitch") && !findChild(page, "soundSwitch"))
+        }
+        const awake = findChild(page, page.kino ? "thumbAwake" : "awakeSwitch")
+        const sound = findChild(page, page.kino ? "thumbSound" : "soundSwitch")
         verify(awake.checked && sound.checked)
         awake.clicked()
         verify(!Levels.held && !Levels.awake)
@@ -1087,18 +1098,56 @@ TestCase {
         verify(!Levels.sound && !sound.checked)
         sound.clicked()
         verify(Levels.sound)
-        findChild(page, "transportBar").speedChangeRequested(0.5)
+        if (page.kino) {
+            page.setSpeed(0.5)
+        } else {
+            findChild(page, "transportBar").speedChangeRequested(0.5)
+        }
         verify(!sound.checked, "slow motion is silent")
         verify(!sound.enabled, "no unseen change in slow motion")
-        findChild(page, "transportBar").speedChangeRequested(1)
+        if (page.kino) {
+            page.setSpeed(1)
+        } else {
+            findChild(page, "transportBar").speedChangeRequested(1)
+        }
         verify(sound.checked)
 
+        // Sideways the plate has the same switches.
+        if (page.kino) {
+            window.width = 860
+            window.height = 420
+            tryVerify(() => findChild(page, "plate").visible, 3000)
+            const plateAwake = findChild(page, "plateAwake")
+            const plateSound = findChild(page, "plateSound")
+            verify(plateAwake.visible && plateSound.visible && plateAwake.checked && plateSound.checked)
+            plateAwake.clicked()
+            verify(!Levels.awake)
+            plateAwake.clicked()
+            verify(Levels.awake)
+            plateSound.clicked()
+            verify(!Levels.sound && !plateSound.checked)
+            plateSound.clicked()
+            verify(Levels.sound)
+            window.width = 420
+            window.height = 800
+            tryVerify(() => page.upright, 3000)
+        }
+
+        // With a picture (Kino) the middle lists the last notes, else the controls say "Noted today".
         const noted = findChild(page, "notedToday")
-        verify(!noted.visible)
+        verify(page.kino ? (!noted || !noted.visible) : !noted.visible)
         Practice.addNote(page.current.id, "Schritt kleiner")
         Practice.addNote(page.current.id, "Blick")
-        verify(noted.visible)
-        verify(noted.text.indexOf("Schritt kleiner") >= 0 && noted.text.indexOf("Blick") >= 0, noted.text)
+        if (page.kino && findChild(page, "kinoMiddle").tight) {
+            verify(findChild(page, "kinoNotesLine").text.indexOf("2") >= 0, findChild(page, "kinoNotesLine").text)
+        } else if (page.kino) {
+            const listed = allChildren(findChild(page, "kinoHistory")).filter(c => c.objectName === "lastNote" && c.visible)
+            verify(listed.length === 2 && listed[0].text.indexOf("Blick") >= 0 && listed[1].text.indexOf("Schritt kleiner") >= 0)
+        } else {
+            verify(noted.visible)
+            verify(noted.text.indexOf("Schritt kleiner") >= 0 && noted.text.indexOf("Blick") >= 0, noted.text)
+        }
+
         for (const n of Practice.notes(page.current.id)) {
             Practice.deleteNote(n.uid)
         }
@@ -1205,49 +1254,335 @@ TestCase {
         popPage()
     }
 
-    // A tablet sideways with a wide video: title above, controls below, no rail (the clickdummy's
-    // "Player groß"). A phone has the time on the picture and no word on the rail.
-    function test_4t_player_bands() {
-        const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry" && r.video)
-        if (rows.length === 0 || !Videos.available(rows[0].video.video)) {
-            skip("no video for Aikido 5. Kyu (set MITORI_VIDEOS)")
+    // The ratings of a player: in the controls, or with a picture (Kino) the thumb zone's row, sideways
+    // (full screen) the column.
+    function ratingBarOf(player) {
+        for (const name of ["ratingRow", "kinoRating", "ratingColumn"]) {
+            const found = findChild(player, name)
+            if (found && found.visible) {
+                return found
+            }
         }
-        const width = window.width
-        const height = window.height
+        return null
+    }
+
+    // An item's edges in the page's coordinates.
+    function edgesIn(page, item) {
+        const at = item.mapToItem(page, 0, 0)
+        return { left: at.x, top: at.y, right: at.x + item.width, bottom: at.y + item.height }
+    }
+    function overlap(a, b) {
+        return a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
+    }
+    // Buttons in view under 44 units a side (a finger's size), as "name WxH".
+    function smallTargets(page) {
+        const least = Look.unit(44) - 0.5
+        return allChildren(page).filter(c => c.visible && c.clicked !== undefined && c.width > 0 && c.height > 0
+                                             && (c.width < least || c.height < least))
+                                .map(c => (c.objectName || c.text || c.toString()) + " " + Math.round(c.width) + "x" + Math.round(c.height))
+    }
+
+    // The player's design "Kino" sideways (a tablet, a phone): the picture fills the page; over it
+    // the back button and the name at the top left, the notes at the top right, the four ratings as
+    // a column at the right edge, the plate with the timeline and the controls at the foot.
+    function test_4t_player_kino_data() {
+        return [{ tag: "tablet", width: 1280, height: 800 }, { tag: "phone", width: 860, height: 420 },
+                { tag: "small phone", width: 800, height: 360 }]
+    }
+    function test_4t_player_kino(data) {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        const rows = Programme.entries("aikido", "k2").filter(r => r.kind === "entry" && r.video)
         const page = push("PlayerPage", { playlist: rows, index: 0 })
-        window.width = 800
-        window.height = 360
-        tryVerify(() => findChild(page, "railTime").visible, 2000)
-        verify(!findChild(page, "bandTitle").visible)
-        compare(findChild(page, "railLoop").text, "", "only the symbol on the rail")
-        window.width = 1280
-        window.height = 800
-        tryVerify(() => findChild(page, "bandTitle").visible, 2000, "bands")
+        window.width = data.width
+        window.height = data.height
+        const plate = findChild(page, "plate")
+        tryVerify(() => plate.visible && plate.height > 0, 5000, "the plate")
+        wait(500)
+        shot("player-kino-" + data.width + "x" + data.height)
+
+        verify(page.headless, "no head sideways")
+        const stage = edgesIn(page, findChild(page, "stage"))
+        verify(Math.abs(stage.top) < 1 && Math.abs(stage.bottom - page.height) < 1, "the picture fills the page")
+
+        // The plate at the foot, the full width; the timeline above its row.
+        const foot = edgesIn(page, plate)
+        verify(Math.abs(foot.bottom - page.height) < 1 && Math.abs(foot.right - page.width) < 1 && foot.left < 1, "the plate at the foot")
+        const timeline = edgesIn(page, findChild(page, "railTimeline"))
+        const play = edgesIn(page, findChild(page, "railPlay"))
+        verify(timeline.bottom <= play.top + 1 && timeline.top >= foot.top, "the timeline above the controls, on the plate")
+        for (const part of ["plateTime", "plateTempo", "railFrameBack", "railFrameOn", "railLoop", "plateSound", "plateNext"]) {
+            const e = edgesIn(page, findChild(page, part))
+            verify(e.left >= 0 && e.right <= page.width && e.top >= foot.top && e.bottom <= page.height, part + " in view on the plate")
+        }
+        verify(!findChild(page, "fullButton").visible, "the stage's full-screen button is not there")
+        verify(findChild(page, "plateFull").visible)
+
+        // The back button and the name at the top left, the notes at the top right.
+        const back = edgesIn(page, findChild(page, "railBack"))
+        const name = edgesIn(page, findChild(page, "kinoName"))
+        const notes = edgesIn(page, findChild(page, "kinoNotesButton"))
+        verify(back.left < page.width / 4 && back.top < page.height / 4, "back at the top left")
+        verify(name.left >= back.right && name.top < page.height / 4, "the name beside it")
+        verify(findChild(page, "kinoName").text.indexOf(rows[0].title) >= 0)
+        verify(notes.right <= page.width && notes.left > page.width / 2 && notes.top < page.height / 4, "notes at the top right")
+        verify(findChild(page, "kinoNotesButton").text.indexOf("0") >= 0, "the count of notes")
+
+        // The ratings: a column at the right edge, over the picture, clear of the notes and the plate.
+        const column = findChild(page, "ratingColumn")
+        verify(column.vertical && column.visible)
+        const ratings = edgesIn(page, column)
+        verify(ratings.right > page.width - Look.unit(24) && ratings.right <= page.width, "at the right edge: " + ratings.right)
+        verify(ratings.top >= stage.top && ratings.bottom <= foot.top + 0.5, "over the picture, above the plate")
+        verify(!overlap(ratings, notes) && !overlap(ratings, foot) && !overlap(notes, name), "nothing overlaps")
+        const buttons = column.children.filter(c => c.level !== undefined)
+        compare(buttons.length, 4)
+        for (let i = 1; i < buttons.length; ++i) {
+            verify(edgesIn(page, buttons[i]).top >= edgesIn(page, buttons[i - 1]).bottom - 0.5, "one below the other")
+        }
+        verify(!findChild(page, "kinoRating").visible, "the thumb zone's row is not there")
+        compare(smallTargets(page), [], "every control as large as a finger")
+
+        // A tap rates; the one filled is the level.
+        column.picked(3)
+        compare(Practice.level(rows[0].id), 3)
+        verify(buttons[2].chosen && !buttons[1].chosen)
+
+        // The notes button asks for the notes.
+        findChild(page, "kinoNotesButton").clicked()
+        tryVerify(() => window.pageStack.currentItem !== page, 3000, "the notes page opens")
+        window.back()
+        tryVerify(() => window.pageStack.currentItem === page, 3000)
+    }
+
+    // A note begun stays in its field when the phone turns or the middle gets short; no note is made
+    // without "Add" (only leaving the page keeps it, as before).
+    function test_4u_player_kino_draft_survives() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        const rows = Programme.entries("aikido", "k2").filter(r => r.kind === "entry" && r.video)
+        window.width = 420
+        window.height = 960
+        const page = push("PlayerPage", { playlist: rows, index: 3 })
+        const id = rows[3].id
+        const fieldOf = () => findChild(findChild(page, "kinoNote"), "noteField")
+        tryVerify(() => page.upright && !!fieldOf(), 5000, "the field")
+        slidIn()
+        const before = Practice.notes(id).length
+        fieldOf().text = "halb getippt"
+
+        // Turned sideways and back.
+        window.width = 860
+        window.height = 420
+        tryVerify(() => page.headless, 3000)
         wait(300)
-        shot("6b-player-bands")
-        verify(findChild(page, "bandBack").visible)
-        verify(!findChild(page, "railBack").visible)
-        verify(!findChild(page, "railTime").visible)
-        verify(findChild(page, "bandTime").visible)
-        verify(findChild(page, "bandTitle").text.indexOf(rows[0].title) >= 0)
-        compare(findChild(page, "railLoop").icon.name, "media-playlist-repeat")
-        verify(findChild(page, "railLoop").text !== "", "the word in the row")
-        const stage = findChild(page, "stage")
-        const stageTop = stage.mapToItem(page, 0, 0).y
-        const stageBottom = stageTop + stage.height
-        verify(stageTop > 0, "the title stands above the picture")
-        const timeline = findChild(page, "railTimeline")
-        verify(timeline.mapToItem(page, 0, 0).y >= stageBottom, "the timeline stands below it")
-        const play = findChild(page, "railPlay")
-        const playY = play.mapToItem(page, 0, 0).y
-        verify(playY >= timeline.mapToItem(page, 0, timeline.height).y, "the row below the timeline")
-        verify(playY + play.height <= page.height, "in view")
-        verify(Math.abs(play.mapToItem(page, play.width / 2, 0).x - page.width / 2) < 2, "the transport in the middle")
-        const loop = findChild(page, "railLoop")
-        verify(loop.mapToItem(page, loop.width, 0).x <= page.width, "the row ends in view")
-        window.width = width
-        window.height = height
-        window.back()      // as the head does (Kirigami's pop() may keep the page, PlayerPage.leave)
+        compare(Practice.notes(id).length, before, "turning makes no note")
+        window.width = 420
+        window.height = 960
+        tryVerify(() => page.upright && !!fieldOf(), 5000, "the field again")
+        compare(fieldOf().text, "halb getippt")
+        compare(Practice.notes(id).length, before)
+
+        // A short middle (no focus in the field): the compact form, and its button says that a note
+        // is begun; it opens the notes page with the text, in view without scrolling.
+        window.width = 360
+        window.height = 640
+        const middle = findChild(page, "kinoMiddle")
+        tryVerify(() => middle.tight, 3000, "short")
+        wait(300)
+        compare(Practice.notes(id).length, before, "a short middle makes no note")
+        const add = findChild(page, "kinoAddNote")
+        verify(add.visible && add.text === qsTr("Continue note …"), "the button says so: " + add.text)
+        const at = edgesIn(page, add)
+        verify(at.top >= edgesIn(page, middle).top - 0.5 && at.bottom <= edgesIn(page, middle).bottom + 0.5, "the button in view")
+        add.clicked()
+        tryVerify(() => window.pageStack.currentItem !== page, 3000, "the notes page opens")
+        const compose = findChild(window.pageStack.currentItem, "compose")
+        compare(compose.text, "halb getippt", "with the begun text")
+        compose.clear()
+        window.back()
+        tryVerify(() => window.pageStack.currentItem === page, 3000)
+        compare(Practice.notes(id).length, before)
+
+        // Leaving keeps a begun note as a note, as it always did.
+        window.width = 420
+        window.height = 960
+        tryVerify(() => page.upright && !!fieldOf(), 5000, "the field again")
+        compare(fieldOf().text, "", "the text went to the notes page")
+        fieldOf().text = "beim Verlassen"
+        window.back()
+        tryCompare(window.pageStack, "depth", 1)
+        compare(Practice.notes(id).length, before + 1)
+        for (const n of Practice.notes(id)) {
+            Practice.deleteNote(n.uid)
+        }
+    }
+
+    // The player moves on while a note is begun and its field is not built (sideways, or a technique
+    // without a video): the draft is saved on its own technique and the field is empty.
+    function test_4u_player_kino_draft_moves_on_data() {
+        return [{ tag: "sideways", noVideo: false }, { tag: "no video next", noVideo: true }]
+    }
+    function test_4u_player_kino_draft_moves_on(data) {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        const rows = Programme.entries("aikido", "k2").filter(r => r.kind === "entry" && r.video)
+        const list = [rows[3], data.noVideo ? Object.assign({}, rows[4], { video: null }) : rows[4]]
+        window.width = 420
+        window.height = 960
+        const page = push("PlayerPage", { playlist: list, index: 0 })
+        const a = list[0].id
+        const b = list[1].id
+        const fieldOf = () => findChild(findChild(page, "kinoNote"), "noteField")
+        tryVerify(() => page.upright && !!fieldOf(), 5000, "the field")
+        slidIn()
+        const before = Practice.notes(a).length
+        const beforeB = Practice.notes(b).length
+        fieldOf().text = "fuer A"
+
+        if (!data.noVideo) {
+            window.width = 860
+            window.height = 420
+            tryVerify(() => page.headless, 3000)
+        }
+        page.go(1)
+        compare(page.current.id, b)
+        tryVerify(() => Practice.notes(a).length === before + 1, 3000, "saved on its own technique")
+        compare(Practice.lastNote(a).text, "fuer A")
+        compare(Practice.notes(b).length, beforeB, "nothing for the next one")
+
+        // Back upright with a video: the field is empty under B, too.
+        if (!data.noVideo) {
+            window.width = 420
+            window.height = 960
+            tryVerify(() => page.upright && !!fieldOf(), 5000, "the field again")
+            compare(fieldOf().text, "", "empty under the next technique")
+            compare(page.kinoDraft.text, "")
+        }
+        for (const n of Practice.notes(a)) {
+            Practice.deleteNote(n.uid)
+        }
+        window.back()
+        tryCompare(window.pageStack, "depth", 1)
+    }
+
+    // Kino upright (a phone): the name, the picture and its timeline, in the middle how the technique
+    // was rated and its last notes with a field for a new one, below in the thumb zone the controls,
+    // the ratings and the way on. The middle is never empty and nothing overlaps.
+    function test_4u_player_kino_upright_data() {
+        // `tight`: the middle is too short for the notes and the field (a small phone); left out,
+        // the style's fonts decide (Shinki needs more room than Kante).
+        return [{ tag: "tall phone", width: 420, height: 960, row: 0, tight: false },
+                { tag: "phone", width: 420, height: 860, row: 2 },
+                { tag: "small phone", width: 360, height: 640, row: 1, tight: true }]
+    }
+    function test_4u_player_kino_upright(data) {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        const rows = Programme.entries("aikido", "k2").filter(r => r.kind === "entry" && r.video)
+        window.width = data.width
+        window.height = data.height
+        const page = push("PlayerPage", { playlist: rows, index: data.row })
+        const id = rows[data.row].id
+        const middle = findChild(page, "kinoMiddle")
+        tryVerify(() => middle.visible && middle.height > 0, 5000, "the middle")
+        slidIn()
+        verify(page.upright && !page.headless)
+
+        // The dark title row carries the name whole and Back; no light head above it.
+        const title = findChild(page, "kinoTitle")
+        tryVerify(() => title.width > 0, 2000)
+        tryVerify(() => !title.truncated, 2000, "the name is cut: " + title.text + " in " + title.width + " px")
+        compare(page.globalToolBarStyle, Kirigami.ApplicationHeaderStyle.None, "no light head over the dark page")
+        verify(findChild(page, "kinoBack").visible, "Back in the title row")
+
+        // Not empty, whatever the technique has: the history stands there with its height.
+        const history = findChild(page, "kinoHistory")
+        verify(history.visible && history.height > 0)
+        const before = history.ratings.length
+        compare(Practice.notes(id).length, 0)
+        const tight = middle.tight
+        if (data.tight !== undefined) {
+            verify(tight === data.tight, "tight " + tight + " at a height of " + middle.height + " (needs " + middle.needed + ")")
+        }
+        verify(middle.clip, "the middle is clipped")
+        if (!tight) {
+            verify(findChild(page, "noNotes").visible, "without notes it says so")
+        }
+        shot("player-kino-" + data.width + "x" + data.height + "-empty")
+
+        // Ratings and notes show; the field adds today's.
+        verify(Practice.rate(id, 1))
+        verify(Practice.rate(id, 3))
+        Practice.addNote(id, "Schritt kleiner")
+        Practice.addNote(id, "Blick zum Partner")
+        Practice.addNote(id, "Hüfte zuerst")
+        compare(history.ratings.length, Math.min(8, before + 2))
+        compare(history.ratings[history.ratings.length - 2].level, 1)
+        compare(history.ratings[history.ratings.length - 1].level, 3)
+        const lastNotes = () => allChildren(history).filter(c => c.objectName === "lastNote" && c.visible)
+        if (tight) {
+            // Too short: the bars, a "Notes · n" line and a button to the note input, no list, no field.
+            compare(lastNotes().length, 0)
+            verify(findChild(page, "kinoNotesLine").visible)
+            verify(findChild(page, "kinoNotesLine").text.indexOf("3") >= 0, findChild(page, "kinoNotesLine").text)
+            verify(!findChild(page, "kinoNote").active, "no inline field")
+            const add = findChild(page, "kinoAddNote")
+            verify(add.visible)
+            add.clicked()
+            tryVerify(() => window.pageStack.currentItem !== page, 3000, "the note input opens")
+            window.back()
+            tryVerify(() => window.pageStack.currentItem === page, 3000)
+        } else {
+            compare(lastNotes().length, 2, "the last two notes")
+            verify(lastNotes()[0].text.indexOf("Hüfte zuerst") >= 0 && lastNotes()[1].text.indexOf("Blick zum Partner") >= 0,
+                   lastNotes()[0].text + " / " + lastNotes()[1].text)
+            verify(!findChild(page, "noNotes").visible)
+            verify(!findChild(page, "kinoAddNote").visible)
+
+            const note = findChild(page, "kinoNote")
+            const field = findChild(note, "noteField")
+            field.text = "Heute ruhiger"
+            findChild(note, "addNote").clicked()
+            compare(field.text, "")
+            verify(lastNotes()[0].text.indexOf("Heute ruhiger") > 0, lastNotes()[0].text)
+        }
+        wait(300)
+        shot("player-kino-" + data.width + "x" + data.height)
+
+        // From top to bottom: the name, the picture, the timeline, the middle, the thumb zone; none
+        // over another, all in the page.
+        const order = ["kinoTitleRow", "stage", "kinoScrub", "kinoMiddle", "thumbZone"].map(n => ({ n: n, e: edgesIn(page, findChild(page, n)) }))
+        for (let i = 1; i < order.length; ++i) {
+            verify(order[i].e.top >= order[i - 1].e.bottom - 0.5, order[i].n + " below " + order[i - 1].n + ": " + JSON.stringify(order))
+        }
+        verify(order[4].e.bottom <= page.height + 0.5, "the thumb zone in view: " + order[4].e.bottom + " of " + page.height)
+        verify(order[3].e.bottom - order[3].e.top > 0, "the middle has height")
+        // Nothing of the middle reaches below its edge into the thumb zone.
+        const stray = allChildren(middle).filter(c => c.visible && c.width > 0 && c.height > 0
+                                                 && (c.text !== undefined || c.clicked !== undefined || c.picked !== undefined)
+                                                 && edgesIn(page, c).bottom > order[3].e.bottom + 0.5)
+                                         .map(c => (c.objectName || c.text) + " to " + edgesIn(page, c).bottom + " of " + order[3].e.bottom)
+        compare(stray, [], "the middle spills into the thumb zone")
+        for (const part of order) {
+            verify(part.e.left >= 0 && part.e.right <= page.width + 0.5, part.n + " within the width")
+        }
+        const row = edgesIn(page, findChild(page, "kinoRating"))
+        verify(row.top >= order[3].e.bottom - 0.5, "the ratings in the thumb zone")
+        verify(!findChild(page, "ratingColumn").visible && !findChild(page, "plate").visible)
+        verify(findChild(page, "fullButton").visible, "full screen on the picture")
+        compare(smallTargets(page), [], "every control as large as a finger")
+
+        // The row rates, and the training would move on.
+        findChild(page, "kinoRating").picked(4)
+        compare(Practice.level(id), 4)
+        compare(history.ratings.length, Math.min(8, before + 3))
+        compare(history.ratings[history.ratings.length - 1].level, 4)
+
+        for (const n of Practice.notes(id)) {
+            Practice.deleteNote(n.uid)
+        }
+        window.back()
         tryCompare(window.pageStack, "depth", 1)
     }
 
@@ -1296,7 +1631,7 @@ TestCase {
         wait(300)
         shot("6b-full-screen")
         verify(!full.visible, "⤢ is gone in full screen")
-        const leave = findChild(page, "bandBack")
+        const leave = findChild(page, "railBack")
         tryVerify(() => leave.visible && leave.width > 0)
         wait(300)
         compare(leave.symbol, "view-restore")
@@ -1360,17 +1695,23 @@ TestCase {
         compare(spaced.big, true)
 
         // The Back key ends full screen too, and the video stops.
+        // Seen as it happens: the page goes within the key press (pop in the same turn of the loop),
+        // so a read afterwards finds it destroyed. Full screen must end and the video stop first.
+        let bigEnded = false
+        spaced.bigChanged.connect(() => { bigEnded = bigEnded || !spaced.big })
         keyClick(Qt.Key_Back)
         tryCompare(window.pageStack, "currentIndex", 0)
         tryCompare(window, "visibility", before)
-        compare(spaced.big, false)
+        tryVerify(() => bigEnded, 5000, "full screen ended")
         window.pageStack.pop(window.pageStack.currentItem)
         const hidden = push("PlayerPage", { playlist: rows, index: 0 })
         tryVerify(() => hidden.playing, 5000)
         wait(500)
+        let quiet = false
+        hidden.playingChanged.connect(() => { quiet = quiet || !hidden.playing })
         keyClick(Qt.Key_Back)
         tryCompare(window.pageStack, "currentIndex", 0)
-        tryCompare(hidden, "playing", false, 2000, "no sound from a page left")
+        tryVerify(() => quiet, 5000, "no sound from a page left")
         window.pageStack.pop(window.pageStack.currentItem)
 
         // Back from full screen leaves the keys with the page before: the search goes on.
@@ -1424,7 +1765,7 @@ TestCase {
         tryVerify(() => bigPage.duration > 0, 5000)
         tryVerify(() => Math.abs(bigPage.position - place) < 500, 3000, "at " + bigPage.position)
         compare(window.visibility, Window.FullScreen)
-        const close = findChild(bigPage, "bandBack")
+        const close = findChild(bigPage, "railBack")
         tryVerify(() => close.visible && close.width > 0)
         clickUntil(close, () => window.pageStack.depth === before2)
         tryCompare(window.pageStack, "depth", before2)
@@ -1440,7 +1781,8 @@ TestCase {
         const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")
         const player = push("PlayerPage", { playlist: rows, index: 0 })
         if (player.hasVideo) {
-            const bar = findChild(player, "transportBar")
+            // With a picture (Kino) the thumb zone holds the symbol buttons, else the style's bar.
+            const bar = findChild(player, player.kino ? "thumbZone" : "transportBar")
             const buttons = allChildren(bar).filter(c => c.visible && c.width > 0 && c.checkable !== undefined
                                                     && c.display === 0)
             verify(buttons.length > 0 || !uiShinki, "the bar's symbol buttons")
@@ -1849,7 +2191,7 @@ TestCase {
         compare(player.playlist.length, today.due.length, "every due technique, with or without a video")
 
         // Position and the card standing for a missing video.
-        const place = findChild(player, "placeText")
+        const place = findChild(player, player.kino ? "kinoPlace" : "placeText")
         verify(place.text.endsWith("1 / " + player.playlist.length), place.text)
         verify(place.text.indexOf(player.current.gradeName) >= 0, place.text)
         if (!player.hasVideo) {
@@ -1985,7 +2327,7 @@ TestCase {
         pages.player.big = true
         compare(window.visibility, Window.FullScreen)
         verify(Practice.rate(rows[0].id, 2))
-        findChild(pages.player, "ratingRow").rated(2)
+        ratingBarOf(pages.player).rated(2)
         tryVerify(() => window.pageStack.currentItem.count === 1)
         compare(window.visibility, before)
         verify(!hasPlayer())
@@ -1995,7 +2337,7 @@ TestCase {
     function test_7d_training_end_once() {
         const rows = freshRows(1)
         const pages = trainingOver(rows)
-        const row = findChild(pages.player, "ratingRow")
+        const row = ratingBarOf(pages.player)
         verify(Practice.rate(rows[0].id, 2))
         row.rated(2)
         row.rated(2)
@@ -2983,7 +3325,7 @@ TestCase {
         verify(button().checked)
         verify(Videos.subtitlesOn)
 
-        // Sideways on a phone (the rail) and on a tablet (the bands): the switch in view, the text above the timeline.
+        // Sideways on a phone and on a tablet (the plate of Kino): the switch in view, the text above the timeline.
         window.width = 800
         window.height = 360
         tryVerify(() => page.headless && !!button())
@@ -2995,10 +3337,9 @@ TestCase {
         shot("16h-subtitles-phone-landscape")
         const phoneSize = text.font.pixelSize
         window.width = 1280
-        window.height = 1000     // room above and below the 16:9 picture: the bands
-        tryVerify(() => findChild(page, "bandTitle").visible, 2000, "bands")
+        window.height = 1000     // room above and below the 16:9 picture
+        tryVerify(() => findChild(page, "plate").visible && button().visible, 2000, "the plate")
         wait(300)
-        verify(button().text !== "", "the word in the row")
         verify(button().mapToItem(page, button().width, 0).x <= page.width, "the row ends in view")
         verify(overflowing(page, 1280).length === 0, "past the edge: " + overflowing(page, 1280))
         shot("16h-subtitles-tablet")
@@ -4503,17 +4844,24 @@ TestCase {
             skip("no video for the Kamae exercise (set MITORI_VIDEOS)")
         }
         // [width, height, training, the item that must be in view]
-        for (const c of [[420, 800, true, "ratingRow"]]) {
+        for (const c of [[420, 800, true, "kinoRating"]]) {
             window.width = c[0]
             window.height = c[1]
             const at = entry => {
                 const page = push("PlayerPage", { playlist: [entry], index: 0, training: c[2] })
                 wait(500)
-                const view = findChild(page, "controlsView")
-                compare(view.contentY, 0)
-                const item = findChild(page, c[3])
+                // With a picture the ratings stand in the thumb zone (Kino), the positions in the middle;
+                // without one the controls scroll and the positions come last.
+                const view = page.kino ? page : findChild(page, "controlsView")
+                if (!page.kino) {
+                    compare(view.contentY, 0)
+                }
+                const item = findChild(page, page.kino ? c[3] : "ratingRow")
                 verify(item.visible, c[3])
                 const y = item.mapToItem(view, 0, 0).y
+                // One list of positions, the visible one (Kino does not build the controls' copy).
+                compare(findChildren(page, "stepList").length, 1)
+                verify(findChild(page, "stepList").visible || entry === suburi)
                 const result = { y: y, bottom: y + item.height, height: view.height, steps: findChild(page, "stepList").count }
                 popPage()
                 return result
@@ -4836,7 +5184,7 @@ TestCase {
     // at its place (far inside the chapter: a run from the start cannot reach it in time).
     function test_2u_c_full_screen_left_while_loading_data() {
         const back = () => window.pageStack.goBack()
-        const button = big => findChild(big, "bandBack").clicked()
+        const button = big => findChild(big, "railBack").clicked()
         return [ { tag: "playing, back", playing: true, leave: back },
                  { tag: "playing, button", playing: true, leave: button },
                  { tag: "standing, back", playing: false, leave: back },
@@ -7071,6 +7419,22 @@ TestCase {
         const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")
         const page = push("PlayerPage", { playlist: rows, index: 0 })
         wait(300)
+        if (page.kino) {
+            // Kino's buttons: the longest German word fits a button, and no word is cut now.
+            const buttons = ratingBarOf(page).children.filter(c => c.level !== undefined)
+            compare(buttons.length, 4)
+            const metrics = Qt.createQmlObject('import QtQuick; TextMetrics {}', page)
+            metrics.font = Look.smallFont
+            for (const word of ["gesehen", "mit Hilfe", "sicher", "prüfungsreif"]) {
+                metrics.text = word
+                for (const button of buttons) {
+                    verify(metrics.advanceWidth <= button.width - 2 * button.padding, word + " in a button of " + button.width + " px")
+                }
+            }
+            compare(truncated(ratingBarOf(page)), [], "the words in full")
+            popPage()
+            return
+        }
         const rating = findChild(page, "ratingRow")
         const picker = allChildren(rating).find(c => c.names !== undefined && c.picked !== undefined)
         verify(picker, "the picker")
@@ -7097,6 +7461,12 @@ TestCase {
         tryVerify(() => !!button)
         const at = name => findChild(page, name).mapToItem(page, 0, 0).y
         const subtitlesY = button.mapToItem(page, 0, 0).y
+        if (page.kino) {
+            // Kino: the thumb zone's first row holds tempo, loop and subtitles.
+            verify(Math.abs(subtitlesY - at("thumbLoop")) < 1, "the subtitles' switch shares the row of the loop: " + subtitlesY + " / " + at("thumbLoop"))
+            popPage()
+            return
+        }
         verify(subtitlesY === at("soundSwitch") || subtitlesY === at("awakeSwitch"),
                "the subtitles' switch shares a row: " + subtitlesY + " / " + at("soundSwitch") + " / " + at("awakeSwitch"))
         popPage()
@@ -7820,7 +8190,7 @@ TestCase {
             look(file, page)
             if (file === "PlayerPage") {
                 // Room to spare: another font (the CI's) needs more than this machine's.
-                verify(findChild(page, "neighbourRow").implicitWidth < data.width * 0.75)
+                verify(findChild(page, page.kino ? "kinoNeighbours" : "neighbourRow").implicitWidth < data.width * 0.75)
             }
             if (file === "ProgrammePage") {
                 page.open(page.rows.find(r => r.id === "shinkitoho/odachi/5"))
@@ -8017,7 +8387,7 @@ TestCase {
         }
         const player = push("PlayerPage", { playlist: rows, index: 0 })
         tryVerify(() => player.playing, 5000)
-        findChild(player, "openNotes").clicked()
+        findChild(player, player.kino ? (player.upright ? "kinoNotes" : "kinoNotesButton") : "openNotes").clicked()
         tryVerify(() => !player.playing, 2000)
         popPage()
         popPage()
@@ -8312,6 +8682,10 @@ TestCase {
     // Found by the QA round of 5 Nov 2026 (qa/PERSONAS.md).
     function test_8b_note_draft_stays_with_its_technique() {
         const page = playerAt(1)
+        if (page.kino) {
+            window.height = 960     // a middle tall enough for the field
+            tryVerify(() => !!findChild(page, "noteField"), 3000)
+        }
         const first = page.current.id
         const field = findChild(page, "noteField")
         field.text = "für die erste Technik"
@@ -8350,6 +8724,10 @@ TestCase {
         const player = list ? list.player : page
         tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 5000, "slid in")
         const id = player.current.id
+        if (player.kino) {
+            window.height = 960     // a middle tall enough for the field
+            tryVerify(() => !!findChild(player, "noteField"), 3000)
+        }
         const field = findChild(player, "noteField")
         const text = "Back key " + data.tag
         field.text = text
@@ -8381,13 +8759,14 @@ TestCase {
     // (the on-screen keyboard opens after the focus).
     function test_8c_note_field_above_keyboard() {
         const page = playerAt(0)                       // skips without videos, before the window changes
-        window.width = 800
-        window.height = 360
+        // With a picture (Kino) the note field is in the middle of the upright player.
+        window.width = page.kino ? 420 : 800
+        window.height = page.kino ? 960 : 360
         wait(300)
-        const view = findChild(page, "controlsView")
-        const field = findChild(page, "noteField")
+        const view = findChild(page, page.kino ? "kinoMiddle" : "controlsView")
+        const field = findChild(page.kino ? findChild(page, "kinoNote") : page, "noteField")
         field.forceActiveFocus()
-        window.height = 200
+        window.height = page.kino ? 560 : 200
         wait(300)
         const at = field.mapToItem(view, 0, 0)
         verify(at.y >= 0 && at.y + field.height <= view.height + 1, "field in view (" + at.y + ", " + view.height + ")")

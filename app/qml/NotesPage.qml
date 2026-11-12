@@ -20,6 +20,13 @@ Kirigami.ScrollablePage {
     background: Rectangle { color: Look.backgroundColor }
 
     required property var entry
+    // A note begun elsewhere (the player's short middle): it goes into the field, not saved yet.
+    property string draft: ""
+    Component.onCompleted: {
+        if (draft !== "") {
+            compose.text = draft
+        }
+    }
     // Opened from "All notes": its action goes back there instead of stacking another list.
     property bool fromAllNotes: false
     readonly property var notes: Practice.notesRevision >= 0 ? Practice.notes(entry.id) : []

@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 import Mitori
 
 // The player as a page (PlayerView): from the programme, today's practice and the search; in
-// landscape without the page header (the rail or the bands of PlayerView have its controls).
+// landscape without the page header (the plate and the overlays of PlayerView, "Kino", have its controls).
 Kirigami.Page {
     id: page
 
@@ -39,6 +39,11 @@ Kirigami.Page {
     function seek(ms) { view.seek(ms) }
     readonly property alias practisedCount: view.practisedCount
     readonly property alias hasVideo: view.hasVideo
+    // Kino: the dark page with a picture; upright it has the history in the middle.
+    readonly property alias kino: view.kino
+    readonly property alias upright: view.upright
+    // The note begun in the field of Kino, for the UI test.
+    readonly property alias kinoDraft: view.kinoDraft
     function go(direction) { view.go(direction) }
     function jump(ms) { view.jump(ms) }
     function step(direction) { view.step(direction) }
@@ -57,7 +62,9 @@ Kirigami.Page {
     // Sideways the video takes the whole height: no head (Kirigami's bar, or Shinki's head).
     readonly property bool headless: view.landscape
     // Not Auto: a page takes the style the bar resolved it to; with Auto it had no head at all.
-    globalToolBarStyle: headless ? Kirigami.ApplicationHeaderStyle.None
+    // Kino (a picture, not beside a list) is a dark page of its own: upright its title row carries Back.
+    globalToolBarStyle: view.kino ? Kirigami.ApplicationHeaderStyle.None
+                        : headless ? Kirigami.ApplicationHeaderStyle.None
                                  : page.Kirigami.PageStack.pageStack?.globalToolBar.actualStyle ?? Kirigami.ApplicationHeaderStyle.None
 
     onIndexChanged: {
@@ -230,6 +237,11 @@ Kirigami.Page {
         onNotesRequested: entry => {
             view.pause()
             page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
+        }
+        // A note begun in the field goes on in the notes page.
+        onNoteDraftRequested: (entry, text) => {
+            view.pause()
+            page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry, draft: text })
         }
         // The same under the comment (only beside the list: the training on a tablet).
         onCommentRequested: entry => {

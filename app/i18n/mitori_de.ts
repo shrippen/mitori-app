@@ -1757,7 +1757,60 @@
     </message>
 </context>
 <context>
+    <name>PlayerHistory</name>
+    <message>
+        <source>today</source>
+        <translation>heute</translation>
+    </message>
+    <message>
+        <source>%1 → today</source>
+        <translation>%1 → heute</translation>
+    </message>
+    <message>
+        <source>Ratings</source>
+        <translation>Einschätzungen</translation>
+    </message>
+    <message>
+        <source>Not rated yet.</source>
+        <translation>Noch nicht eingeschätzt.</translation>
+    </message>
+    <message>
+        <source>Notes · %1</source>
+        <translation>Notizen · %1</translation>
+    </message>
+    <message>
+        <source>Last notes</source>
+        <translation>Letzte Notizen</translation>
+    </message>
+    <message>
+        <source>No notes yet.</source>
+        <translation>Noch keine Notizen.</translation>
+    </message>
+    <message>
+        <source>Photo or voice note</source>
+        <translation>Foto oder Sprachnotiz</translation>
+    </message>
+</context>
+<context>
     <name>PlayerPage</name>
+    <message>
+        <source>practised</source>
+        <translation>geübt</translation>
+    </message>
+</context>
+<context>
+    <name>PlayerRatings</name>
+    <message>
+        <source>Rating</source>
+        <translation>Einschätzung</translation>
+    </message>
+</context>
+<context>
+    <name>PlayerTrainingList</name>
+    <message>
+        <source>Today&apos;s playlist · %1 of %2 practised</source>
+        <translation>Heutige Playliste · %1 von %2 geübt</translation>
+    </message>
     <message>
         <source>practised</source>
         <translation>geübt</translation>
@@ -1786,8 +1839,24 @@
         <translation>Abspielen</translation>
     </message>
     <message>
+        <source>Tempo %1 %</source>
+        <translation>Tempo %1 %</translation>
+    </message>
+    <message>
         <source>Pause</source>
         <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Notes · %1</source>
+        <translation>Notizen · %1</translation>
+    </message>
+    <message>
+        <source>Add note</source>
+        <translation>Notiz hinzufügen</translation>
+    </message>
+    <message>
+        <source>Continue note …</source>
+        <translation>Notiz fortsetzen …</translation>
     </message>
     <message>
         <source>Loop</source>
@@ -1796,6 +1865,14 @@
     <message>
         <source>Tempo</source>
         <translation>Tempo</translation>
+    </message>
+    <message>
+        <source>2 s back</source>
+        <translation>2 s zurück</translation>
+    </message>
+    <message>
+        <source>2 s on</source>
+        <translation>2 s vor</translation>
     </message>
     <message>
         <source>Exit full screen</source>
@@ -1812,14 +1889,6 @@
     <message>
         <source>Full screen</source>
         <translation>Vollbild</translation>
-    </message>
-    <message>
-        <source>1 frame</source>
-        <translation>1 Bild</translation>
-    </message>
-    <message>
-        <source>Frame</source>
-        <translation>Bild</translation>
     </message>
     <message>
         <source>Frame back</source>
@@ -1852,14 +1921,6 @@
     <message>
         <source>Next</source>
         <translation>Nächste</translation>
-    </message>
-    <message>
-        <source>Today&apos;s playlist · %1 of %2 practised</source>
-        <translation>Heutige Playliste · %1 von %2 geübt</translation>
-    </message>
-    <message>
-        <source>practised</source>
-        <translation>geübt</translation>
     </message>
     <message>
         <source>Back</source>

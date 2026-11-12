@@ -15,6 +15,14 @@ ColumnLayout {
     readonly property var today: Practice.notesRevision >= 0 && Practice.today && entry.id ? Practice.notesToday(entry.id) : []
     // The technique the field's text belongs to.
     property string draftFor: ""
+    // Only the field and Add: the upright player lists the notes and opens them itself.
+    property bool fieldOnly: false
+    // The begun text; a holder outside may keep it across a rebuild (see saveOnDestroy).
+    property alias text: field.text
+    // Off where another holds the draft (the player's Kino keeps it in the view, across a turn).
+    property bool saveOnDestroy: true
+    // The least height of the field and Add (a finger's size); 0: as the style has them.
+    property real touchHeight: 0
 
     signal notesRequested()
     // The field got the keyboard focus (the player scrolls it into view above the keyboard).
@@ -39,7 +47,11 @@ ColumnLayout {
         }
     }
     // Leaving the player (Back, the training's last rating) keeps the draft too.
-    Component.onDestruction: keepDraft()
+    Component.onDestruction: {
+        if (saveOnDestroy) {
+            keepDraft()
+        }
+    }
 
     spacing: Look.unit(6)
 
@@ -58,7 +70,7 @@ ColumnLayout {
     LookLabel {
         objectName: "notedToday"
         Layout.fillWidth: true
-        visible: noteRow.today.length > 0
+        visible: !noteRow.fieldOnly && noteRow.today.length > 0
         text: qsTr("Noted today: %1").arg(noteRow.today.map(n => noteRow.noteText(n)).join(" · "))
         color: Look.mutedTextColor
         wrapMode: Text.Wrap
@@ -68,7 +80,7 @@ ColumnLayout {
     LookLabel {
         Layout.fillWidth: true
         readonly property string shown: noteRow.today.length > 0 ? "" : noteRow.noteText(noteRow.last)
-        visible: shown !== ""
+        visible: !noteRow.fieldOnly && shown !== ""
         text: qsTr("Last note: %1").arg(shown)
         color: Look.mutedTextColor
         wrapMode: Text.Wrap
@@ -83,6 +95,7 @@ ColumnLayout {
 
             objectName: "noteField"
             Layout.fillWidth: true
+            Layout.minimumHeight: noteRow.touchHeight
             placeholderText: qsTr("Note for today …")
             Accessible.name: qsTr("New note")
             onAccepted: add()
@@ -108,6 +121,7 @@ ColumnLayout {
         // field has something to send.
         LookButton {
             objectName: "addNote"
+            Layout.minimumHeight: noteRow.touchHeight
             enabled: field.text.trim() !== ""
             role: LookButton.Role.Primary
             text: qsTr("Add")
@@ -118,6 +132,7 @@ ColumnLayout {
             text: qsTr("Notes")
             display: QQC2.AbstractButton.IconOnly
             objectName: "openNotes"
+            visible: !noteRow.fieldOnly
             onClicked: noteRow.notesRequested()
         }
     }

@@ -57,6 +57,8 @@ public:
     Q_INVOKABLE int bestLevel(const QStringList &entries) const;
     // When the entry was rated last (local time), or an invalid date.
     Q_INVOKABLE QDateTime lastRated(const QString &entry) const;
+    // The last `count` ratings of an entry, oldest first: {day ("YYYY-MM-DD", local), at (local), level}.
+    Q_INVOKABLE QVariantList ratingHistory(const QString &entry, int count) const;
     // How many of the entries stand at each level: [none, 1, 2, 3, 4].
     Q_INVOKABLE QVariantList counts(const QStringList &entries) const;
     // How many techniques were practised on each of the last `days` days up to today:

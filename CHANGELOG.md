@@ -19,6 +19,7 @@
 - Glossary: on a tablet sideways a letter rail, the list and a detail of the word tapped (kanji, reading, translation, pronunciation, techniques); on a phone a slim letter rail at the edge that you can drag over, with a bubble, and headings that stay at the top. The hints above the list are shorter.
 - Technique map: on a tablet the map stands in the middle with the tapped technique beside it (rating, note, video), the place marked; the filters stand compactly at the top (on a phone too).
 - Start menu: the planned exam is no longer a hint box above the tiles; the exam tile shows it.
+- Player: a new dark layout with a video. Sideways the picture fills the page, with the name and Notes at the top, the four ratings at the right edge and one plate at the foot (timeline, tempo, frames, loop, subtitles, sound, full screen, next). Upright the middle shows how the technique was rated over time and its last notes, with a field for today's, and the controls, ratings and the way on lie in reach of the thumb.
 
 #### Removed
 - Videos: the "Video folder" setting for video files of one's own. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
@@ -40,6 +41,7 @@
 - Glossar: auf einem Tablet quer eine Buchstabenleiste, die Liste und ein Detail zum angetippten Wort (Kanji, Lesung, Übersetzung, Aussprache, Techniken); auf dem Handy eine schmale Buchstabenleiste am Rand, über die man ziehen kann, mit Blase, und Überschriften, die oben stehen bleiben. Die Hinweise über der Liste sind kürzer.
 - Landkarte: Auf einem Tablet steht die Karte in der Mitte, daneben die angetippte Technik mit Stand, Notiz und Video, der Ort ist markiert; die Filter stehen kompakt oben (auch auf dem Telefon).
 - Startmenü: die geplante Prüfung steht nicht mehr als Hinweis über den Kacheln, die Prüfungskachel zeigt sie.
+- Player: neues dunkles Layout mit Video. Quer füllt das Bild die Seite; oben stehen der Name und „Notizen“, am rechten Rand die vier Einschätzungen, unten eine Leiste (Zeitleiste, Tempo, Einzelbilder, Schleife, Untertitel, Ton, Vollbild, weiter). Hochkant zeigt die Mitte, wie die Technik eingeschätzt wurde, und die letzten Notizen mit einem Feld für die heutige; Steuerung, Einschätzung und Weiter liegen in Daumenreichweite.
 
 #### Entfernt
 - Videos: die Einstellung „Videoordner“ für eigene Videodateien. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.
