@@ -374,6 +374,25 @@ Kirigami.ScrollablePage {
             wrapMode: Text.Wrap
         }
 
+        // The subtitles' size, once a package of learning videos (they bring subtitles) is unlocked.
+        LookSettingRow {
+            objectName: "subtitleSizeRow"
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.largeSpacing
+            visible: Library.packages.length > 0
+            section: qsTr("Subtitles")
+            title: qsTr("Size")
+            hint: qsTr("grows with the picture")
+
+            LookSegmented {
+                objectName: "subtitleSize"
+                model: [qsTr("Small"), qsTr("Normal"), qsTr("Large"), qsTr("Very large")]
+                currentIndex: Videos.subtitleSize
+                onActivated: index => Videos.subtitleSize = index
+                Accessible.name: qsTr("Subtitle size")
+            }
+        }
+
         // Where the videos lie: the app's folder, a card (Android) or a folder of one's own (Linux).
         // Another place takes the loaded videos along.
         LookSectionLabel {

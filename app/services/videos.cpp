@@ -18,6 +18,23 @@ namespace {
 constexpr auto kOldFolderKey = "videos/folder";
 // The start is over by then (0.5 s on a desktop): the backend does not compete with it.
 constexpr int kDecoderPauseMs = 2000;
+constexpr auto kSubtitleSizeKey = "videos/subtitleSize";
+
+// The factor of each subtitle size on the player's own (Normal): steps of a quarter.
+qreal sizeFactor(Videos::SubtitleSize size)
+{
+    switch (size) {
+    case Videos::SubtitleSize::Small:
+        return 0.8;
+    case Videos::SubtitleSize::Normal:
+        return 1.0;
+    case Videos::SubtitleSize::Large:
+        return 1.25;
+    case Videos::SubtitleSize::Huge:
+        return 1.5;
+    }
+    return 1.0;
+}
 
 // A language's own name without a region: the name most of its locales in the code's script
 // carry. The language's default locale names its region ("en" is en_US, "American English";
@@ -54,6 +71,30 @@ Videos::Videos(const Catalog &catalog, QObject *parent)
     // Videos of a bundle came or went: bindings that ask available() follow (they read folder).
     connect(&BundleShelf::notifier(), &BundleShelfNotifier::changed, this, &Videos::folderChanged);
     connect(&Decoders::shared(), &Decoders::ready, this, &Videos::decodersReadyChanged);
+}
+
+Videos::SubtitleSize Videos::subtitleSize() const
+{
+    // A value outside the enum (another version's) counts as Normal.
+    const int saved = QSettings().value(QLatin1String(kSubtitleSizeKey), int(SubtitleSize::Normal)).toInt();
+    if (saved < int(SubtitleSize::Small) || saved > int(SubtitleSize::Huge)) {
+        return SubtitleSize::Normal;
+    }
+    return SubtitleSize(saved);
+}
+
+void Videos::setSubtitleSize(SubtitleSize size)
+{
+    if (size == subtitleSize()) {
+        return;
+    }
+    QSettings().setValue(QLatin1String(kSubtitleSizeKey), int(size));
+    emit subtitleSizeChanged();
+}
+
+qreal Videos::subtitleScale() const
+{
+    return sizeFactor(subtitleSize());
 }
 
 bool Videos::decodersReady() const

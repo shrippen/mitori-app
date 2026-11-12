@@ -2570,6 +2570,29 @@ TestCase {
         popPage()
     }
 
+    // The subtitles' size: only with learning videos (they bring the subtitles); a tap saves it.
+    function test_9n_videos_subtitle_size() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        const page = push("VideosPage")
+        const row = findChild(page, "subtitleSizeRow")
+        verify(!row.visible, "no learning videos, no subtitles")
+
+        verify(uiCatalog.installLesson(lessonId, same))
+        Bundles.reload()
+        tryVerify(() => row.visible)
+        const choice = findChild(row, "subtitleSize")
+        compare(choice.currentIndex, Videos.SubtitleSize.Normal)
+        page.flickable.contentY = Math.max(0, row.mapToItem(page.flickable.contentItem, 0, 0).y - page.flickable.height / 2)
+        wait(50)
+        mouseClick(choice, choice.width * 5 / 8, choice.height / 2)       // the third of four: Large
+        tryCompare(Videos, "subtitleSize", Videos.SubtitleSize.Large)
+        compare(choice.currentIndex, Videos.SubtitleSize.Large)
+        shot("15g-videos-subtitle-size")
+        Videos.subtitleSize = Videos.SubtitleSize.Normal
+        popPage()
+    }
+
     // Where the videos lie: the app's own folder in use, a folder of one's own to pick (Linux); no
     // field for a folder of one's own videos any more.
     function test_9n_videos_storage() {
@@ -2795,6 +2818,7 @@ TestCase {
         const timeline = findChild(page, "railTimeline")
         verify(text.mapToItem(page, 0, text.height).y <= timeline.mapToItem(page, 0, 0).y, "above the timeline")
         shot("16h-subtitles-phone-landscape")
+        const phoneSize = text.font.pixelSize
         window.width = 1280
         window.height = 1000     // room above and below the 16:9 picture: the bands
         tryVerify(() => findChild(page, "bandTitle").visible, 2000, "bands")
@@ -2803,6 +2827,15 @@ TestCase {
         verify(button().mapToItem(page, button().width, 0).x <= page.width, "the row ends in view")
         verify(overflowing(page, 1280).length === 0, "past the edge: " + overflowing(page, 1280))
         shot("16h-subtitles-tablet")
+
+        // The text grows with the picture, and with the size chosen in the settings.
+        const tabletSize = text.font.pixelSize
+        verify(tabletSize > phoneSize * 1.5, "tablet " + tabletSize + " px, phone " + phoneSize + " px")
+        Videos.subtitleSize = Videos.SubtitleSize.Large
+        tryVerify(() => Math.abs(text.font.pixelSize - tabletSize * 1.25) <= 1, 2000,
+                  "a quarter larger (whole pixels): " + text.font.pixelSize)
+        shot("16h-subtitles-tablet-large")
+        Videos.subtitleSize = Videos.SubtitleSize.Normal
         window.width = 420
         window.height = 800
         popPage()

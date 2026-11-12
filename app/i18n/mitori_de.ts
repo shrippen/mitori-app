@@ -3001,6 +3001,38 @@
         <translation>Entfernen gibt den Platz frei; der Code bleibt gespeichert, die Videos lassen sich ohne ihn neu laden.</translation>
     </message>
     <message>
+        <source>Subtitles</source>
+        <translation>Untertitel</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Größe</translation>
+    </message>
+    <message>
+        <source>grows with the picture</source>
+        <translation>wächst mit dem Bild</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>Klein</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>Groß</translation>
+    </message>
+    <message>
+        <source>Very large</source>
+        <translation>Sehr groß</translation>
+    </message>
+    <message>
+        <source>Subtitle size</source>
+        <translation>Untertitelgröße</translation>
+    </message>
+    <message>
         <source>%1 free</source>
         <translation>%1 frei</translation>
     </message>
