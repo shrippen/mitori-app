@@ -6607,6 +6607,29 @@ TestCase {
         }
     }
 
+    // Resizing a window keeps the year's heatmaps (a year's tips take their time to build): they are
+    // built anew only between whole and halves.
+    function test_8s_years_heatmap_resize() {
+        window.width = 420
+        window.height = 860
+        wait(100)
+        const page = push("YearsPage")
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        wait(300)
+        const year = page.todayDate.getFullYear()
+        const before = findChildren(findChild(page, "year_" + year), "yearHeatmap")
+        compare(before.length, 2, "halves at 420")
+        window.width = 400
+        wait(300)
+        const after = findChildren(findChild(page, "year_" + year), "yearHeatmap")
+        verify(after.length === 2 && after.every((h, i) => h === before[i]), "the same heatmaps at 400")
+        window.width = 1280
+        window.height = 800
+        tryVerify(() => findChildren(findChild(page, "year_" + year), "yearHeatmap").filter(h => h.visible).length === 1,
+                  3000, "one heatmap on a wide window")
+        popPage()
+    }
+
     // The grade form on a phone: grade and day in one row, place and "Add" in the next, edges flush.
     function test_8s_grades_form_aligned_data() {
         return [ { tag: "360", width: 360, height: 800 }, { tag: "420", width: 420, height: 800 }, { tag: "1280x800", width: 1280, height: 800 } ]
