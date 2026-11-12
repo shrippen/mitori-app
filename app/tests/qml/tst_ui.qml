@@ -4271,6 +4271,15 @@ TestCase {
         popPage()
         tryVerify(() => mini.playing, 10000, "plays again back on the map")
 
+        // Another technique of the same file: no new load, it starts at its own chapter.
+        const same = rows.find(r => r.id !== rows[0].id && r.video.video === rows[0].video.video
+                                    && Videos.place(r.id, r.video).von * 1000 > mini.to)
+        verify(same, "a later technique in the same video")
+        page.paneEntry = same
+        tryVerify(() => mini.from === Videos.place(same.id, same.video).von * 1000)
+        tryVerify(() => media.position >= mini.from && media.position <= mini.end + 500, 3000,
+                  "in the new chapter: " + media.position + " not in " + mini.from + "–" + mini.end)
+
         // A technique without video: no player.
         page.paneEntry = { id: "x/none", title: "None", discipline: "aikido" }
         tryVerify(() => !mini.visible)

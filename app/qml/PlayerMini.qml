@@ -26,7 +26,9 @@ Item {
     readonly property var crop: hasVideo ? Videos.crop(video) : ({})
     readonly property real ratio: crop.verhaeltnis || 16 / 9
     readonly property bool playing: player.playing
-    readonly property bool shouldPlay: active && !paused && hasVideo && Qt.application.state === Qt.ApplicationActive
+    // Not in the background; a window that only lost the focus (desktop) plays on.
+    readonly property bool shouldPlay: active && !paused && hasVideo && Qt.application.state !== Qt.ApplicationSuspended
+                                       && Qt.application.state !== Qt.ApplicationHidden
     property bool loaded: false
     readonly property real plateAlpha: 0.75
 
@@ -52,7 +54,10 @@ Item {
 
     onEntryChanged: paused = false
     onShouldPlayChanged: follow()
-    onPlaceChanged: {
+    // Another technique of the same file: no new load. Later, when `from` has followed the place.
+    onPlaceChanged: Qt.callLater(mini.toChapter)
+
+    function toChapter() {
         if (loaded) {
             player.position = from
         }
