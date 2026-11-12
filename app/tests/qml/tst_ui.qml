@@ -6636,9 +6636,6 @@ TestCase {
         return [ { tag: "360", width: 360 } ]
     }
     function test_8s_rating_words_fit(data) {
-        if (!Look.shinki) {
-            skip("KanteLevelPicker elides the word at 360: wants a wrapping word in Kante first")
-        }
         window.width = data.width
         window.height = 640
         wait(100)
