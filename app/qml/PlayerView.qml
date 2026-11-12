@@ -575,28 +575,42 @@ Item {
             objectName: "kinoTitleRow"
             visible: page.upright
             Layout.fillWidth: true
-            Layout.leftMargin: Look.unit(16)
+            Layout.leftMargin: Look.unit(8)
             Layout.rightMargin: Look.unit(16)
             Layout.topMargin: Look.unit(8)
             Layout.bottomMargin: Look.unit(8)
-            spacing: Look.unit(10)
+            spacing: Look.unit(6)
 
-            LookLabel {
-                objectName: "kinoTitle"
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-                text: page.titleText
-                color: Look.stageTextColor
-                font: Look.sheetTitleFont
+            RailButton {
+                objectName: "kinoBack"
+                symbol: page.leaveSymbol
+                text: page.leaveText
+                onClicked: page.leave()
             }
-            LookLabel {
-                // Of the page: the row's own width would feed back into its layout.
-                Layout.maximumWidth: page.width * 0.2
-                elide: Text.ElideRight
-                text: page.current.jp || ""
-                font: Look.japaneseFont(Look.defaultFont)
-                color: Look.stageTextColor
-                opacity: 0.7
+            // The name may take two lines, the kanji stands below it: nothing is cut on 360 px.
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                LookLabel {
+                    objectName: "kinoTitle"
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                    text: page.titleText
+                    color: Look.stageTextColor
+                    font: Look.sheetTitleFont
+                }
+                LookLabel {
+                    Layout.fillWidth: true
+                    visible: text !== ""
+                    elide: Text.ElideRight
+                    text: page.current.jp || ""
+                    font: Look.japaneseFont(Look.defaultFont)
+                    color: Look.stageTextColor
+                    opacity: 0.7
+                }
             }
             NotesButton {
                 objectName: "kinoNotes"
@@ -936,7 +950,9 @@ Item {
             Layout.rightMargin: Look.unit(16)
             Layout.topMargin: Look.unit(6)
             Layout.bottomMargin: Look.unit(12)
-            spacing: Look.unit(8)
+            // A short phone (360 × 640) gives up some air so that the zone stays in view.
+            readonly property bool short: page.height < Look.unit(600)
+            spacing: short ? Look.unit(4) : Look.unit(8)
 
             RowLayout {
                 Layout.fillWidth: true
@@ -1005,6 +1021,7 @@ Item {
             RatingBar {
                 objectName: "kinoRating"
                 Layout.fillWidth: true
+                buttonHeight: parent.short ? Look.unit(44) : Look.unit(52)
             }
             // Short words: as wide as they need.
             RowLayout {

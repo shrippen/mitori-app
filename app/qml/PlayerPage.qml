@@ -60,7 +60,9 @@ Kirigami.Page {
     // Sideways the video takes the whole height: no head (Kirigami's bar, or Shinki's head).
     readonly property bool headless: view.landscape
     // Not Auto: a page takes the style the bar resolved it to; with Auto it had no head at all.
-    globalToolBarStyle: headless ? Kirigami.ApplicationHeaderStyle.None
+    // Kino (a picture, not beside a list) is a dark page of its own: upright its title row carries Back.
+    globalToolBarStyle: view.kino ? Kirigami.ApplicationHeaderStyle.None
+                        : headless ? Kirigami.ApplicationHeaderStyle.None
                                  : page.Kirigami.PageStack.pageStack?.globalToolBar.actualStyle ?? Kirigami.ApplicationHeaderStyle.None
 
     onIndexChanged: {

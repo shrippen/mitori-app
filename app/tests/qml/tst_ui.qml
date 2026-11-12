@@ -1075,7 +1075,8 @@ TestCase {
         const page = push("PlayerPage", { playlist: rows, index: 0 })
         // The page has the bar's style (with Auto it had no head, and no way back, under Kante).
         const bar = window.pageStack.globalToolBar
-        compare(page.globalToolBarStyle, bar.actualStyle)
+        // With a picture (Kino) the dark page has no head of its own.
+        compare(page.globalToolBarStyle, page.kino ? Kirigami.ApplicationHeaderStyle.None : bar.actualStyle)
         verify(!Levels.held, "no video plays: the screen may sleep")
         Levels.setPlayback(Levels.Playback.Playing)     // as the player does while it plays
         const awake = findChild(page, "awakeSwitch")
@@ -1313,6 +1314,13 @@ TestCase {
         slidIn()
         verify(page.upright && !page.headless)
 
+        // The dark title row carries the name whole and Back; no light head above it.
+        const title = findChild(page, "kinoTitle")
+        tryVerify(() => title.width > 0, 2000)
+        verify(!title.truncated, "the name is cut: " + title.text + " in " + title.width + " px")
+        compare(page.globalToolBarStyle, Kirigami.ApplicationHeaderStyle.None, "no light head over the dark page")
+        verify(findChild(page, "kinoBack").visible, "Back in the title row")
+
         // Not empty, whatever the technique has: the history stands there with its height.
         const history = findChild(page, "kinoHistory")
         verify(history.visible && history.height > 0)
@@ -1483,18 +1491,23 @@ TestCase {
         compare(spaced.big, true)
 
         // The Back key ends full screen too, and the video stops.
+        // Seen as it happens: the page goes within the key press (pop in the same turn of the loop),
+        // so a read afterwards finds it destroyed. Full screen must end and the video stop first.
+        let bigEnded = false
+        spaced.bigChanged.connect(() => { bigEnded = bigEnded || !spaced.big })
         keyClick(Qt.Key_Back)
         tryCompare(window.pageStack, "currentIndex", 0)
         tryCompare(window, "visibility", before)
-        tryVerify(() => { try { return spaced.big !== true } catch (e) { return true } }, 5000, "full screen ended")
+        tryVerify(() => bigEnded, 5000, "full screen ended")
         window.pageStack.pop(window.pageStack.currentItem)
         const hidden = push("PlayerPage", { playlist: rows, index: 0 })
         tryVerify(() => hidden.playing, 5000)
         wait(500)
+        let quiet = false
+        hidden.playingChanged.connect(() => { quiet = quiet || !hidden.playing })
         keyClick(Qt.Key_Back)
         tryCompare(window.pageStack, "currentIndex", 0)
-        // Quiet at once, or already gone with the page (it may be destroyed before a poll sees it paused).
-        tryVerify(() => { try { return hidden.playing !== true } catch (e) { return true } }, 5000, "no sound from a page left")
+        tryVerify(() => quiet, 5000, "no sound from a page left")
         window.pageStack.pop(window.pageStack.currentItem)
 
         // Back from full screen leaves the keys with the page before: the search goes on.
