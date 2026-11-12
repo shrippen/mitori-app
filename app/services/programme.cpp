@@ -447,6 +447,39 @@ QVariantList Programme::search(const QString &query, int limit) const
     return result;
 }
 
+namespace {
+
+// Whether `words` stand in `text` one after the other.
+bool containsRun(const QStringList &text, const QStringList &words)
+{
+    return std::search(text.cbegin(), text.cend(), words.cbegin(), words.cend()) != text.cend();
+}
+
+QStringList wordsOf(const QString &text)
+{
+    return searchKey(text).split(u' ', Qt::SkipEmptyParts);
+}
+
+} // namespace
+
+QVariantList Programme::techniquesNamed(const QString &word, int limit) const
+{
+    QVariantList result;
+    const QStringList words = searchKey(word).split(u' ', Qt::SkipEmptyParts);
+    if (words.isEmpty()) {
+        return result;
+    }
+    for (const SearchRow &r : searchRows()) {
+        if (result.size() >= limit) {
+            break;
+        }
+        if (containsRun(r.titleWords, words) || containsRun(r.attackWords, words)) {
+            result << r.row;
+        }
+    }
+    return result;
+}
+
 QVariantList Programme::searchComments(const QString &query, int limit) const
 {
     QVariantList result;
@@ -497,7 +530,9 @@ const QList<Programme::SearchRow> &Programme::searchRows() const
         if (!c.isEmpty()) {
             comment.emplace(c.value(QStringLiteral("titel")).toString() + u' ' + c.value(QStringLiteral("text")).toString());
         }
-        m_searchRows.append({row, SearchText((fields + stepFields).join(u' ')), comment});
+        m_searchRows.append({row, SearchText((fields + stepFields).join(u' ')), comment,
+                             wordsOf(row.value(QStringLiteral("title")).toString()),
+                             wordsOf(row.value(QStringLiteral("attack")).toString())});
         return true;
     });
     return m_searchRows;

@@ -2212,6 +2212,15 @@ TestCase {
         tryCompare(findChild(page, "detailWord"), "text", "Ago")
         compare(findChild(page, "detailMeaning").text, row.found.meaning)
         compare(saySpy.count, 0)
+        // Ago is no whole word of any technique's name: no section.
+        compare(findChildren(page, "detailHit").length, 0)
+        verify(!findChild(page, "detailHitsHead").visible)
+        // The kanji at the row's end are not smaller than the row's word.
+        const kanji = findChild(row, "rowKanji")
+        const name = allChildren(row).find(c => c.text === "Ago" && c.objectName !== "rowKanji")
+        verify(kanji.visible && !!name, "kanji " + kanji.visible + " name " + name + " " + allChildren(row).filter(c => c.text !== undefined).map(c => c.text).join("|"))
+        verify(kanji.font.pixelSize >= name.font.pixelSize && kanji.font.pointSize >= name.font.pointSize,
+               "kanji " + kanji.font.pointSize + "/" + kanji.font.pixelSize + " word " + name.font.pointSize + "/" + name.font.pixelSize)
         shot("9-glossary-wide")
         const kiri = Glossary.words.find(w => w.word === "Kiri-otoshi")
         page.chosen = kiri

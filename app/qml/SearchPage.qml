@@ -304,7 +304,7 @@ Kirigami.Page {
                     selected: (rowLoader.ListView.isCurrentItem && list.activeFocus)
                               || (page.wide && kind === "word" && !!page.detailWord && found.word === page.detailWord.word)
                     leadingText: kind === "technique" && found.nr ? String(found.nr) : ""
-                    meta: kind === "comment" ? found.gradeName : kind === "word" ? found.jp : ""
+                    meta: kind === "comment" ? found.gradeName : ""
                     // From the row itself, kind and data together: a reused row gets both at once.
                     text: page.rowText(rowLoader.modelData)
                     subtitle: page.rowSubtitle(rowLoader.modelData)
@@ -314,17 +314,38 @@ Kirigami.Page {
                         list.currentIndex = rowLoader.index
                         page.openRow(rowLoader.modelData)
                     }
-                    // A Loader: an invisible button would still keep its room at the row's end.
-                    trailing: Loader {
-                        active: page.canSpeak && row.kind === "word"
-                        sourceComponent: LookToolButton {
-                            objectName: "sayButton"
-                            focusPolicy: Qt.NoFocus
-                            display: QQC2.AbstractButton.IconOnly
-                            icon.name: "media-playback-start"
-                            text: qsTr("Pronunciation")
-                            Accessible.name: qsTr("Pronounce %1").arg(row.found.word)
-                            onClicked: Glossary.say(row.found.speech)
+                    // The kanji at the right end, as large as the word (the row's meta figure is small);
+                    // the button in a Loader: an invisible one would still keep its room.
+                    trailing: Item {
+                        // Sized by hand: the row hides a slot whose children have no size yet.
+                        implicitWidth: kanji.width + (voice.active ? voice.width + Kirigami.Units.smallSpacing : 0)
+                        implicitHeight: Math.max(kanji.height, voice.height)
+
+                        LookLabel {
+                            id: kanji
+
+                            objectName: "rowKanji"
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: row.kind === "word" ? row.found.jp : ""
+                            font: Look.japaneseFont(Look.titleFont(Look.defaultFont.pointSize * 1.25))
+                            color: Look.mutedTextColor
+                        }
+
+                        Loader {
+                            id: voice
+
+                            x: kanji.width + Kirigami.Units.smallSpacing
+                            anchors.verticalCenter: parent.verticalCenter
+                            active: page.canSpeak && row.kind === "word"
+                            sourceComponent: LookToolButton {
+                                objectName: "sayButton"
+                                focusPolicy: Qt.NoFocus
+                                display: QQC2.AbstractButton.IconOnly
+                                icon.name: "media-playback-start"
+                                text: qsTr("Pronunciation")
+                                Accessible.name: qsTr("Pronounce %1").arg(row.found.word)
+                                onClicked: Glossary.say(row.found.speech)
+                            }
                         }
                     }
                 }

@@ -13,9 +13,9 @@ ColumnLayout {
     id: detail
 
     property var word: null
-    // Techniques named after the word; the search's own finding.
+    // Techniques that name the word as a whole word.
     readonly property int maxHits: 5
-    readonly property var hits: word ? Programme.search(word.word, maxHits + 1).slice(0, maxHits) : []
+    readonly property var hits: word ? Programme.techniquesNamed(word.word, maxHits) : []
     readonly property bool canSpeak: Glossary.speech === Glossary.Ready
 
     signal techniqueRequested(var technique)

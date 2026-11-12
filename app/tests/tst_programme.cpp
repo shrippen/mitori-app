@@ -586,6 +586,27 @@ private slots:
         QVERIFY2(label.contains(QStringLiteral(" · Aikido ")), qPrintable(label));
     }
 
+    // A glossary word names a technique only as a whole word; hyphenated parts are words.
+    void techniquesNamedByWholeWord()
+    {
+        QVERIFY2(programme.techniquesNamed(QStringLiteral("Ago")).isEmpty(), "Ago is no part of a name");
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Ikk")).isEmpty());
+
+        const QVariantList kote = programme.techniquesNamed(QStringLiteral("Kote"));
+        QVERIFY(!kote.isEmpty());
+        for (const QVariant &r : kote) {
+            const QString title = r.toMap().value(QStringLiteral("title")).toString();
+            const QString attack = r.toMap().value(QStringLiteral("attack")).toString();
+            QVERIFY2(title.contains(QStringLiteral("Kote"), Qt::CaseInsensitive)
+                     || attack.contains(QStringLiteral("Kote"), Qt::CaseInsensitive), qPrintable(title));
+        }
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kote-gaeshi")).size() > 0);
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kote"), 3).size() <= 3);
+        // The attack counts: Katate-dori is a whole name, Kat a word of none.
+        QVERIFY(!programme.techniquesNamed(QStringLiteral("Katate-dori")).isEmpty());
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kat")).isEmpty());
+    }
+
     // Search across disciplines: every word must match; case, accents and hyphens do not matter.
     void searchFindsTechniques()
     {
