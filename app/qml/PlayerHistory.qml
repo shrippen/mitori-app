@@ -143,14 +143,30 @@ ColumnLayout {
             }
         }
     }
-    LookLabel {
+    RowLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Look.unit(20)
-        visible: history.span !== ""
-        text: history.span
-        color: Look.stageTextColor
-        opacity: 0.7
-        font: Look.smallFont
+
+        LookLabel {
+            Layout.fillWidth: true
+            visible: history.span !== ""
+            text: history.span
+            color: Look.stageTextColor
+            opacity: 0.7
+            font: Look.smallFont
+        }
+        Item {
+            Layout.fillWidth: true
+            visible: history.span === ""
+        }
+        // Short middle: the notes as one line here, the button to them beside the chart.
+        LookLabel {
+            objectName: "kinoNotesLine"
+            visible: history.compact
+            text: qsTr("Notes · %1").arg(history.noteCount)
+            color: Look.stageTextColor
+            font: Look.smallFont
+        }
     }
 
     LookLabel {

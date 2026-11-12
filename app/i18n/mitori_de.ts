@@ -1775,6 +1775,10 @@
         <translation>Noch nicht eingeschätzt.</translation>
     </message>
     <message>
+        <source>Notes · %1</source>
+        <translation>Notizen · %1</translation>
+    </message>
+    <message>
         <source>Last notes</source>
         <translation>Letzte Notizen</translation>
     </message>
