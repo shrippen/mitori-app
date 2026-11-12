@@ -206,7 +206,7 @@ Kirigami.ScrollablePage {
                 objectName: "mapPanel"
                 Layout.preferredWidth: Look.unit(360)
                 Layout.alignment: Qt.AlignTop
-                implicitHeight: (paneBody.visible ? paneBody.implicitHeight : panelHint.implicitHeight) + 2 * Look.unit(16)
+                implicitHeight: (paneBody.visible ? paneBody.y + paneBody.implicitHeight : panelHint.y + panelHint.implicitHeight) + Look.unit(16)
                 visible: page.wide
                 color: Look.backgroundColor
                 border.width: Look.borderWidth
@@ -225,12 +225,24 @@ Kirigami.ScrollablePage {
                     wrapMode: Text.Wrap
                 }
 
+                // The technique's chapter, small, when its video is on the device.
+                PlayerMini {
+                    id: paneVideo
+
+                    objectName: "mapMiniPlayer"
+                    x: Look.unit(16)
+                    y: Look.unit(16)
+                    width: panel.width - 2 * x
+                    entry: page.paneEntry && page.playable(page.paneEntry) ? page.paneEntry : ({})
+                    active: page.isCurrentPage && panel.visible
+                }
+
                 TechniqueBody {
                     id: paneBody
 
                     objectName: "paneSheet"
                     x: Look.unit(16)
-                    y: Look.unit(16)
+                    y: paneVideo.visible ? paneVideo.y + paneVideo.height + Look.unit(12) : Look.unit(16)
                     width: panel.width - 2 * x
                     visible: !!page.paneEntry
                     inPane: true
