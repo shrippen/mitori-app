@@ -16,14 +16,27 @@ import "playlists.js" as Playlists
 // okurigana do not matter; several words must all match. A technique opens its sheet, a note its
 // notes page, a comment hit the comment, an entry its notebook (scrolled to the entry).
 //
-//   ListView (virtual: about 300 words, or up to 50 rows of each other kind found besides)
-//   ├─ header   hints
-//   ├─ rows     the glossary under A … Z headings without a query; with one the words, techniques,
-//   │           notes, comments and course notes found, each kind under its heading and with a hint
-//   │           when there are more
-//   └─ footer   source of the translations
-Kirigami.ScrollablePage {
+// Wide window (a tablet sideways): letter rail | list | detail of the word tapped. A phone: the list
+// with a slim rail at its right edge; dragging over it jumps, a bubble shows the letter.
+//
+//   [A-Z rail] [ListView (virtual: about 300 words, or up to 50 rows of each other kind found)] [detail]
+//                ├─ header   hints
+//                ├─ rows     the glossary under pinned A … Z headings without a query; with one the
+//                │           words, techniques, notes, comments and course notes found, each kind
+//                │           under its heading and with a hint when there are more
+//                └─ footer   source of the translations
+Kirigami.Page {
     id: page
+
+    padding: 0
+    readonly property bool wide: Tablet.wide(width, height)
+    // The word the detail shows (wide): the one tapped, else the first found.
+    property var chosen: null
+    readonly property var detailWord: chosen || (glossary.length > 0 ? glossary[0] : null)
+    readonly property var alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+    // The letters with a word (the glossary without a query).
+    readonly property var usedLetters: searching ? [] : Array.from(new Set(glossary.map(w => w.letter)))
+    readonly property real railWidth: Look.unit(28)
 
     // ScrollablePage keeps the platform's colours (Theme.inherit: false): give it the style's, and
     // the style's page ground (Look: Kante or Shinki).
@@ -92,7 +105,15 @@ Kirigami.ScrollablePage {
 
     // A new query shows its results from the top (the list keeps its position when the header
     // with the techniques found changes height, which left it above the first row).
-    onQueryChanged: Qt.callLater(list.positionViewAtBeginning)
+    onQueryChanged: {
+        chosen = null
+        Qt.callLater(list.positionViewAtBeginning)
+    }
+
+    // A tap on a letter: its section at the top.
+    function jumpTo(letter) {
+        list.positionViewAtIndex(page.glossary.findIndex(w => w.letter === letter), ListView.Beginning)
+    }
 
     header: LookToolBar {
         LookTextField {
@@ -131,16 +152,34 @@ Kirigami.ScrollablePage {
         }
     }
 
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
+
+        // Wide: the rail stays in place at the left while the list scrolls.
+        LetterRail {
+            objectName: "letterRail"
+            Layout.fillHeight: true
+            Layout.preferredWidth: page.railWidth
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.bottomMargin: Kirigami.Units.smallSpacing
+            visible: page.wide && !page.searching
+            letters: page.alphabet
+            available: page.usedLetters
+            current: list.currentSection
+            onPicked: letter => page.jumpTo(letter)
+        }
+
     ListView {
         id: list
 
         objectName: "glossaryList"
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        clip: true
         model: page.rows
         reuseItems: true
-        // The page's padding does not reach a list that is the page's content: on a wide window the
-        // rows keep the reading width (Tablet.pageWidth) in the middle, each at `sideGap`.
-        readonly property real sideGap: Tablet.sidePadding(width, 0)
-        readonly property real rowWidth: width - 2 * sideGap
+        QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
         // The list stays at its top while the head changes height (a query's results, the speech
         // hint, letters wrapping anew), only if it stood there: not once the reader has moved it
         // (flick, wheel, keys, a letter). A head that changes height leaves contentY as it is.
@@ -157,16 +196,25 @@ Kirigami.ScrollablePage {
         // A–Z headings in the whole glossary; words found stand under "Glossary", then "Techniques",
         // "Notes", "In comments" and "In course notes".
         section.property: "section"
-        section.delegate: LookSectionLabel {
+        // The heading stays at the top while its section scrolls, on the page's ground.
+        section.labelPositioning: ViewSection.InlineLabels | ViewSection.CurrentLabelAtStart
+        section.delegate: Rectangle {
             required property string section
 
-            objectName: "letterHeading"
-            x: list.sideGap
-            width: list.rowWidth
-            topPadding: Kirigami.Units.largeSpacing
-            bottomPadding: Kirigami.Units.smallSpacing
-            leftPadding: Kirigami.Units.largeSpacing
-            text: section
+            width: list.width
+            height: heading.implicitHeight
+            color: Look.backgroundColor
+
+            LookSectionLabel {
+                id: heading
+
+                objectName: "letterHeading"
+                width: parent.width
+                topPadding: Kirigami.Units.largeSpacing
+                bottomPadding: Kirigami.Units.smallSpacing
+                leftPadding: Kirigami.Units.largeSpacing
+                text: parent.section
+            }
         }
 
         // Up from the first row goes back to the field; Return or Space say the current word or open
@@ -184,35 +232,10 @@ Kirigami.ScrollablePage {
 
         // Hints and headings keep the page's margin; rows bring their own.
         header: ColumnLayout {
-            x: list.sideGap
-            width: list.rowWidth
-            spacing: Kirigami.Units.largeSpacing
+            width: list.width
+            spacing: Kirigami.Units.smallSpacing
             onHeightChanged: Qt.callLater(list.toTop)
 
-            // A–Z: the letters with a word, a tap goes to the first (clickdummy "Glossar").
-            Flow {
-                objectName: "letterBar"
-                Layout.fillWidth: true
-                Layout.topMargin: Kirigami.Units.largeSpacing
-                Layout.leftMargin: Kirigami.Units.largeSpacing
-                Layout.rightMargin: Kirigami.Units.largeSpacing
-                visible: !page.searching
-                spacing: Look.unit(2)
-
-                Repeater {
-                    model: page.searching ? [] : Array.from(new Set(page.glossary.map(w => w.letter)))
-
-                    LookToolButton {
-                        required property string modelData
-
-                        objectName: "letterJump"
-                        text: modelData
-                        Accessible.name: qsTr("Words with %1").arg(modelData)
-                        focusPolicy: Qt.NoFocus
-                        onClicked: list.positionViewAtIndex(page.glossary.findIndex(w => w.letter === modelData), ListView.Beginning)
-                    }
-                }
-            }
             LookLabel {
                 objectName: "glossaryIntro"
                 Layout.fillWidth: true
@@ -220,7 +243,7 @@ Kirigami.ScrollablePage {
                 Layout.leftMargin: Kirigami.Units.largeSpacing
                 Layout.rightMargin: Kirigami.Units.largeSpacing
                 visible: !page.searching
-                text: qsTr("%n Japanese term(s), with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.", "", Glossary.words.length)
+                text: qsTr("%n Japanese term(s), with kanji and translation.", "", Glossary.words.length)
                 color: Look.mutedTextColor
                 wrapMode: Text.Wrap
             }
@@ -233,8 +256,8 @@ Kirigami.ScrollablePage {
                 // Once with the glossary, not above every result.
                 visible: !page.searching && (Glossary.speech === Glossary.NoVoice || Glossary.speech === Glossary.Unsupported)
                 text: Glossary.speech === Glossary.Unsupported
-                      ? qsTr("This version of Mitori has no speech output, so there is no pronunciation.")
-                      : qsTr("No Japanese voice for speech output found. Where the system offers one (Android: settings, text-to-speech output), install it to hear the pronunciation.")
+                      ? qsTr("No speech output in this version: no pronunciation.")
+                      : qsTr("No Japanese voice found: no pronunciation (Android: settings, text-to-speech).")
                 color: Look.mutedTextColor
                 wrapMode: Text.Wrap
             }
@@ -270,8 +293,6 @@ Kirigami.ScrollablePage {
 
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.leftMargin: list.sideGap
-                    anchors.rightMargin: list.sideGap
                     readonly property var found: rowLoader.modelData.data
                     readonly property string kind: rowLoader.modelData.kind
 
@@ -280,9 +301,10 @@ Kirigami.ScrollablePage {
                     // The list is one Tab stop; Up and Down move in it.
                     activeFocusOnTab: false
                     focusOnClick: false
-                    selected: rowLoader.ListView.isCurrentItem && list.activeFocus
+                    selected: (rowLoader.ListView.isCurrentItem && list.activeFocus)
+                              || (page.wide && kind === "word" && !!page.detailWord && found.word === page.detailWord.word)
                     leadingText: kind === "technique" && found.nr ? String(found.nr) : ""
-                    meta: kind === "comment" ? found.gradeName : ""
+                    meta: kind === "comment" ? found.gradeName : kind === "word" ? found.jp : ""
                     // From the row itself, kind and data together: a reused row gets both at once.
                     text: page.rowText(rowLoader.modelData)
                     subtitle: page.rowSubtitle(rowLoader.modelData)
@@ -292,15 +314,18 @@ Kirigami.ScrollablePage {
                         list.currentIndex = rowLoader.index
                         page.openRow(rowLoader.modelData)
                     }
-                    trailing: LookToolButton {
-                        objectName: "sayButton"
-                        visible: page.canSpeak && row.kind === "word"
-                        focusPolicy: Qt.NoFocus
-                        display: QQC2.AbstractButton.IconOnly
-                        icon.name: "media-playback-start"
-                        text: qsTr("Pronunciation")
-                        Accessible.name: qsTr("Pronounce %1").arg(row.found.word)
-                        onClicked: Glossary.say(row.found.speech)
+                    // A Loader: an invisible button would still keep its room at the row's end.
+                    trailing: Loader {
+                        active: page.canSpeak && row.kind === "word"
+                        sourceComponent: LookToolButton {
+                            objectName: "sayButton"
+                            focusPolicy: Qt.NoFocus
+                            display: QQC2.AbstractButton.IconOnly
+                            icon.name: "media-playback-start"
+                            text: qsTr("Pronunciation")
+                            Accessible.name: qsTr("Pronounce %1").arg(row.found.word)
+                            onClicked: Glossary.say(row.found.speech)
+                        }
                     }
                 }
             }
@@ -311,8 +336,6 @@ Kirigami.ScrollablePage {
                 LookLabel {
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.leftMargin: list.sideGap
-                    anchors.rightMargin: list.sideGap
                     objectName: rowLoader.modelData.data.name
                     leftPadding: Kirigami.Units.largeSpacing
                     rightPadding: Kirigami.Units.largeSpacing
@@ -326,8 +349,7 @@ Kirigami.ScrollablePage {
         }
 
         footer: ColumnLayout {
-            x: list.sideGap
-            width: list.rowWidth
+            width: list.width
             spacing: Kirigami.Units.largeSpacing
 
             LookLabel {
@@ -343,12 +365,51 @@ Kirigami.ScrollablePage {
         }
     }
 
+
+        // Phone: a slim rail at the right edge; dragging over it jumps, a bubble shows the letter.
+        LetterRail {
+            objectName: "letterRailPhone"
+            Layout.fillHeight: true
+            Layout.preferredWidth: page.railWidth
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.bottomMargin: Kirigami.Units.smallSpacing
+            visible: !page.wide && !page.searching
+            bubble: true
+            letters: page.alphabet
+            available: page.usedLetters
+            current: list.currentSection
+            onPicked: letter => page.jumpTo(letter)
+        }
+
+        // Wide: the word tapped.
+        Rectangle {
+            objectName: "glossaryDetail"
+            visible: page.wide
+            Layout.fillHeight: true
+            Layout.preferredWidth: Math.round(page.width * 0.4)
+            color: Look.cardColor
+
+            Rectangle {
+                width: Look.borderWidth
+                height: parent.height
+                color: Look.ruleColor
+            }
+
+            WordDetail {
+                anchors.fill: parent
+                anchors.margins: Kirigami.Units.largeSpacing * 2
+                word: page.detailWord
+                onTechniqueRequested: technique => page.openRow({ kind: "technique", data: technique })
+            }
+        }
+    }
+
     // What a row says. As in the programme: the technique's and the attack's addition tell rows
     // apart; a note in one line, as the row shows it.
     function rowText(row) {
         const found = row.data
         if (row.kind === "word") {
-            return found.word + (found.jp ? "  " + found.jp : "")
+            return found.word
         }
         if (row.kind === "technique") {
             return found.title + (found.extra && !found.nr ? " (" + found.extra + ")" : "") + (found.jp ? "  " + found.jp : "")
@@ -396,7 +457,9 @@ Kirigami.ScrollablePage {
         if (!row) {
             return
         }
-        if (row.kind === "word") {
+        if (row.kind === "word" && page.wide) {
+            page.chosen = row.data
+        } else if (row.kind === "word") {
             Glossary.say(row.data.speech)
         } else if (row.kind === "technique") {
             sheet.entry = row.data
