@@ -1101,7 +1101,9 @@ TestCase {
         verify(!noted.visible)
         Practice.addNote(page.current.id, "Schritt kleiner")
         Practice.addNote(page.current.id, "Blick")
-        if (page.kino) {
+        if (page.kino && findChild(page, "kinoMiddle").tight) {
+            verify(findChild(page, "kinoNotesLine").text.indexOf("2") >= 0, findChild(page, "kinoNotesLine").text)
+        } else if (page.kino) {
             const listed = allChildren(findChild(page, "kinoHistory")).filter(c => c.objectName === "lastNote" && c.visible)
             verify(listed.length === 2 && listed[0].text.indexOf("Blick") >= 0 && listed[1].text.indexOf("Schritt kleiner") >= 0)
         } else {
@@ -1299,7 +1301,11 @@ TestCase {
     // was rated and its last notes with a field for a new one, below in the thumb zone the controls,
     // the ratings and the way on. The middle is never empty and nothing overlaps.
     function test_4u_player_kino_upright_data() {
-        return [{ tag: "phone", width: 420, height: 860, row: 0 }, { tag: "small phone", width: 360, height: 640, row: 1 }]
+        // `tight`: the middle is too short for the notes and the field (a small phone); left out,
+        // the style's fonts decide (Shinki needs more room than Kante).
+        return [{ tag: "tall phone", width: 420, height: 960, row: 0, tight: false },
+                { tag: "phone", width: 420, height: 860, row: 2 },
+                { tag: "small phone", width: 360, height: 640, row: 1, tight: true }]
     }
     function test_4u_player_kino_upright(data) {
         failOnWarning(/ReferenceError|TypeError|Binding loop/)
@@ -1317,7 +1323,7 @@ TestCase {
         // The dark title row carries the name whole and Back; no light head above it.
         const title = findChild(page, "kinoTitle")
         tryVerify(() => title.width > 0, 2000)
-        verify(!title.truncated, "the name is cut: " + title.text + " in " + title.width + " px")
+        tryVerify(() => !title.truncated, 2000, "the name is cut: " + title.text + " in " + title.width + " px")
         compare(page.globalToolBarStyle, Kirigami.ApplicationHeaderStyle.None, "no light head over the dark page")
         verify(findChild(page, "kinoBack").visible, "Back in the title row")
 
@@ -1326,7 +1332,14 @@ TestCase {
         verify(history.visible && history.height > 0)
         const before = history.ratings.length
         compare(Practice.notes(id).length, 0)
-        verify(findChild(page, "noNotes").visible, "without notes it says so")
+        const tight = middle.tight
+        if (data.tight !== undefined) {
+            verify(tight === data.tight, "tight " + tight + " at a height of " + middle.height + " (needs " + middle.needed + ")")
+        }
+        verify(middle.clip, "the middle is clipped")
+        if (!tight) {
+            verify(findChild(page, "noNotes").visible, "without notes it says so")
+        }
         shot("player-kino-" + data.width + "x" + data.height + "-empty")
 
         // Ratings and notes show; the field adds today's.
@@ -1339,17 +1352,32 @@ TestCase {
         compare(history.ratings[history.ratings.length - 2].level, 1)
         compare(history.ratings[history.ratings.length - 1].level, 3)
         const lastNotes = () => allChildren(history).filter(c => c.objectName === "lastNote" && c.visible)
-        compare(lastNotes().length, 2, "the last two notes")
-        verify(lastNotes()[0].text.indexOf("Hüfte zuerst") >= 0 && lastNotes()[1].text.indexOf("Blick zum Partner") >= 0,
-               lastNotes()[0].text + " / " + lastNotes()[1].text)
-        verify(!findChild(page, "noNotes").visible)
+        if (tight) {
+            // Too short: the bars, a "Notes · n" line and a button to the note input, no list, no field.
+            compare(lastNotes().length, 0)
+            verify(findChild(page, "kinoNotesLine").visible)
+            verify(findChild(page, "kinoNotesLine").text.indexOf("3") >= 0, findChild(page, "kinoNotesLine").text)
+            verify(!findChild(page, "kinoNote").active, "no inline field")
+            const add = findChild(page, "kinoAddNote")
+            verify(add.visible)
+            add.clicked()
+            tryVerify(() => window.pageStack.currentItem !== page, 3000, "the note input opens")
+            window.back()
+            tryVerify(() => window.pageStack.currentItem === page, 3000)
+        } else {
+            compare(lastNotes().length, 2, "the last two notes")
+            verify(lastNotes()[0].text.indexOf("Hüfte zuerst") >= 0 && lastNotes()[1].text.indexOf("Blick zum Partner") >= 0,
+                   lastNotes()[0].text + " / " + lastNotes()[1].text)
+            verify(!findChild(page, "noNotes").visible)
+            verify(!findChild(page, "kinoAddNote").visible)
 
-        const note = findChild(page, "kinoNote")
-        const field = findChild(note, "noteField")
-        field.text = "Heute ruhiger"
-        findChild(note, "addNote").clicked()
-        compare(field.text, "")
-        verify(lastNotes()[0].text.indexOf("Heute ruhiger") > 0, lastNotes()[0].text)
+            const note = findChild(page, "kinoNote")
+            const field = findChild(note, "noteField")
+            field.text = "Heute ruhiger"
+            findChild(note, "addNote").clicked()
+            compare(field.text, "")
+            verify(lastNotes()[0].text.indexOf("Heute ruhiger") > 0, lastNotes()[0].text)
+        }
         wait(300)
         shot("player-kino-" + data.width + "x" + data.height)
 
@@ -1361,6 +1389,12 @@ TestCase {
         }
         verify(order[4].e.bottom <= page.height + 0.5, "the thumb zone in view: " + order[4].e.bottom + " of " + page.height)
         verify(order[3].e.bottom - order[3].e.top > 0, "the middle has height")
+        // Nothing of the middle reaches below its edge into the thumb zone.
+        const stray = allChildren(middle).filter(c => c.visible && c.width > 0 && c.height > 0
+                                                 && (c.text !== undefined || c.clicked !== undefined || c.picked !== undefined)
+                                                 && edgesIn(page, c).bottom > order[3].e.bottom + 0.5)
+                                         .map(c => (c.objectName || c.text) + " to " + edgesIn(page, c).bottom + " of " + order[3].e.bottom)
+        compare(stray, [], "the middle spills into the thumb zone")
         for (const part of order) {
             verify(part.e.left >= 0 && part.e.right <= page.width + 0.5, part.n + " within the width")
         }
@@ -8098,7 +8132,7 @@ TestCase {
         const page = playerAt(0)                       // skips without videos, before the window changes
         // With a picture (Kino) the note field is in the middle of the upright player.
         window.width = page.kino ? 420 : 800
-        window.height = page.kino ? 800 : 360
+        window.height = page.kino ? 960 : 360
         wait(300)
         const view = findChild(page, page.kino ? "kinoMiddle" : "controlsView")
         const field = findChild(page.kino ? findChild(page, "kinoNote") : page, "noteField")

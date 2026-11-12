@@ -12,10 +12,14 @@ ColumnLayout {
     id: history
 
     required property string entry
+    // Only the bars and their span (a short middle): no heading, no list of notes.
+    property bool compact: false
     readonly property int count: 8
     readonly property int levels: 4
     // [{day, at, level}], oldest first.
     readonly property var ratings: Practice.revision >= 0 && entry !== "" ? Practice.ratingHistory(entry, count) : []
+    // How many notes the technique has.
+    readonly property int noteCount: Practice.notesRevision >= 0 && entry !== "" ? Practice.notes(entry).length : 0
     // The newest two notes, newest first.
     readonly property var lastNotes: {
         if (Practice.notesRevision < 0 || entry === "") {
@@ -47,6 +51,7 @@ ColumnLayout {
 
     LookLabel {
         Layout.fillWidth: true
+        visible: !history.compact
         text: qsTr("Ratings")
         color: Look.stageTextColor
         opacity: 0.7
@@ -77,7 +82,8 @@ ColumnLayout {
                     horizontalAlignment: Text.AlignRight
                     text: history.levels - index
                     color: Look.stageTextColor
-                    opacity: 0.7
+                    // Short chart: only the ends of the scale, the rest would overlap.
+                    opacity: history.compact && index > 0 && index < history.levels - 1 ? 0 : 0.7
                     font: Look.smallFont
                 }
             }
@@ -87,7 +93,7 @@ ColumnLayout {
             id: bars
 
             Layout.fillWidth: true
-            Layout.preferredHeight: Look.unit(56)
+            Layout.preferredHeight: history.compact ? Look.unit(32) : Look.unit(56)
 
             // The scale's base line.
             Rectangle {
@@ -150,6 +156,7 @@ ColumnLayout {
     LookLabel {
         Layout.fillWidth: true
         Layout.topMargin: Look.unit(4)
+        visible: !history.compact
         text: qsTr("Last notes")
         color: Look.stageTextColor
         opacity: 0.7
@@ -158,13 +165,13 @@ ColumnLayout {
     LookLabel {
         objectName: "noNotes"
         Layout.fillWidth: true
-        visible: history.lastNotes.length === 0
+        visible: !history.compact && history.lastNotes.length === 0
         text: qsTr("No notes yet.")
         color: Look.stageTextColor
         opacity: 0.7
     }
     Repeater {
-        model: history.lastNotes
+        model: history.compact ? [] : history.lastNotes
 
         LookLabel {
             required property var modelData

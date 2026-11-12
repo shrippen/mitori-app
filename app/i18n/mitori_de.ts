@@ -1836,6 +1836,10 @@
         <translation>Notizen · %1</translation>
     </message>
     <message>
+        <source>Add note</source>
+        <translation>Notiz hinzufügen</translation>
+    </message>
+    <message>
         <source>Loop</source>
         <translation>Schleife</translation>
     </message>

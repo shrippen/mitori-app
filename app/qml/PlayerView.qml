@@ -873,6 +873,19 @@ Item {
             Layout.fillHeight: true
             Layout.minimumHeight: Look.unit(64)
             contentHeight: middleColumn.implicitHeight + Look.unit(16)
+            // Too short for the bars, the notes and the field (a small phone): the bars, a "Notes · n"
+            // line and a button to the note input instead. A field being typed in stays, whatever the
+            // height. `needed` is what the full middle took the last time it was shown (the fonts of
+            // the style decide), so the switch follows the style and not a fixed number.
+            property real needed: 0
+            readonly property bool tight: needed > 0 && height < needed && !(focusedField && focusedField.activeFocus)
+            function measure() {
+                if (tight || !kinoNote.item) {
+                    return
+                }
+                needed = kinoHistoryRow.implicitHeight + middleColumn.spacing + kinoNote.item.implicitHeight + Look.unit(16)
+            }
+            onContentHeightChanged: Qt.callLater(measure)
             boundsBehavior: Flickable.StopAtBounds
             clip: true
 
@@ -893,14 +906,46 @@ Item {
                 id: middleColumn
 
                 x: Look.unit(16)
-                y: Look.unit(8)
+                y: middle.tight ? Look.unit(4) : Look.unit(8)
                 width: middle.width - Look.unit(32)
                 spacing: Look.unit(10)
 
-                PlayerHistory {
-                    objectName: "kinoHistory"
+                RowLayout {
+                    id: kinoHistoryRow
+
                     Layout.fillWidth: true
-                    entry: page.current.id || ""
+                    spacing: Look.unit(12)
+
+                    PlayerHistory {
+                        id: kinoHistory
+
+                        objectName: "kinoHistory"
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
+                        compact: middle.tight
+                        entry: page.current.id || ""
+                    }
+                    ColumnLayout {
+                        visible: middle.tight
+                        Layout.alignment: Qt.AlignTop
+                        spacing: Look.unit(2)
+
+                        LookLabel {
+                            objectName: "kinoNotesLine"
+                            text: qsTr("Notes · %1").arg(kinoHistory.noteCount)
+                            color: Look.stageTextColor
+                        }
+                        LookToggle {
+                            objectName: "kinoAddNote"
+                            implicitHeight: Look.unit(30)
+                            onStage: true
+                            checkable: false
+                            focusPolicy: Qt.TabFocus
+                            icon.name: "view-pim-notes"
+                            text: qsTr("Add note")
+                            onClicked: page.notesRequested(page.current)
+                        }
+                    }
                 }
                 // Only upright: beside the list the one in the controls is the note field.
                 Loader {
@@ -908,7 +953,8 @@ Item {
 
                     objectName: "kinoNote"
                     Layout.fillWidth: true
-                    active: page.upright
+                    active: page.upright && !middle.tight
+                    visible: active
 
                     sourceComponent: NoteRow {
                         fieldOnly: true
