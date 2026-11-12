@@ -756,6 +756,12 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     add_test(NAME look_shinki COMMAND tst_ui -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/qml-look/tst_look.qml)
     set_tests_properties(look_shinki PROPERTIES ENVIRONMENT
         "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Material;MITORI_TEST_STYLE=shinki;${NO_KEY_STORE}")
+    # The change of style's CPU time, in a process of its own (tst_look.qml, test_style_switch_cpu).
+    add_test(NAME look_cpu COMMAND tst_ui -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/qml-look/tst_look.qml Look::test_style_switch_cpu)
+    set_tests_properties(look_cpu PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Material;${NO_KEY_STORE}")
+    add_test(NAME look_cpu_shinki COMMAND tst_ui -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/qml-look/tst_look.qml Look::test_style_switch_cpu)
+    set_tests_properties(look_cpu_shinki PROPERTIES ENVIRONMENT
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Material;MITORI_TEST_STYLE=shinki;${NO_KEY_STORE}")
     # The pages' times with five years of use (budgets catch what became slow).
     qt_add_executable(tst_perf tests/tst_perf.cpp)
     target_link_libraries(tst_perf PRIVATE mitori_app mitori_appplugin Qt6::QuickTest Qt6::Sql)
@@ -766,7 +772,7 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     add_test(NAME perf COMMAND tst_perf)
     set_tests_properties(perf PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Material;${NO_KEY_STORE}")
     # Both runs share the test data (ui-data): never at the same time.
-    set_tests_properties(ui ui_shinki look look_shinki PROPERTIES RESOURCE_LOCK ui_data)
+    set_tests_properties(ui ui_shinki look look_shinki look_cpu look_cpu_shinki PROPERTIES RESOURCE_LOCK ui_data)
 endif()
 
 install(TARGETS mitori
