@@ -3189,8 +3189,8 @@
         <translation>In Techniken</translation>
     </message>
     <message>
-        <source>More than %1 techniques. Search for the word to see them all.</source>
-        <translation>Mehr als %1 Techniken. Suche nach dem Wort, um alle zu sehen.</translation>
+        <source>Only the first %1 techniques.</source>
+        <translation>Nur die ersten %1 Techniken.</translation>
     </message>
 </context>
 <context>

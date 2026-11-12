@@ -108,7 +108,7 @@ ColumnLayout {
         objectName: "detailHitsMore"
         Layout.fillWidth: true
         visible: detail.found.length > detail.maxHits
-        text: qsTr("More than %1 techniques. Search for the word to see them all.").arg(detail.maxHits)
+        text: qsTr("Only the first %1 techniques.").arg(detail.maxHits)
         color: Look.mutedTextColor
         wrapMode: Text.Wrap
     }
