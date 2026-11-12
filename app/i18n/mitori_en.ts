@@ -188,6 +188,27 @@
         </translation>
     </message>
     <message numerus="yes">
+        <source>%n day(s) in a row</source>
+        <translation>
+            <numerusform>%n day in a row</numerusform>
+            <numerusform>%n days in a row</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s) in the notebook</source>
+        <translation>
+            <numerusform>%n note in the notebook</numerusform>
+            <numerusform>%n notes in the notebook</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s)</source>
+        <translation>
+            <numerusform>%n note</numerusform>
+            <numerusform>%n notes</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
         <source>%n package(s)</source>
         <translation>
             <numerusform>%n package</numerusform>

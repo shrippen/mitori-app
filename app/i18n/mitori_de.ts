@@ -2224,16 +2224,20 @@
         <translation>Videos</translation>
     </message>
     <message>
-        <source>Planned exam</source>
-        <translation>Prüfung geplant</translation>
-    </message>
-    <message>
         <source>Programme</source>
         <translation>Programm</translation>
     </message>
     <message>
         <source>%1 of %2 exam-ready</source>
         <translation>%1 von %2 prüfungsreif</translation>
+    </message>
+    <message>
+        <source>up to %1 · %2 of %3 sure · %4 exam-ready</source>
+        <translation>bis %1 · %2 von %3 sicher · %4 prüfungsreif</translation>
+    </message>
+    <message>
+        <source>Continue with: %1</source>
+        <translation>Weiter mit: %1</translation>
     </message>
     <message>
         <source>Practice today</source>
@@ -2251,12 +2255,39 @@
         <translation>alles geübt</translation>
     </message>
     <message>
+        <source>due today</source>
+        <translation>heute fällig</translation>
+    </message>
+    <message>
+        <source>%1 unsure · %2 new</source>
+        <translation>%1 unsicher · %2 neu</translation>
+    </message>
+    <message>
+        <source>Start training</source>
+        <translation>Training starten</translation>
+    </message>
+    <message>
         <source>Exam mode</source>
         <translation>Prüfung</translation>
     </message>
     <message>
         <source>Mock exam %1</source>
         <translation>Probe %1</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>%1 % of the exam&apos;s techniques sure or better</source>
+        <translation>%1 % der Prüfungstechniken sicher oder besser</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) in a row</source>
+        <translation>
+            <numerusform>%n Tag in Folge</numerusform>
+            <numerusform>%n Tage in Folge</numerusform>
+        </translation>
     </message>
     <message>
         <source>Courses</source>
@@ -2276,6 +2307,29 @@
     <message>
         <source>today</source>
         <translation>heute</translation>
+    </message>
+    <message>
+        <source>Notes</source>
+        <translation>Notizen</translation>
+    </message>
+    <message>
+        <source>Technique notes and notebooks</source>
+        <translation>Notizen zu Techniken und Notizbücher</translation>
+    </message>
+    <message>
+        <source>Photo or voice note</source>
+        <translation>Foto oder Sprachnotiz</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s)</source>
+        <translation>
+            <numerusform>%n Notiz</numerusform>
+            <numerusform>%n Notizen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No notes yet</source>
+        <translation>Noch keine Notizen</translation>
     </message>
     <message>
         <source>Learning videos</source>
@@ -2316,6 +2370,13 @@
         <translation>
             <numerusform>%n Übungstag in 30 Tagen</numerusform>
             <numerusform>%n Übungstage in 30 Tagen</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s) in the notebook</source>
+        <translation>
+            <numerusform>%n Notiz im Notizbuch</numerusform>
+            <numerusform>%n Notizen im Notizbuch</numerusform>
         </translation>
     </message>
     <message>

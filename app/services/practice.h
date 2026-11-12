@@ -72,6 +72,11 @@ public:
     // ones in order (Schedule::due), each row with `level` and `days` added.
     Q_INVOKABLE QVariantList due(const QVariantList &candidates) const;
 
+    // The latest rating of every entry and the day each was rated first, as copies (C++ only: StartBoard
+    // hands them to a worker thread; the hashes share their data until this one writes).
+    QHash<QString, PracticeLog::Rating> ratings() const { return m_latest; }
+    QHash<QString, QDate> firstDays() const { return m_first; }
+
     // Notes on a technique: {uid, text, created, changed} with local dates, oldest first.
     Q_INVOKABLE QVariantList notes(const QString &entry) const;
     // The entry's notes written today (the player's "Noted today"), oldest first.

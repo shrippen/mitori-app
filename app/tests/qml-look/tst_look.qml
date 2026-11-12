@@ -235,7 +235,7 @@ TestCase {
     // The start tiles are all as high, in every style, on a phone and a tablet: the exam tile's
     // short hint made it smaller than the others.
     function test_start_tiles_equal_height() {
-        const names = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile"]
+        const names = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "notesTile"]
         const sizes = [{ w: 360, h: 640 }, { w: 420, h: 800 }, { w: 1000, h: 600 }]
         const styles = [Appearance.Style.Breeze, Appearance.Style.Material, Appearance.Style.Kante, Appearance.Style.Leinen, Appearance.Style.Shinki]
         for (const style of styles) {
@@ -629,7 +629,7 @@ TestCase {
 
         const english = () => {
             verify(/\d(st|nd|rd|th) Kyu/.test(hint("programmeTile")), hint("programmeTile"))
-            verify(/\d(st|nd|rd|th) Kyu/.test(hint("examTile")), hint("examTile"))
+            tryVerify(() => /\d(st|nd|rd|th) Kyu/.test(hint("examTile")), 5000, hint("examTile"))
             verify(dates().includes("As of"), dates())
             verify(noteTitle().includes("5th Kyu"), noteTitle())
             compare(meaning("Koshi-nage"), "hip throw")
@@ -641,7 +641,7 @@ TestCase {
 
         tile(page, "languageTile", "Deutsch").clicked()
         verify(/\d\. Kyu/.test(hint("programmeTile")), hint("programmeTile"))
-        verify(/\d\. Kyu/.test(hint("examTile")), hint("examTile"))
+        tryVerify(() => /\d\. Kyu/.test(hint("examTile")), 5000, hint("examTile"))
         verify(dates().includes("Stand"), dates())
         verify(noteTitle().includes("5. Kyu"), noteTitle())
         compare(meaning("Koshi-nage"), "Hüftwurf")

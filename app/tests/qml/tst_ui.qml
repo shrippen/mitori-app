@@ -190,7 +190,7 @@ TestCase {
         compare(window.pageStack.currentItem.title, "Mitori 見取り")
         // The tiles in the decided order: Today, Exam, Statistics, Courses (clickdummy "Startmenü").
         const start = window.pageStack.currentItem
-        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile"]
+        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "notesTile"]
         const items = order.map(n => findChild(start, n))
         const at = it => it.mapToItem(start, 0, 0)
         for (let i = 1; i < items.length; i++) {
@@ -200,6 +200,8 @@ TestCase {
         // The discipline by its short name (clickdummy: "Aikido · 5. Kyu · 7 of 20 exam-ready").
         const short = Programme.disciplines.find(d => d.id === Programme.discipline).kurzname
         verify(findChild(start, "programmeTile").hint.startsWith(short + " · "), findChild(start, "programmeTile").hint)
+        // The tiles fill in after the page is drawn (StartBoard, off the GUI thread).
+        tryVerify(() => order.concat("programmeTile").every(n => findChild(start, n).filled))
         verify(findChild(start, "todayTile").hint.endsWith(" · " + short), findChild(start, "todayTile").hint)
         shot("1-start")
     }
@@ -2265,7 +2267,7 @@ TestCase {
         // The first day as a local day (no time zone moves it to the day before).
         compare(rows[0].firstDay.getDate(), new Date(Date.now() + 12 * 86400000).getDate())
         compare(findChildren(page, "notebookRow").length, 0, "the list lives on its own page")
-        verify(findChild(window.pageStack.items[0], "coursesTile").hint.indexOf("Siebeldingen") === 0)
+        tryVerify(() => findChild(window.pageStack.items[0], "coursesTile").hint.indexOf("Siebeldingen") === 0)
         shot("14-courses")
 
         // "My notebooks" says how many, and opens the list: empty, it says how to make one.
@@ -2631,9 +2633,9 @@ TestCase {
         const start = window.pageStack.items[0]
         tryCompare(Library.packages, "length", 0)
         verify(!findChild(start, "lessonsTile").visible)
-        // 6 small tiles in 2 columns: none spans both.
+        // 7 small tiles (today's practice spans both columns): the rest in pairs.
         const tiles = findChild(start, "tiles")
-        compare(tiles.smallTiles, 6)
+        compare(tiles.smallTiles, 7)
         verify(findChild(start, "glossaryTile").width < tiles.width)
         push("LessonsPage")
         tryVerify(() => window.pageStack.depth === 2)
@@ -2662,10 +2664,11 @@ TestCase {
         const start = window.pageStack.items[0]
         const tile = findChild(start, "lessonsTile")
         tryVerify(() => tile.visible)
-        // Last of 7 small tiles on the phone: after the glossary, over both columns.
-        const glossary = findChild(start, "glossaryTile")
-        verify(tile.mapToItem(start, 0, 0).y > glossary.mapToItem(start, 0, 0).y)
-        compare(tile.width, findChild(start, "tiles").width)
+        // Last of 8 small tiles on the phone: after the notes, over both columns.
+        const glossary = findChild(start, "notesTile")
+        tryVerify(() => tile.mapToItem(start, 0, 0).y > glossary.mapToItem(start, 0, 0).y)
+        tryCompare(tile, "width", findChild(start, "tiles").width)
+        wait(200)       // the rows settle with the new tile
         compare(tile.hint, qsTr("%n package(s)", "", 1) + " · " + qsTr("%n technique(s)", "", 4))
         slidIn()
         clickTile(tile)
@@ -3010,10 +3013,10 @@ TestCase {
         shot("16g-lessons-tablet-sheet", true)
         sheet.close()
         tryVerify(() => !sheet.opened)
-        // The tile, four to a row: eight tiles fill two rows.
+        // The tile, four to a row: after the notes, in a row of its own.
         popPage()
         const tiles = findChild(start, "tiles")
-        compare(tiles.smallTiles, 7)
+        compare(tiles.smallTiles, 8)
         compare(findChild(start, "lessonsTile").width, findChild(start, "glossaryTile").width)
     }
 
@@ -3428,12 +3431,13 @@ TestCase {
         popPage()
 
         const start = window.pageStack.items[0]
-        // CD-5 shot: the start menu with the planned exam hint box above the tiles.
+        // CD-5 shot: the start menu with the planned exam's countdown on the exam tile.
+        tryVerify(() => findChild(start, "examCountdown").visible)
         shot("1b-start-planned-exam")
-        // The planned exam is its own hint box (clickdummy "Startmenü"), not on a tile.
-        verify(findChild(start, "plannedExam").visible)
-        verify(findChild(start, "plannedExam").text.indexOf(qsTr("Exam %1 in %n day(s)", "", 12).arg("Aikido 4. Kyu")) >= 0,
-               findChild(start, "plannedExam").text)
+        compare(findChild(start, "examDays").text, qsTr("in %n day(s)", "", 12))
+        compare(findChild(start, "examTile").t.name, "Aikido 4. Kyu")
+        verify(findChild(start, "examRing").visible)
+        verify(!findChild(start, "plannedExam"), "the countdown is the exam tile's, no hint box above the tiles")
         Programme.discipline = "aikido"
         const today = push("TodayPage")
         verify(findChild(today, "plannedHint").visible)
@@ -3977,7 +3981,7 @@ TestCase {
         Exam.shuffled = false
         Exam.samples = true
         const tile = findChild(window.pageStack.items[0], "examTile")
-        verify(tile.hint.indexOf("4. Kyu") >= 0, tile.hint)
+        tryVerify(() => tile.hint.indexOf("4. Kyu") >= 0, 5000, tile.hint)
 
         const page = push("ExamPage")
         compare(page.grade, "k4")
@@ -4322,7 +4326,7 @@ TestCase {
         Courses.removeGrade(Courses.grades.find(g => g.discipline === "daitoryu").uid)
         // The start tile counts the practice days.
         const tile = findChild(window.pageStack.items[0], "statsTile")
-        compare(tile.days, 1)
+        tryCompare(tile, "days", 1)
     }
 
     // Another video folder for this case; cleanup() brings the real one back.
@@ -5430,28 +5434,66 @@ TestCase {
         Programme.discipline = "aikido"
     }
 
-    // Tablet in landscape: the start menu as a grid of four; the fifth tile starts a second row.
+    // Tablet in landscape: the start menu as a bento of four columns. The programme tile takes two
+    // columns and two rows at the top left, today's practice two columns beside it, the exam and the
+    // statistics below that; then four to a row.
     function test_1b_start_tablet() {
         const start = window.pageStack.items[0]
         window.width = 1280
         window.height = 800
         const tiles = findChild(start, "tiles")
         tryCompare(tiles, "columns", 4)
-        const shown = tiles.children.filter(t => t.visible && t.width > 0)
-        verify(shown.length > 4, "a second row")
-        // Four to a row, in order: the fifth starts the next row under the first.
-        shown.forEach((t, i) => {
-            const first = shown[i - i % 4]
-            verify(Math.abs(t.y - first.y) < 1, "tile " + i + " in its row")
-            if (i % 4)
-                verify(t.x > shown[i - 1].x + shown[i - 1].width - 1, "tile " + i + " right of the one before")
-            else if (i)
-                verify(Math.abs(t.x - shown[0].x) < 1 && t.y > shown[i - 4].y, "tile " + i + " starts a row")
-        })
+        wait(200)
+        const at = n => findChild(start, n).mapToItem(tiles, 0, 0)
+        const programme = findChild(start, "programmeTile")
+        const small = findChild(start, "examTile")
+        compare(at("programmeTile").x, 0)
+        compare(at("programmeTile").y, 0)
+        verify(Math.abs(at("todayTile").y) < 1, "today beside the programme tile")
+        verify(Math.abs(at("todayTile").x - (programme.width + tiles.columnSpacing)) < 1, "today right of it")
+        const row2 = ["examTile", "statsTile"].map(at)
+        verify(row2[0].y > 0 && Math.abs(row2[0].y - row2[1].y) < 1, "exam and statistics in a row")
+        verify(Math.abs(row2[0].x - at("todayTile").x) < 1 && row2[1].x > row2[0].x, "under today's practice")
+        const row3 = ["coursesTile", "mapTile", "glossaryTile", "notesTile"].map(at)
+        for (let i = 0; i < 4; ++i) {
+            verify(Math.abs(row3[i].y - row3[0].y) < 1, "tile " + i + " in the last row")
+            verify(row3[i].y >= programme.height - 1, "below the programme tile")
+            if (i)
+                verify(row3[i].x > row3[i - 1].x, "tile " + i + " right of the one before")
+        }
+        compare(findChild(start, "notesTile").width, small.width)
         shot("1b-start-tablet")
         window.width = 420
         window.height = 800
         tryCompare(tiles, "columns", 2)      // two columns on the phone (the clickdummy)
+    }
+
+    // The programme tile is always twice as wide and twice as high as the others (plus the gap
+    // between two cells), at every width; each tile's value is there.
+    function test_1b_bento_sizes_data() {
+        return [ { tag: "1280x800", width: 1280, height: 800 }, { tag: "800x1280", width: 800, height: 1280 },
+                 { tag: "420x860", width: 420, height: 860 }, { tag: "360x640", width: 360, height: 640 } ]
+    }
+    function test_1b_bento_sizes(data) {
+        window.width = data.width
+        window.height = data.height
+        const start = window.pageStack.items[0]
+        const tiles = findChild(start, "tiles")
+        const names = ["programmeTile", "todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "notesTile"]
+        tryVerify(() => names.every(n => findChild(start, n).filled), 5000, "every tile has its value")
+        wait(100)
+        const gap = tiles.columnSpacing
+        const programme = findChild(start, "programmeTile")
+        const where = data.tag + ": "
+        for (const n of names.slice(2)) {
+            const t = findChild(start, n)
+            verify(Math.abs(programme.width - (2 * t.width + gap)) <= 1, where + n + " is half as wide: " + t.width + " of " + programme.width)
+            verify(Math.abs(programme.height - (2 * t.height + gap)) <= 1, where + n + " is half as high: " + t.height + " of " + programme.height)
+        }
+        const today = findChild(start, "todayTile")
+        verify(Math.abs(today.width - programme.width) <= 1, where + "today's practice as wide as the programme tile")
+        verify(Math.abs(2 * today.height + gap - programme.height) <= 1, where + "today's practice is a row high")
+        shot("1b-bento-" + data.tag)
     }
 
     // The keyboard scrolls the programme list (Down, Page Down).
@@ -6017,6 +6059,8 @@ TestCase {
         PracticeGrade.setGrade("aikido", "k4")
         const start = window.pageStack.items[0]
         const tiles = ["programmeTile", "todayTile", "examTile"].map(n => findChild(start, n))
+        // The board's run for this grade is in (the exam tile names the grade).
+        tryVerify(() => tiles[2].hint.indexOf("4. Kyu") >= 0 && tiles[0].t.gradeName === "4. Kyu", 5000, tiles[2].hint)
         const hints = tiles.map(t => t.hint)
         verify(hints[0].indexOf("4. Kyu") >= 0, hints[0])
         verify(hints[2].indexOf("4. Kyu") >= 0, hints[2])
@@ -6078,7 +6122,7 @@ TestCase {
         verify(findChild(today, "practice_k4").checked)
         compare(dueIds(), dueAt("k4"), "what is due follows the grade")
         compare(hint.text, qsTranslate("TodayPage", "up to %1 (from My grades)").arg("4. Kyu"))
-        verify(examTile.hint.indexOf("4. Kyu") >= 0, examTile.hint)
+        tryVerify(() => examTile.hint.indexOf("4. Kyu") >= 0, 5000, examTile.hint)
 
         // By hand on Today, further than suggested. 2. Kyu: the training cases, with videos, have
         // used up today's new ones of 5. to 3. Kyu; what is due there may be the same (nothing).
@@ -6090,7 +6134,7 @@ TestCase {
         verify(findChild(today, "practice_k2").checked)
         verify(!findChild(today, "practice_k4").checked)
         compare(hint.text, qsTranslate("TodayPage", "up to %1 (chosen by you)").arg("2. Kyu"))
-        verify(examTile.hint.indexOf("2. Kyu") >= 0, examTile.hint)
+        tryVerify(() => examTile.hint.indexOf("2. Kyu") >= 0, 5000, examTile.hint)
 
         // A passed grade behind it leaves it.
         verify(Courses.addGrade(discipline, "k4", "2026-05-01", ""))
@@ -6105,7 +6149,7 @@ TestCase {
         compare(exam.grade, "k2")
         clickUntil(findChild(exam, "grade_k5"), () => exam.grade === "k5")
         compare(PracticeGrade.grade(discipline), "k5")
-        verify(examTile.hint.indexOf("5. Kyu") >= 0, examTile.hint)
+        tryVerify(() => examTile.hint.indexOf("5. Kyu") >= 0, 5000, examTile.hint)
 
         // A grade passed since moves a choice behind it forward.
         verify(Courses.addGrade(discipline, "k3", "2026-06-01", ""))
