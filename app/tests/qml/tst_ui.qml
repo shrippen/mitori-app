@@ -6413,6 +6413,20 @@ TestCase {
         return { left: left, right: right, first: first, last: last }
     }
 
+    // The words that stand elided in what `root` shows.
+    function truncated(root) {
+        return allChildren(root).filter(c => c.visible && c.truncated === true).map(c => c.text)
+    }
+
+    // A course 12 days ahead with an exam planned on it; the caller removes it.
+    function plannedCourse(title) {
+        const day = Qt.formatDate(new Date(Date.now() + 12 * 24 * 3600 * 1000), "yyyy-MM-dd")
+        const uid = Courses.create(title, day, day, "Lüneburg", "Hiroshi Tanabe Sensei")
+        verify(uid !== "", "course made")
+        verify(Courses.planExam(uid, "aikido", "k3"), "exam planned")
+        return uid
+    }
+
     // Single-column pages on a wide window: a page of reading width in the middle, never the whole
     // window (the composer bars of the notes too).
     function test_8s_reading_width_data() {
@@ -6481,7 +6495,181 @@ TestCase {
         verify(nextTop - textBottom < Look.unit(40), "the button is " + Math.round(nextTop - textBottom) + " below the text")
         const content = extent(page)
         verify(Math.abs(next.mapToItem(window.contentItem, next.width, 0).x - content.right) < 1, "right-aligned")
-    }    // The on-screen keyboard is a lower window (not a device's here): while a field of the page is
+    }
+
+    // The notebook's title and the exam hints break their lines instead of eliding, on the smallest phone.
+    function test_8s_titles_wrap_small_phone() {
+        window.width = 320
+        window.height = 568
+        wait(100)
+        const uid = plannedCourse("Aikido Kyu-Lehrgang mit Prüfung")
+        const book = push("CoursePage", { uid: uid })
+        wait(300)
+        compare(truncated(findChild(book, "courseTitle")), [], "the notebook's title")
+        popPage()
+
+        Programme.discipline = "aikido"
+        const today = push("TodayPage")
+        wait(300)
+        compare(truncated(findChild(today, "plannedHint")), [], "the hint on Today")
+        popPage()
+        const exam = push("ExamPage")
+        wait(300)
+        compare(truncated(findChild(exam, "plannedHint")), [], "the hint on Exam mode")
+        popPage()
+        Courses.remove(uid)
+    }
+
+    // The planned exam on the notebook: the chip and "Change" in one row, the waiting time below.
+    function test_8s_course_exam_row_data() {
+        return [ { tag: "360", width: 360 }, { tag: "420", width: 420 } ]
+    }
+    function test_8s_course_exam_row(data) {
+        window.width = data.width
+        window.height = 800
+        wait(100)
+        const uid = plannedCourse("Aikido Lehrgang")
+        const book = push("CoursePage", { uid: uid })
+        wait(300)
+        const chip = findChild(book, "examChip")
+        const waiting = findChild(book, "examWait")
+        const change = findChild(book, "changeExam")
+        verify(chip.visible && waiting.visible && change.visible)
+        const at = item => item.mapToItem(book, 0, 0)
+        verify(at(waiting).y >= at(chip).y + chip.height - 1, "the text below the chip: " + at(waiting).y + " / " + at(chip).y)
+        verify(at(change).y < at(waiting).y, "the button beside the chip")
+        verify(waiting.lineCount <= 1 || waiting.width > book.width / 2, "the text has room: " + waiting.lineCount + " lines, " + waiting.width)
+        popPage()
+        Courses.remove(uid)
+    }
+
+    // Small controls (switches) stand right beside their label at every width.
+    function test_8s_exam_switches_right_data() {
+        return [ { tag: "360", width: 360 }, { tag: "320", width: 320 }, { tag: "420", width: 420 } ]
+    }
+    function test_8s_exam_switches_right(data) {
+        window.width = data.width
+        window.height = 800
+        wait(100)
+        const page = push("ExamPage")
+        wait(300)
+        for (const name of ["shuffledSwitch", "samplesSwitch"]) {
+            const sw = findChild(page, name)
+            let row = sw.parent
+            while (row && row.narrow === undefined) {
+                row = row.parent
+            }
+            verify(row && !row.narrow, name + " stands below its label")
+            const edge = sw.mapToItem(page, sw.width, 0).x
+            verify(edge > page.width - Look.unit(48), name + " is at the right: " + edge)
+        }
+        popPage()
+    }
+
+    // The year heatmap: cells a finger can read on a phone, which scrolls sideways from the latest
+    // weeks; on a wide window it fills the page.
+    function test_8s_years_heatmap_data() {
+        return [ { tag: "360", width: 360, height: 640, wide: false }, { tag: "420", width: 420, height: 860, wide: false },
+                 { tag: "1280x800", width: 1280, height: 800, wide: true } ]
+    }
+    function test_8s_years_heatmap(data) {
+        window.width = data.width
+        window.height = data.height
+        wait(100)
+        const page = push("YearsPage")
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        wait(300)
+        const heat = findChildren(page, "yearHeatmap").find(h => h.visible)
+        const block = findChild(page, "year_" + page.todayDate.getFullYear())
+        verify(heat && block, "this year's heatmap")
+        if (data.wide) {
+            verify(heat.width >= block.width * 0.9, "fills the page: " + heat.width + " of " + block.width)
+            return
+        }
+        verify(heat.cellSize >= Look.unit(10), "cells of " + heat.cellSize)
+        let flick = heat.parent
+        while (flick && flick.contentX === undefined) {
+            flick = flick.parent
+        }
+        verify(flick, "scrolls sideways")
+        verify(flick.contentWidth > flick.width, "wider than the window")
+        tryVerify(() => Math.abs(flick.contentX - (flick.contentWidth - flick.width)) < 2, 2000, "starts at the latest weeks: " + flick.contentX)
+    }
+
+    // The grade form on a phone: grade and day in one row, place and "Add" in the next, edges flush.
+    function test_8s_grades_form_aligned_data() {
+        return [ { tag: "360", width: 360, height: 800 }, { tag: "420", width: 420, height: 800 }, { tag: "1280x800", width: 1280, height: 800 } ]
+    }
+    function test_8s_grades_form_aligned(data) {
+        window.width = data.width
+        window.height = data.height
+        wait(100)
+        const page = push("GradesPage")
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        wait(300)
+        const block = findChild(page, "grades_aikido")
+        const edges = name => {
+            const item = findChild(block, name)
+            verify(item && item.visible, name)
+            const at = item.mapToItem(window.contentItem, 0, 0)
+            return { left: at.x, right: at.x + item.width, top: at.y + item.height / 2 }
+        }
+        const grade = edges("gradeBox"), day = edges("gradeDay"), place = edges("gradePlace"), add = edges("addGrade")
+        verify(Math.abs(grade.top - day.top) < 8, "grade and day in a row")
+        verify(place.top > grade.top + 8, "the place in the next row")
+        verify(Math.abs(place.top - add.top) < 8, "place and button in a row")
+        verify(Math.abs(place.left - grade.left) < 1, "left edges: " + place.left + " / " + grade.left)
+        verify(Math.abs(add.right - day.right) < 1, "right edges: " + add.right + " / " + day.right)
+        verify(Math.abs(place.right + Look.unit(8) - add.left) < Look.unit(8) + 1, "the place field fills up to the button: " + place.right + " / " + add.left)
+        popPage()
+    }
+
+    // The four rating words in German on the smallest phone: every one in full, none elided.
+    function test_8s_rating_words_fit_data() {
+        return [ { tag: "360", width: 360 } ]
+    }
+    function test_8s_rating_words_fit(data) {
+        if (!Look.shinki) {
+            skip("KanteLevelPicker elides the word at 360: wants a wrapping word in Kante first")
+        }
+        window.width = data.width
+        window.height = 640
+        wait(100)
+        const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry")
+        const page = push("PlayerPage", { playlist: rows, index: 0 })
+        wait(300)
+        const rating = findChild(page, "ratingRow")
+        const picker = allChildren(rating).find(c => c.names !== undefined && c.picked !== undefined)
+        verify(picker, "the picker")
+        picker.names = ["", "gesehen", "mit Hilfe", "sicher", "prüfungsreif"]
+        wait(100)
+        compare(truncated(picker), [], "picker " + picker.width + " wide")
+        popPage()
+    }
+
+    // The player's switches upright: sound, screen on and subtitles share their rows; the subtitles'
+    // switch does not stand alone in a third row.
+    function test_8s_player_switches_flow() {
+        const same = Programme.entries("aikido", "k5").find(r => r.kind === "entry").id
+        const lesson = "lern/" + lessonId + "/irimi"
+        verify(uiCatalog.installLesson(lessonId, same))
+        tryCompare(Library.packages, "length", 1)
+        window.width = 420
+        window.height = 800
+        const around = Library.around(lesson)
+        const page = push("PlayerPage", { playlist: around.playlist, index: around.index })
+        tryVerify(() => page.hasVideo)
+        slidIn()
+        const button = findChildren(page, "subtitleButton").find(i => i.visible)
+        tryVerify(() => !!button)
+        const at = name => findChild(page, name).mapToItem(page, 0, 0).y
+        const subtitlesY = button.mapToItem(page, 0, 0).y
+        verify(subtitlesY === at("soundSwitch") || subtitlesY === at("awakeSwitch"),
+               "the subtitles' switch shares a row: " + subtitlesY + " / " + at("soundSwitch") + " / " + at("awakeSwitch"))
+        popPage()
+    }
+
+    // The on-screen keyboard is a lower window (not a device's here): while a field of the page is
     // typed in, and until the page is high again, the live page keeps its columns, both ways.
     function test_8r_typing_holds_columns_data() {
         const place = page => findChild(findChild(page, "grades_daitoryu"), "gradePlace")

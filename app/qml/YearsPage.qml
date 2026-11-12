@@ -98,18 +98,31 @@ Kirigami.ScrollablePage {
                           .concat(yearBlock.grades.map(g => (Programme.disciplines.find(d => d.id === g.discipline) || {}).kurzname + " " + g.name))
                           .join(" · ")
                 }
-                // The whole year in the width, weekday names kept (small days on a phone).
-                Item {
+                // The whole year in the width on a wide window; on a phone the cells keep a size that
+                // reads and the year scrolls sideways, from its latest weeks. Weekday names kept.
+                Flickable {
                     id: heatBox
 
                     Layout.fillWidth: true
                     implicitHeight: heat.implicitHeight
+                    contentWidth: heat.implicitWidth
+                    contentHeight: heat.implicitHeight
+                    flickableDirection: Flickable.HorizontalFlick
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+
+                    // The newest weeks are the ones that count.
+                    function toEnd() {
+                        contentX = Math.max(0, contentWidth - width)
+                    }
+                    onWidthChanged: toEnd()
+                    onContentWidthChanged: toEnd()
 
                     LookCalendarHeatmap {
                         id: heat
 
                         objectName: "yearHeatmap"
-                        cellSize: Math.max(Look.unit(4), Math.min(Look.unit(12),
+                        cellSize: Math.max(Look.unit(10), Math.min(Look.unit(20),
                                                Math.floor((heatBox.width - labelWidth + spacing) / weeks) - spacing))
                         // From the week of 1 January to the last day.
                         weeks: {

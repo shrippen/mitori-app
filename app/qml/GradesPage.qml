@@ -152,44 +152,57 @@ Kirigami.ScrollablePage {
 
                     // A passed grade: the next one is chosen, today's day; with all passed none (the
                     // same grade again would overwrite its day).
-                    Flow {
+                    ColumnLayout {
                         Layout.fillWidth: true
                         spacing: Kirigami.Units.smallSpacing
 
-                        LookComboBox {
-                            id: gradeBox
+                        // Grade and day fill the row, place and "Add" the next: the edges stand flush.
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
 
-                            objectName: "gradeBox"
-                            model: block.ladder.map(g => g.name)
-                            currentIndex: block.ladder.findIndex(g => g.id === block.next)
-                            Accessible.name: qsTr("Grade")
-                        }
-                        LookDateField {
-                            id: dayField
+                            LookComboBox {
+                                id: gradeBox
 
-                            objectName: "gradeDay"
-                            format: qsTr("yyyy-MM-dd", "date format")
-                            dayNames: [qsTr("MO"), qsTr("TU"), qsTr("WE"), qsTr("TH"), qsTr("FR"), qsTr("SA"), qsTr("SU")]
-                            todayText: qsTr("Today")
-                            date: new Date()
-                            Accessible.name: qsTr("Day of the exam")
-                        }
-                        LookTextField {
-                            id: placeField
+                                objectName: "gradeBox"
+                                model: block.ladder.map(g => g.name)
+                                currentIndex: block.ladder.findIndex(g => g.id === block.next)
+                                Accessible.name: qsTr("Grade")
+                            }
+                            LookDateField {
+                                id: dayField
 
-                            objectName: "gradePlace"
-                            placeholderText: qsTr("Place")
-                            Accessible.name: qsTr("Place")
+                                objectName: "gradeDay"
+                                Layout.fillWidth: true
+                                format: qsTr("yyyy-MM-dd", "date format")
+                                dayNames: [qsTr("MO"), qsTr("TU"), qsTr("WE"), qsTr("TH"), qsTr("FR"), qsTr("SA"), qsTr("SU")]
+                                todayText: qsTr("Today")
+                                date: new Date()
+                                Accessible.name: qsTr("Day of the exam")
+                            }
                         }
-                        LookButton {
-                            objectName: "addGrade"
-                            icon.name: "list-add"
-                            text: qsTr("Add")
-                            enabled: gradeBox.currentIndex >= 0 && !!dayField.date && !dayField.invalid
-                            onClicked: {
-                                const grade = block.ladder[gradeBox.currentIndex]
-                                if (grade && Courses.addGrade(block.discipline, grade.id, CourseDays.iso(dayField.date), placeField.text)) {
-                                    placeField.clear()
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            LookTextField {
+                                id: placeField
+
+                                objectName: "gradePlace"
+                                Layout.fillWidth: true
+                                placeholderText: qsTr("Place")
+                                Accessible.name: qsTr("Place")
+                            }
+                            LookButton {
+                                objectName: "addGrade"
+                                icon.name: "list-add"
+                                text: qsTr("Add")
+                                enabled: gradeBox.currentIndex >= 0 && !!dayField.date && !dayField.invalid
+                                onClicked: {
+                                    const grade = block.ladder[gradeBox.currentIndex]
+                                    if (grade && Courses.addGrade(block.discipline, grade.id, CourseDays.iso(dayField.date), placeField.text)) {
+                                        placeField.clear()
+                                    }
                                 }
                             }
                         }

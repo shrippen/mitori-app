@@ -45,8 +45,9 @@ Item {
                                                && subtitleTracks.length >= 0 ? Videos.subtitleLanguage(video) : ""
     readonly property real subtitlePlateAlpha: 0.75
     // The subtitles' text: a share of the picture's height, as on television, so that it grows with
-    // the picture (a tablet's is three times a phone's); never below the smallest that reads on a
-    // small upright picture. Settings → Videos scales it (Videos.subtitleScale).
+    // the picture (a tablet's is three times a phone's); at Normal never below the smallest that
+    // reads on a small upright picture. Settings → Videos scales it (Videos.subtitleScale) after
+    // that: Small may go below the minimum on purpose.
     readonly property real subtitleShare: 0.035
     readonly property real subtitleMinPixels: Look.unit(14)
     // Where the technique stands: attack · addition · grade · position ("Shomen-uchi · 5. Kyu · 3 / 8").
@@ -981,7 +982,15 @@ Item {
                     GridLayout {
                         Layout.fillWidth: !page.paneColumns
                         visible: page.hasVideo
-                        columns: page.paneColumns ? 1 : 2
+                        // Upright all three in a row where they fit, else two and one.
+                        readonly property bool oneRow: {
+                            let sum = (visibleChildren.length - 1) * columnSpacing
+                            for (const child of visibleChildren) {
+                                sum += child.implicitWidth
+                            }
+                            return sum <= controls.width
+                        }
+                        columns: page.paneColumns ? 1 : oneRow ? 3 : 2
 
                         LookToggle {
                             objectName: "soundSwitch"

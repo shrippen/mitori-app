@@ -182,6 +182,8 @@ Kirigami.ScrollablePage {
                     objectName: "courseTitle"
                     Layout.fillWidth: true
                     level: 2
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
                     text: page.course.title || ""
                 }
                 LookLabel {
@@ -240,16 +242,29 @@ Kirigami.ScrollablePage {
             visible: page.planned || page.coming
             spacing: Kirigami.Units.smallSpacing
 
-            RowLayout {
+            // The chip and "Change" in a row; the waiting time below, in the full width.
+            ColumnLayout {
                 Layout.fillWidth: true
                 visible: page.planned && !page.choosing
+                spacing: Kirigami.Units.smallSpacing
 
-                LookChip {
-                    objectName: "examChip"
-                    text: qsTr("Exam %1").arg(page.course.examName || "")
-                    checkable: true
-                    checked: true
-                    interactive: false
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    LookChip {
+                        objectName: "examChip"
+                        text: qsTr("Exam %1").arg(page.course.examName || "")
+                        checkable: true
+                        checked: true
+                        interactive: false
+                    }
+                    Item { Layout.fillWidth: true }
+                    LookButton {
+                        objectName: "changeExam"
+                        visible: page.coming
+                        text: qsTr("Change")
+                        onClicked: page.choose()
+                    }
                 }
                 LookLabel {
                     objectName: "examWait"
@@ -259,12 +274,6 @@ Kirigami.ScrollablePage {
                     text: Grades.waitText(wait)
                     color: Grades.tooEarly(wait) ? Look.neutralTextColor : Look.mutedTextColor
                     wrapMode: Text.Wrap
-                }
-                LookButton {
-                    objectName: "changeExam"
-                    visible: page.coming
-                    text: qsTr("Change")
-                    onClicked: page.choose()
                 }
             }
             LookButton {

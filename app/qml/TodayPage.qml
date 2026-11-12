@@ -130,6 +130,7 @@ Kirigami.ScrollablePage {
             sourceComponent: LookHint {
                 objectName: "plannedHint"
                 compact: true
+                wrapTitle: true
                 importance: LookHint.Importance.Important
                 titleText: page.exam.course ? Grades.examText(page.exam) : ""
                 meta: page.exam.place || page.exam.title || ""
