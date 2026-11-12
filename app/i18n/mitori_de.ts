@@ -1496,6 +1496,17 @@
     </message>
 </context>
 <context>
+    <name>LetterRail</name>
+    <message>
+        <source>Letters</source>
+        <translation>Buchstaben</translation>
+    </message>
+    <message>
+        <source>Words with %1</source>
+        <translation>Wörter mit %1</translation>
+    </message>
+</context>
+<context>
     <name>ListAndPage</name>
     <message>
         <source>Choose a course from the list.</source>
@@ -2079,13 +2090,6 @@
         <source>Kiriotoshi, 切り落とし or Hüftwurf</source>
         <translation>Kiriotoshi, 切り落とし oder Hüftwurf</translation>
     </message>
-    <message numerus="yes">
-        <source>%n Japanese term(s), with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</source>
-        <translation>
-            <numerusform>%n japanischer Begriff, mit Kanji und deutscher Übersetzung, wo Lexikon oder Programm sie haben. Die Suche findet auch deutsche Wörter, Techniken und deine Notizen.</numerusform>
-            <numerusform>%n japanische Begriffe, mit Kanji und deutscher Übersetzung, wo Lexikon oder Programm sie haben. Die Suche findet auch deutsche Wörter, Techniken und deine Notizen.</numerusform>
-        </translation>
-    </message>
     <message>
         <source>Nothing found for “%1”.</source>
         <translation>Nichts gefunden für „%1“.</translation>
@@ -2119,24 +2123,27 @@
         <translation>Mehr als %1 Lehrgangsnotizen gefunden. Ein weiteres Wort grenzt die Suche ein.</translation>
     </message>
     <message>
-        <source>Words with %1</source>
-        <translation>Wörter mit %1</translation>
-    </message>
-    <message>
-        <source>This version of Mitori has no speech output, so there is no pronunciation.</source>
-        <translation>Diese Version von Mitori hat keine Sprachausgabe, die Aussprache fehlt.</translation>
-    </message>
-    <message>
-        <source>No Japanese voice for speech output found. Where the system offers one (Android: settings, text-to-speech output), install it to hear the pronunciation.</source>
-        <translation>Keine japanische Stimme für die Sprachausgabe gefunden. Wo das System eine anbietet (Android: Einstellungen, Sprachausgabe), sie für die Aussprache installieren.</translation>
-    </message>
-    <message>
         <source>No translation in the lexicon</source>
         <translation>Übersetzung fehlt im Lexikon</translation>
     </message>
     <message>
         <source>Pronunciation</source>
         <translation>Aussprache</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n Japanese term(s), with kanji and translation.</source>
+        <translation>
+            <numerusform>%n japanischer Begriff, mit Kanji und Übersetzung.</numerusform>
+            <numerusform>%n japanische Begriffe, mit Kanji und Übersetzung.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No speech output in this version: no pronunciation.</source>
+        <translation>Keine Sprachausgabe in dieser Version: keine Aussprache.</translation>
+    </message>
+    <message>
+        <source>No Japanese voice found: no pronunciation (Android: settings, text-to-speech).</source>
+        <translation>Keine japanische Stimme gefunden: keine Aussprache (Android: Einstellungen, Sprachausgabe).</translation>
     </message>
     <message>
         <source>Pronounce %1</source>
@@ -3246,6 +3253,29 @@
     <message>
         <source>Start</source>
         <translation>Los</translation>
+    </message>
+</context>
+<context>
+    <name>WordDetail</name>
+    <message>
+        <source>Tap a word to see it here.</source>
+        <translation>Tippe ein Wort an, um es hier zu sehen.</translation>
+    </message>
+    <message>
+        <source>No translation in the lexicon</source>
+        <translation>Übersetzung fehlt im Lexikon</translation>
+    </message>
+    <message>
+        <source>Pronunciation</source>
+        <translation>Aussprache</translation>
+    </message>
+    <message>
+        <source>In techniques</source>
+        <translation>In Techniken</translation>
+    </message>
+    <message>
+        <source>Only the first %1 techniques.</source>
+        <translation>Nur die ersten %1 Techniken.</translation>
     </message>
 </context>
 <context>

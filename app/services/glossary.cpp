@@ -75,6 +75,7 @@ void Glossary::load()
         m_words << QVariantMap{{QStringLiteral("word"), word},
                                {QStringLiteral("jp"), jp},
                                {QStringLiteral("meaning"), meaning},
+                               {QStringLiteral("reading"), kana},
                                {QStringLiteral("letter"), letter(word)},
                                {QStringLiteral("speech"), speechText(word, jp, kana)}};
         m_texts << SearchText(QStringList{word, jp, kana, meaning}.join(u' '));

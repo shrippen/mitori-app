@@ -50,6 +50,7 @@ private slots:
         const QVariantMap atemi = find(glossary.words(), QStringLiteral("Atemi"));
         QCOMPARE(atemi.value(QStringLiteral("jp")).toString(), QString());
         QCOMPARE(atemi.value(QStringLiteral("speech")).toString(), QStringLiteral("あてみ"));
+        QCOMPARE(atemi.value(QStringLiteral("reading")).toString(), QStringLiteral("あてみ"));
         // Every word has something to say.
         for (const QVariant &w : glossary.words()) {
             QVERIFY(!w.toMap().value(QStringLiteral("speech")).toString().isEmpty());

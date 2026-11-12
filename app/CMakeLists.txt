@@ -86,6 +86,8 @@ qt_add_qml_module(mitori_app
         qml/NoteRow.qml
         qml/AllNotesPage.qml
         qml/SearchPage.qml
+        qml/LetterRail.qml
+        qml/WordDetail.qml
         qml/StatsPage.qml
         qml/ExamPage.qml
         qml/ExamRoundPage.qml
