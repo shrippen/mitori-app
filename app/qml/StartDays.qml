@@ -12,7 +12,8 @@ Item {
     property var counts: []
     readonly property int perRow: 10
     readonly property real spacing: Look.unit(3)
-    readonly property real cell: Math.max(1, Math.floor((width - spacing * (perRow - 1)) / perRow))
+    readonly property real maxCell: Look.unit(16)
+    readonly property real cell: Math.max(1, Math.min(maxCell, Math.floor((width - spacing * (perRow - 1)) / perRow)))
     // The counts from which a day is a level (the same as today's practice calendar).
     readonly property var bounds: [1, 3, 6, 10]
 

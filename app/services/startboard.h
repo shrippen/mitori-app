@@ -75,6 +75,9 @@ public:
     QVariantMap tiles() const { return m_tiles; }
     bool ready() const { return m_ready; }
 
+    // How long the GUI thread took for the last snapshot, in microseconds (tests, diagnosis).
+    qint64 snapshotUs() const { return m_snapshotUs; }
+
     // A run for the services' state of now (after the pause); the signals of the services do it.
     Q_INVOKABLE void refresh();
 
@@ -82,18 +85,10 @@ signals:
     void tilesChanged();
 
 private:
-    // What the programme tile and the map read, kept until the programme, the discipline or the grade changes.
-    struct Material {
-        QString key;
-        QVariantList entries;
-        QVariantMap map;
-    };
-
     void start();
     void done();
     StartSnapshot snapshot();
     void readNotes();
-    void readMaterial(const QString &discipline, const QString &grade);
 
     QPointer<Programme> m_programme;
     QPointer<Practice> m_practice;
@@ -109,5 +104,7 @@ private:
     bool m_again = false;       // a change came while a run was working
     bool m_notesStale = true;
     StartNotes m_notes;
-    Material m_material;
+    qint64 m_snapshotUs = 0;
+    QString m_gradeKey;
+    QString m_grade;
 };

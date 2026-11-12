@@ -179,6 +179,7 @@ Kirigami.ScrollablePage {
                 Layout.rowSpan: 2
                 visible: Programme.errorString === ""
                 big: true
+                titleOnTop: true
                 stretch: true
                 filled: !!t.ready
                 glyph: "技"
@@ -188,7 +189,83 @@ Kirigami.ScrollablePage {
                       + (filled ? " · " + qsTr("%1 of %2 exam-ready").arg(t.exam).arg(t.total) : "")
                 onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("ProgrammePage.qml"))
 
-                // The grades up to the one practised: passed, the practice grade, the rest.
+                // Top right, under the title: how many techniques sit, as a figure.
+                aside: [
+                    LookLabel {
+                        objectName: "sureNumber"
+                        Layout.alignment: Qt.AlignRight
+                        text: String(programmeTile.t.sure || 0)
+                        font: Look.headingFont(programmeTile.base * 3.2)
+                    },
+                    LookLabel {
+                        Layout.alignment: Qt.AlignRight
+                        text: qsTr("of %1 sure").arg(programmeTile.t.total || 0)
+                        color: Look.mutedTextColor
+                    }
+                ]
+
+                // Above the stand: where to go on (a tap leads to it), set off by a rule.
+                Item {
+                    Layout.fillHeight: true
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    visible: !!programmeTile.t.next
+                    color: Look.ruleColor
+                }
+                Item {
+                    id: next
+
+                    objectName: "nextTechnique"
+                    readonly property var technique: programmeTile.t.next
+
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: nextRow.implicitHeight
+                    visible: !!technique
+                    Accessible.role: Accessible.Button
+                    Accessible.name: nextText.text
+                    Accessible.onPressAction: page.openTechnique(technique.id)
+
+                    RowLayout {
+                        id: nextRow
+
+                        width: parent.width
+                        spacing: Look.unit(8)
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+
+                            LookKicker {
+                                Layout.fillWidth: true
+                                text: qsTr("Continue with")
+                            }
+                            LookLabel {
+                                id: nextText
+
+                                Layout.fillWidth: true
+                                text: next.technique ? next.technique.title + (next.technique.attack ? " · " + next.technique.attack : "") : ""
+                                font: Look.headingFont(programmeTile.base * 1.7)
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                            }
+                        }
+                        LookLabel {
+                            text: qsTr("Open ›")
+                            color: Look.accentColor
+                            font.bold: true
+                        }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: page.openTechnique(next.technique.id)
+                    }
+                }
+                // The stand at the bottom: the grades, the levels of everything up to the practice
+                // grade in one bar, and in words.
                 Flow {
                     objectName: "gradeLadder"
                     Layout.fillWidth: true
@@ -221,7 +298,6 @@ Kirigami.ScrollablePage {
                         }
                     }
                 }
-                // The level of everything up to the practice grade, in one bar.
                 LookProgressBar {
                     objectName: "levelBar"
                     Layout.fillWidth: true
@@ -246,41 +322,6 @@ Kirigami.ScrollablePage {
                     color: Look.mutedTextColor
                     wrapMode: Text.Wrap
                 }
-                // The next technique stands at the bottom of the tile.
-                Item {
-                    Layout.fillHeight: true
-                }
-                // The technique unsure the longest: a tap leads to it.
-                Item {
-                    id: next
-
-                    objectName: "nextTechnique"
-                    readonly property var technique: programmeTile.t.next
-
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: nextText.implicitHeight
-                    visible: !!technique
-                    Accessible.role: Accessible.Button
-                    Accessible.name: nextText.text
-                    Accessible.onPressAction: page.openTechnique(technique.id)
-
-                    LookLabel {
-                        id: nextText
-
-                        width: parent.width
-                        text: next.technique ? qsTr("Continue with: %1").arg(next.technique.title
-                                                                             + (next.technique.attack ? " · " + next.technique.attack : "")) : ""
-                        font.bold: true
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: page.openTechnique(next.technique.id)
-                    }
-                }
             }
 
             StartTile {
@@ -294,50 +335,36 @@ Kirigami.ScrollablePage {
                 Layout.columnSpan: 2
                 visible: Programme.errorString === ""
                 filled: !!t.ready
+                showHint: false
                 glyph: "稽"
                 text: qsTr("Practice today")
                 hint: (filled ? (due > 0 ? qsTr("%n due", "", due) : qsTr("all practised")) + " · " : "") + programmeTile.current.title
                 onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("TodayPage.qml"))
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Look.unit(12)
-
-                    ColumnLayout {
-                        spacing: 0
-
-                        LookLabel {
-                            objectName: "dueNumber"
-                            text: String(todayTile.due)
-                            font: Look.headingFont(todayTile.base * 2.6)
-                        }
-                        LookLabel {
-                            text: qsTr("due today")
-                            font: Look.smallFont
-                            color: Look.mutedTextColor
-                        }
+                // Top right: the number due, as large as a heading, and what it is made of.
+                aside: [
+                    LookLabel {
+                        objectName: "dueNumber"
+                        Layout.alignment: Qt.AlignRight
+                        text: String(todayTile.due)
+                        font: Look.headingFont(todayTile.base * 3.2)
+                    },
+                    LookLabel {
+                        objectName: "dueText"
+                        Layout.alignment: Qt.AlignRight
+                        text: todayTile.due > 0 ? qsTr("%1 unsure · %2 new").arg(todayTile.t.unsure).arg(todayTile.t.fresh)
+                                                : qsTr("all practised")
+                        color: Look.mutedTextColor
                     }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: todayTile.gap
-
-                        LookLabel {
-                            objectName: "dueText"
-                            Layout.fillWidth: true
-                            text: todayTile.due > 0 ? qsTr("%1 unsure · %2 new").arg(todayTile.t.unsure).arg(todayTile.t.fresh)
-                                                    : qsTr("all practised")
-                            color: Look.mutedTextColor
-                            wrapMode: Text.Wrap
-                        }
-                        LookButton {
-                            objectName: "startTraining"
-                            visible: todayTile.due > 0
-                            role: LookButton.Role.Primary
-                            icon.name: "media-playback-start"
-                            text: qsTr("Start training")
-                            onClicked: page.startTraining()
-                        }
-                    }
+                ]
+                // Bottom right: the way into the training.
+                corner: LookButton {
+                    objectName: "startTraining"
+                    visible: todayTile.due > 0
+                    role: LookButton.Role.Primary
+                    icon.name: "media-playback-start"
+                    text: qsTr("Start training")
+                    onClicked: page.startTraining()
                 }
             }
 
@@ -398,7 +425,7 @@ Kirigami.ScrollablePage {
                 LookLabel {
                     Layout.fillWidth: true
                     visible: !examTile.planned
-                    text: qsTr("Mock exam %1").arg(examTile.t.mock || "")
+                    text: qsTr("No exam planned")
                     color: Look.mutedTextColor
                     wrapMode: Text.Wrap
                 }
@@ -434,7 +461,7 @@ Kirigami.ScrollablePage {
                 }
                 LookLabel {
                     Layout.fillWidth: true
-                    text: qsTr("%n practice day(s) in 30 days", "", statsTile.days) + " · " + qsTr("%n technique(s)", "", statsTile.t.techniques || 0)
+                    text: qsTr("%n technique(s)", "", statsTile.t.techniques || 0)
                     font: Look.smallFont
                     color: Look.mutedTextColor
                     wrapMode: Text.Wrap
@@ -451,6 +478,7 @@ Kirigami.ScrollablePage {
                 readonly property int days: t.days || 0
 
                 filled: !!t.ready
+                showHint: !has
                 glyph: "講"
                 text: qsTr("Courses")
                 hint: !filled || !has ? qsTr("Calendar and notebooks")
@@ -495,13 +523,6 @@ Kirigami.ScrollablePage {
                     color: Look.mutedTextColor
                     wrapMode: Text.Wrap
                 }
-                LookLabel {
-                    Layout.fillWidth: true
-                    visible: !coursesTile.has
-                    text: qsTr("Calendar and notebooks")
-                    color: Look.mutedTextColor
-                    wrapMode: Text.Wrap
-                }
             }
 
             StartTile {
@@ -526,14 +547,6 @@ Kirigami.ScrollablePage {
                     Layout.minimumHeight: Look.unit(30)
                     levels: mapTile.t.levels || []
                     columns: mapTile.t.columns || 0
-                }
-                LookLabel {
-                    Layout.fillWidth: true
-                    visible: !!mapTile.t.title
-                    text: mapTile.t.title || ""
-                    font: Look.smallFont
-                    color: Look.mutedTextColor
-                    elide: Text.ElideRight
                 }
             }
 
@@ -638,13 +651,6 @@ Kirigami.ScrollablePage {
                 hint: qsTr("%n package(s)", "", Library.packages.length) + " · " + qsTr("%n technique(s)", "", techniques)
                 // Beside its package on a tablet.
                 onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("ListAndPage.qml"), { listSource: "LessonsPage.qml" })
-
-                LookLabel {
-                    Layout.fillWidth: true
-                    text: lessonsTile.hint
-                    color: Look.mutedTextColor
-                    wrapMode: Text.Wrap
-                }
             }
         }
     }

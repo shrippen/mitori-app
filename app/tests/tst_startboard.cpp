@@ -305,6 +305,27 @@ private slots:
         QCOMPARE(tile(*again, u"glossary"_s).value(u"word"_s), word.value(u"word"_s));
     }
 
+    // The GUI thread only copies: a snapshot takes little, however much the programme holds. The
+    // programme's rows and the days are the worker's.
+    void snapshotIsCheap()
+    {
+        constexpr qint64 kBudgetUs = 5000;
+        Services s = made(u"cheap"_s);
+        for (const QString &id : s.ids) {
+            QVERIFY(s.practice->rate(id, 2));
+        }
+        QVERIFY(s.practice->addNote(s.ids[0], u"Notiz"_s));
+        const auto board = s.board();
+        tiles(*board);
+
+        // The next run: the notes are read, the rest is copies.
+        QSignalSpy spy(board.get(), &StartBoard::tilesChanged);
+        QVERIFY(s.practice->rate(s.ids[0], 3));
+        QVERIFY(spy.wait(5000));
+        qInfo() << "snapshot on the GUI thread:" << board->snapshotUs() << "us";
+        QVERIFY2(board->snapshotUs() < kBudgetUs, qPrintable(QString::number(board->snapshotUs())));
+    }
+
     // A burst of ratings is a run or two, and the tiles show the last state.
     void followsBurst()
     {

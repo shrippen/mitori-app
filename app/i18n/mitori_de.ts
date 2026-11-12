@@ -2232,12 +2232,20 @@
         <translation>%1 von %2 prüfungsreif</translation>
     </message>
     <message>
-        <source>up to %1 · %2 of %3 sure · %4 exam-ready</source>
-        <translation>bis %1 · %2 von %3 sicher · %4 prüfungsreif</translation>
+        <source>of %1 sure</source>
+        <translation>von %1 sicher</translation>
     </message>
     <message>
-        <source>Continue with: %1</source>
-        <translation>Weiter mit: %1</translation>
+        <source>Continue with</source>
+        <translation>Weiter mit</translation>
+    </message>
+    <message>
+        <source>Open ›</source>
+        <translation>Öffnen ›</translation>
+    </message>
+    <message>
+        <source>up to %1 · %2 of %3 sure · %4 exam-ready</source>
+        <translation>bis %1 · %2 von %3 sicher · %4 prüfungsreif</translation>
     </message>
     <message>
         <source>Practice today</source>
@@ -2253,10 +2261,6 @@
     <message>
         <source>all practised</source>
         <translation>alles geübt</translation>
-    </message>
-    <message>
-        <source>due today</source>
-        <translation>heute fällig</translation>
     </message>
     <message>
         <source>%1 unsure · %2 new</source>
@@ -2281,6 +2285,10 @@
     <message>
         <source>%1 % of the exam&apos;s techniques sure or better</source>
         <translation>%1 % der Prüfungstechniken sicher oder besser</translation>
+    </message>
+    <message>
+        <source>No exam planned</source>
+        <translation>Keine Prüfung geplant</translation>
     </message>
     <message numerus="yes">
         <source>%n day(s) in a row</source>

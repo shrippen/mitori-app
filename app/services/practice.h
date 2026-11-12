@@ -76,6 +76,8 @@ public:
     // hands them to a worker thread; the hashes share their data until this one writes).
     QHash<QString, PracticeLog::Rating> ratings() const { return m_latest; }
     QHash<QString, QDate> firstDays() const { return m_first; }
+    // Who was rated on each local day of a year (levels 1..4), a copy that shares its data.
+    QHash<QDate, QSet<QString>> dayEntries(int year) const { return m_open ? yearDays(year) : DayEntries(); }
 
     // Notes on a technique: {uid, text, created, changed} with local dates, oldest first.
     Q_INVOKABLE QVariantList notes(const QString &entry) const;

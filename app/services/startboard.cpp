@@ -8,6 +8,7 @@
 #include "programme.h"
 #include "schedule.h"
 
+#include <QElapsedTimer>
 #include <QQmlEngine>
 #include <QRegularExpression>
 #include <QtConcurrent/QtConcurrentRun>
@@ -23,6 +24,7 @@ constexpr int kReady = 4;
 constexpr int kLevels = 5;              // none, seen, with help, sure, exam-ready
 constexpr int kStreakDays = 400;        // how far back a streak counts
 constexpr int kNoteWords = 12;          // the notes tile's words of the latest note
+constexpr qint64 kNsPerUs = 1000;
 constexpr int kNoPlace = -1;            // a map cell with no technique
 
 QString text(const QVariant &map, const QString &key)
@@ -59,13 +61,18 @@ struct StartSnapshot {
     QString grade;
     QString gradeName;
     QVariantList ladder;
+    // Read from the immutable catalog by the worker (Programme and Exam hold no cache these
+    // functions touch), so the GUI thread does not build them.
+    const Programme *programme = nullptr;
+    const Exam *exam = nullptr;
     QVariantList entries;               // the entries up to the practice grade
     QVariantMap grid;                   // the map's first group
     QHash<QString, PracticeLog::Rating> latest;
     QHash<QString, QDate> first;
     QList<int> intervals;
-    QVariantMap perDay;                 // {"YYYY-MM-DD": techniques}
-    QVariantMap exam;                   // Courses::nextExam
+    QList<QHash<QDate, QSet<QString>>> dayEntries;     // who was rated on each day, per year (copies)
+    QHash<QDate, int> perDay;           // techniques practised per day, from dayEntries
+    QVariantMap plannedExam;            // Courses::nextExam
     QString examGradeName;              // of the exam mode's grade when none is planned
     QStringList examIds;                // the planned exam's points
     QVariantMap course;                 // the next course
@@ -184,7 +191,7 @@ QVariantMap todayTile(const StartSnapshot &s)
 QVariantMap examTile(const StartSnapshot &s)
 {
     QVariantMap tile{{u"ready"_s, true}, {u"planned"_s, false}, {u"name"_s, s.examGradeName}, {u"mock"_s, s.examGradeName}};
-    if (s.exam.value(u"course"_s).toString().isEmpty()) {
+    if (s.plannedExam.value(u"course"_s).toString().isEmpty()) {
         return tile;
     }
 
@@ -193,8 +200,8 @@ QVariantMap examTile(const StartSnapshot &s)
         sure += levelOf(s, id) >= kSure ? 1 : 0;
     }
     tile[u"planned"_s] = true;
-    tile[u"name"_s] = s.exam.value(u"name"_s);
-    tile[u"days"_s] = s.exam.value(u"days"_s);
+    tile[u"name"_s] = s.plannedExam.value(u"name"_s);
+    tile[u"days"_s] = s.plannedExam.value(u"days"_s);
     tile[u"sure"_s] = sure;
     tile[u"total"_s] = int(s.examIds.size());
     tile[u"share"_s] = s.examIds.isEmpty() ? 0.0 : double(sure) / double(s.examIds.size());
@@ -208,7 +215,7 @@ QVariantMap statsTile(const StartSnapshot &s)
     int days = 0;
     int techniques = 0;
     for (int back = StartBoard::kDays - 1; back >= 0; --back) {
-        const int n = s.perDay.value(s.today.addDays(-back).toString(Qt::ISODate)).toInt();
+        const int n = s.perDay.value(s.today.addDays(-back));
         cells << n;
         days += n > 0 ? 1 : 0;
         techniques += n;
@@ -217,10 +224,10 @@ QVariantMap statsTile(const StartSnapshot &s)
     // A day not practised yet does not break the streak: it counts from yesterday.
     int streak = 0;
     QDate day = s.today;
-    if (s.perDay.value(day.toString(Qt::ISODate)).toInt() == 0) {
+    if (s.perDay.value(day) == 0) {
         day = day.addDays(-1);
     }
-    for (; s.perDay.value(day.toString(Qt::ISODate)).toInt() > 0 && streak < kStreakDays; day = day.addDays(-1)) {
+    for (; s.perDay.value(day) > 0 && streak < kStreakDays; day = day.addDays(-1)) {
         ++streak;
     }
 
@@ -304,8 +311,36 @@ QVariantMap notesTile(const StartSnapshot &s)
             {u"at"_s, n.at}};
 }
 
-QVariantMap summarise(const StartSnapshot &s)
+// What the worker builds from the copies and the immutable catalog.
+void derive(StartSnapshot &s)
 {
+    for (const QHash<QDate, QSet<QString>> &year : s.dayEntries) {
+        for (auto it = year.cbegin(); it != year.cend(); ++it) {
+            s.perDay.insert(it.key(), int(it.value().size()));
+        }
+    }
+
+    s.entries = s.programme->practiceEntries(s.discipline, s.grade);
+    const QVariantList grids = s.programme->techniqueMap(s.discipline, s.grade);
+    s.grid = grids.isEmpty() ? QVariantMap() : grids.first().toMap();
+
+    // The exam: the planned one's points, else the exam mode's grade for the hint.
+    const QString examDiscipline = text(s.plannedExam, u"discipline"_s);
+    if (!examDiscipline.isEmpty()) {
+        s.examIds = idsOf(s.exam->material(examDiscipline, text(s.plannedExam, u"grade"_s)));
+    }
+    const QString mockGrade = s.exam->grade(s.discipline, s.grade);
+    for (const QVariant &g : s.exam->grades(s.discipline)) {
+        if (text(g, u"id"_s) == mockGrade) {
+            s.examGradeName = text(g, u"name"_s);
+        }
+    }
+}
+
+QVariantMap summarise(StartSnapshot s)
+{
+    derive(s);
+
     return {{u"programme"_s, programmeTile(s)}, {u"today"_s, todayTile(s)},   {u"exam"_s, examTile(s)},
             {u"stats"_s, statsTile(s)},         {u"courses"_s, coursesTile(s)}, {u"map"_s, mapTile(s)},
             {u"glossary"_s, glossaryTile(s)},   {u"notes"_s, notesTile(s)}};
@@ -384,7 +419,11 @@ void StartBoard::start()
         m_again = true;
         return;
     }
-    m_watcher.setFuture(QtConcurrent::run([snapshot = this->snapshot()] { return summarise(snapshot); }));
+    QElapsedTimer timer;
+    timer.start();
+    StartSnapshot snap = snapshot();
+    m_snapshotUs = timer.nsecsElapsed() / kNsPerUs;
+    m_watcher.setFuture(QtConcurrent::run([snap = std::move(snap)]() mutable { return summarise(std::move(snap)); }));
 }
 
 void StartBoard::done()
@@ -425,25 +464,20 @@ void StartBoard::readNotes()
     m_notesStale = false;
 }
 
-// The programme's rows are built by the programme, which is slow enough to keep until its inputs change.
-void StartBoard::readMaterial(const QString &discipline, const QString &grade)
-{
-    const QString key = QStringLiteral("%1|%2|%3|%4").arg(m_programme->revision()).arg(discipline, grade).arg(m_grades->revision());
-    if (key == m_material.key) {
-        return;
-    }
-    m_material.key = key;
-    m_material.entries = m_programme->practiceEntries(discipline, grade);
-    const QVariantList grids = m_programme->techniqueMap(discipline, grade);
-    m_material.map = grids.isEmpty() ? QVariantMap() : grids.first().toMap();
-}
-
 StartSnapshot StartBoard::snapshot()
 {
     StartSnapshot s;
     s.today = m_practice->today();
     s.discipline = m_programme->discipline();
-    s.grade = m_grades->grade(s.discipline);
+
+    // The practice grade is worked out from every grade's entries (12 ms): kept until the programme,
+    // the discipline or the grade changes.
+    const QString gradeKey = QStringLiteral("%1|%2|%3").arg(m_programme->revision()).arg(m_grades->revision()).arg(s.discipline);
+    if (gradeKey != m_gradeKey) {
+        m_gradeKey = gradeKey;
+        m_grade = m_grades->grade(s.discipline);
+    }
+    s.grade = m_grade;
 
     for (const QVariant &d : m_programme->disciplines()) {
         if (text(d, u"id"_s) != s.discipline) {
@@ -458,29 +492,20 @@ StartSnapshot StartBoard::snapshot()
     }
     s.ladder = m_courses->ladder(s.discipline);
 
-    readMaterial(s.discipline, s.grade);
-    s.entries = m_material.entries;
-    s.grid = m_material.map;
+    s.programme = m_programme;
+    s.exam = m_exam;
 
     s.latest = m_practice->ratings();
     s.first = m_practice->firstDays();
     for (const QVariant &d : m_practice->intervals()) {
         s.intervals << d.toInt();
     }
-    s.perDay = m_practice->practisedPerDay(kStreakDays);
-
-    // The exam: the planned one's points, else the exam mode's grade for the hint.
-    s.exam = m_courses->nextExam();
-    const QString examDiscipline = text(s.exam, u"discipline"_s);
-    if (!examDiscipline.isEmpty()) {
-        s.examIds = idsOf(m_exam->material(examDiscipline, text(s.exam, u"grade"_s)));
+    // The days of the years the streak can reach: copies sharing their data.
+    const int firstYear = m_practice->firstYear();
+    for (int year = std::max(firstYear, s.today.addDays(1 - kStreakDays).year()); year <= s.today.year(); ++year) {
+        s.dayEntries << m_practice->dayEntries(year);
     }
-    const QString mockGrade = m_exam->grade(s.discipline, s.grade);
-    for (const QVariant &g : m_exam->grades(s.discipline)) {
-        if (text(g, u"id"_s) == mockGrade) {
-            s.examGradeName = text(g, u"name"_s);
-        }
-    }
+    s.plannedExam = m_courses->nextExam();
 
     const QVariantList upcoming = m_courses->upcoming();
     if (!upcoming.isEmpty()) {
