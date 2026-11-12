@@ -137,11 +137,16 @@ Kirigami.ScrollablePage {
                 ColumnLayout {
                     id: heatBox
 
+                    // Whole or in halves; the heatmaps are built anew only when that changes, not at
+                    // every pixel a window is resized (a year's tips take their time).
+                    readonly property bool split: yearBlock.parts(page.bodyWidth).length > 1
+                    readonly property var shown: yearBlock.parts(split ? 0 : Number.MAX_VALUE)
+
                     Layout.fillWidth: true
                     spacing: Kirigami.Units.smallSpacing
 
                     Repeater {
-                        model: yearBlock.parts(page.bodyWidth)
+                        model: heatBox.shown
 
                         LookCalendarHeatmap {
                             id: heat
@@ -149,7 +154,8 @@ Kirigami.ScrollablePage {
                             required property var modelData
 
                             objectName: "yearHeatmap"
-                            cellSize: Math.min(Look.unit(20), Math.floor((page.bodyWidth - labelWidth + spacing) / modelData.span) - spacing)
+                            cellSize: Math.max(Look.unit(4), Math.min(Look.unit(20),
+                                               Math.floor((page.bodyWidth - labelWidth + spacing) / modelData.span) - spacing))
                             weeks: modelData.weeks
                             endDate: modelData.end
                             levels: {

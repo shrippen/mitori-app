@@ -6433,7 +6433,8 @@ TestCase {
     // window (the composer bars of the notes too).
     function test_8s_reading_width_data() {
         return ["ExamPage", "CourseNewPage", "NotebooksPage", "AllNotesPage", "NotesPage", "CoursePage", "SearchPage",
-                "VideosPage", "BackupPage", "AppearancePage", "WelcomePage", "YearsPage"].map(name => ({ tag: name, name: name }))
+                "VideosPage", "BackupPage", "AppearancePage", "WelcomePage", "YearsPage", "TechniquePickerPage"]
+            .map(name => ({ tag: name, name: name }))
     }
     function test_8s_reading_width(data) {
         window.width = 1280
@@ -6441,7 +6442,8 @@ TestCase {
         wait(100)
         const uid = Courses.create("Lesebreite", "2030-01-10", "2030-01-11", "", "")
         const props = data.name === "NotesPage" ? { entry: Programme.entries("aikido", "k5").find(r => r.kind === "entry") }
-                    : data.name === "CoursePage" ? { uid: uid } : {}
+                    : data.name === "CoursePage" ? { uid: uid }
+                    : data.name === "TechniquePickerPage" ? { course: uid, entryUid: "none" } : {}
         const page = push(data.name, props)
         tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
         wait(400)
