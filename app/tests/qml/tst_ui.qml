@@ -6566,8 +6566,8 @@ TestCase {
         popPage()
     }
 
-    // The year heatmap: cells a finger can read on a phone, which scrolls sideways from the latest
-    // weeks; on a wide window it fills the page.
+    // The year heatmap: on a phone each year in two halves stacked (cells that read, every weekday
+    // and month label in view, nothing to scroll); on a wide window one heatmap fills the page.
     function test_8s_years_heatmap_data() {
         return [ { tag: "360", width: 360, height: 640, wide: false }, { tag: "420", width: 420, height: 860, wide: false },
                  { tag: "1280x800", width: 1280, height: 800, wide: true } ]
@@ -6579,21 +6579,28 @@ TestCase {
         const page = push("YearsPage")
         tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
         wait(300)
-        const heat = findChildren(page, "yearHeatmap").find(h => h.visible)
-        const block = findChild(page, "year_" + page.todayDate.getFullYear())
-        verify(heat && block, "this year's heatmap")
+        const year = page.todayDate.getFullYear()
+        const block = findChild(page, "year_" + year)
+        verify(block, "this year's block")
+        const maps = findChildren(block, "yearHeatmap").filter(h => h.visible)
+        verify(maps.length > 0, "a heatmap")
         if (data.wide) {
-            verify(heat.width >= block.width * 0.9, "fills the page: " + heat.width + " of " + block.width)
+            compare(maps.length, 1, "one heatmap for the whole year")
+            verify(maps[0].width >= block.width * 0.9, "fills the page: " + maps[0].width + " of " + block.width)
             return
         }
-        verify(heat.cellSize >= Look.unit(10), "cells of " + heat.cellSize)
-        let flick = heat.parent
-        while (flick && flick.contentX === undefined) {
-            flick = flick.parent
+        verify(maps.length === 2, "two halves: " + maps.length)
+        for (const heat of maps) {
+            verify(heat.cellSize >= Look.unit(8), "cells of " + heat.cellSize)
+            const left = heat.mapToItem(window.contentItem, 0, 0).x
+            verify(left >= 0 && left + heat.width <= data.width + 0.5,
+                   "inside the window, labels in view: " + left + " to " + (left + heat.width))
+            let flick = heat.parent
+            while (flick && flick.contentX === undefined) {
+                flick = flick.parent
+            }
+            verify(!flick || flick.contentWidth <= flick.width + 1, "nothing to scroll sideways")
         }
-        verify(flick, "scrolls sideways")
-        verify(flick.contentWidth > flick.width, "wider than the window")
-        tryVerify(() => Math.abs(flick.contentX - (flick.contentWidth - flick.width)) < 2, 2000, "starts at the latest weeks: " + flick.contentX)
     }
 
     // The grade form on a phone: grade and day in one row, place and "Add" in the next, edges flush.
