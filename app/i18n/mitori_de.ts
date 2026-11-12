@@ -2577,6 +2577,10 @@
         <translation>bis %1</translation>
     </message>
     <message>
+        <source>Grade</source>
+        <translation>Grad</translation>
+    </message>
+    <message>
         <source>No techniques with an attack up to %1.</source>
         <translation>Keine Techniken mit Angriff bis %1.</translation>
     </message>

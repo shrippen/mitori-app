@@ -3511,7 +3511,15 @@ TestCase {
         slidIn()
         compare(page.grade, "k4")
         verify(page.matrix)
-        compare(findChildren(page, "gradeChip").length, Programme.grades("aikido").length)
+        // The grade is one control: another grade changes the grids.
+        const gradeBox = findChild(page, "gradeBox")
+        compare(gradeBox.count, Programme.grades("aikido").length)
+        const gridsBefore = page.grids
+        gradeBox.activated(0)
+        tryCompare(page, "grade", page.grades[0].id)
+        verify(JSON.stringify(page.grids) !== JSON.stringify(gridsBefore), "another grade, other grids")
+        page.grade = "k4"
+        tryCompare(gradeBox, "currentIndex", page.grades.findIndex(g => g.id === "k4"))
 
         // Techniques × attacks (KanteHeatGrid); combinations not in the programme are gaps.
         const heat = findChild(page, "techniqueMatrix")
@@ -3700,6 +3708,9 @@ TestCase {
         slidIn()
         tryVerify(() => !page.wide, 2000, "a phone")
         verify(!findChild(page, "mapPanel").visible)
+        // The filters: at most three lines (discipline; grade and groups).
+        const filters = findChild(page, "mapFilters")
+        tryVerify(() => filters.height > 0 && filters.height <= 3 * findChild(page, "gradeBox").height + 4 * Kirigami.Units.smallSpacing, 2000, "filters " + filters.height)
         const heat = findChild(page, "techniqueMatrix")
         let target = null
         for (let r = 0; r < heat.rowCount && !target; r++) {

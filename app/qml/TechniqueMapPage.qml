@@ -46,10 +46,15 @@ Kirigami.ScrollablePage {
         // The filters stand together and wrap: discipline, "up to" grade, group (groups apart: one
         // grid at a time).
         Flow {
+            id: filters
+
+            objectName: "mapFilters"
             Layout.fillWidth: true
             spacing: Kirigami.Units.smallSpacing
 
             LookSegmented {
+                // A phone: a line of its own.
+                width: page.wide ? implicitWidth : filters.width
                 model: Programme.disciplines.map(d => d.kurzname)
                 currentIndex: Programme.disciplines.findIndex(d => d.id === page.discipline)
                 onActivated: index => {
@@ -58,18 +63,13 @@ Kirigami.ScrollablePage {
                 }
             }
 
-            Repeater {
-                model: page.grades
-
-                LookChip {
-                    required property var modelData
-
-                    objectName: "gradeChip"
-                    text: qsTr("up to %1").arg(modelData.name)
-                    checkable: true
-                    checked: modelData.id === page.grade
-                    onClicked: page.grade = modelData.id
-                }
+            LookComboBox {
+                objectName: "gradeBox"
+                model: page.grades.map(g => g.name)
+                currentIndex: page.grades.findIndex(g => g.id === page.grade)
+                displayText: qsTr("up to %1").arg(page.gradeName)
+                Accessible.name: qsTr("Grade")
+                onActivated: index => page.grade = page.grades[index].id
             }
 
             Repeater {
