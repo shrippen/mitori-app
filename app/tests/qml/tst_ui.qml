@@ -2244,6 +2244,11 @@ TestCase {
         // All of them, not the first five; none looks like another (the attack tells them apart).
         const hits = findChildren(page, "detailHit")
         verify(hits.length >= 10, "every technique named Kiri-otoshi: " + hits.length)
+        // The addition stands once: in the title or, with a form number, in the subtitle.
+        for (const h of hits) {
+            const named = h.text.indexOf("(") >= 0 ? h.text.slice(h.text.indexOf("(") + 1, -1) : ""
+            verify(named === "" || h.subtitle.indexOf(named) < 0, "twice: " + h.text + " / " + h.subtitle)
+        }
         compare(new Set(hits.map(h => h.leadingText + h.subtitle)).size, hits.length, "subtitles: " + hits.map(h => h.leadingText + h.subtitle))
         shot("9-glossary-wide-hits")
 
@@ -6735,6 +6740,26 @@ TestCase {
         verify(box.right - box.left <= Tablet.pageWidth + 1, data.name + " is " + Math.round(box.right - box.left)
                + " wide, at most " + Math.round(Tablet.pageWidth) + " (" + box.first + " to " + box.last + ")")
         verify(Math.abs(box.left - (window.width - box.right)) < Look.unit(40), "in the middle: " + box.left + " / " + box.right)
+    }
+
+    // The glossary in a broad window that is no tablet sideways (a desktop window, a tablet upright
+    // that is broad): one list, its rows of reading width in the middle.
+    function test_8s_search_reading_width() {
+        window.width = 1000
+        window.height = 1200
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        verify(!page.wide, "wide at " + page.width + "x" + page.height + " in " + window.width + "x" + window.height)
+        const list = findChild(page, "glossaryList")
+        tryCompare(list, "count", Glossary.words.length)
+        const rows = findChildren(list, "glossaryRow")
+        verify(rows.length > 0)
+        const row = rows[0]
+        verify(row.width <= Tablet.pageWidth + 1, "a row is " + Math.round(row.width) + " wide, at most " + Math.round(Tablet.pageWidth))
+        const left = row.mapToItem(list, 0, 0).x
+        verify(Math.abs(left - (list.width - left - row.width)) < 1, "in the middle: " + left)
+        popPage()
     }
 
     // The start menu's tiles use the height of a tablet; a phone keeps its tiles.

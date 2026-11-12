@@ -188,6 +188,10 @@ Kirigami.Page {
         model: page.rows
         reuseItems: true
         QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
+        // Without the three parts (a phone, a desktop window, a broad tablet upright) the rows keep
+        // the reading width (Tablet.pageWidth) in the middle, each at `sideGap`.
+        readonly property real sideGap: page.wide ? 0 : Tablet.sidePadding(width, 0)
+        readonly property real rowWidth: width - 2 * sideGap
         // The list stays at its top while the head changes height (a query's results, the speech
         // hint, letters wrapping anew), only if it stood there: not once the reader has moved it
         // (flick, wheel, keys, a letter). A head that changes height leaves contentY as it is.
@@ -217,7 +221,8 @@ Kirigami.Page {
                 id: heading
 
                 objectName: "letterHeading"
-                width: parent.width
+                x: list.sideGap
+                width: list.rowWidth
                 topPadding: Kirigami.Units.largeSpacing
                 bottomPadding: Kirigami.Units.smallSpacing
                 leftPadding: Kirigami.Units.largeSpacing
@@ -240,7 +245,8 @@ Kirigami.Page {
 
         // The hints; rows and headings bring their own margin.
         header: ColumnLayout {
-            width: list.width
+            x: list.sideGap
+            width: list.rowWidth
             spacing: Kirigami.Units.smallSpacing
             onHeightChanged: Qt.callLater(list.toTop)
 
@@ -301,6 +307,8 @@ Kirigami.Page {
 
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.leftMargin: list.sideGap
+                    anchors.rightMargin: list.sideGap
                     readonly property var found: rowLoader.modelData.data
                     readonly property string kind: rowLoader.modelData.kind
 
@@ -365,6 +373,8 @@ Kirigami.Page {
                 LookLabel {
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.leftMargin: list.sideGap
+                    anchors.rightMargin: list.sideGap
                     objectName: rowLoader.modelData.data.name
                     leftPadding: Kirigami.Units.largeSpacing
                     rightPadding: Kirigami.Units.largeSpacing
@@ -378,7 +388,8 @@ Kirigami.Page {
         }
 
         footer: ColumnLayout {
-            width: list.width
+            x: list.sideGap
+            width: list.rowWidth
             spacing: Kirigami.Units.largeSpacing
 
             LookLabel {

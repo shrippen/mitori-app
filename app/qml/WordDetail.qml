@@ -98,7 +98,7 @@ ColumnLayout {
             // As the search's row: the attack tells apart the same technique of one grade.
             subtitle: [modelData.disciplineName + " " + modelData.gradeName, modelData.groupName,
                        (modelData.attack || "") + (modelData.attackExtra ? " (" + modelData.attackExtra + ")" : ""),
-                       modelData.extra]
+                       modelData.nr ? modelData.extra : ""]
                       .filter(x => x).join(" · ")
             onClicked: detail.techniqueRequested(modelData)
         }
