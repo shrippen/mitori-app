@@ -78,6 +78,9 @@ Kirigami.Page {
         return day.toLocaleDateString(Qt.locale(), Locale.ShortFormat)
     }
     padding: 0
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
 
     // The filter, then the list: in this order also for Tab.
     ColumnLayout {

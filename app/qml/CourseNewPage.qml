@@ -23,6 +23,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("New course")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     // Something typed and not made yet: Back and the window's close ask before it goes. "Make" is
     // the way to keep it, so the question only offers to discard.
     readonly property LeaveDialog leaveAsk: leaveDialog

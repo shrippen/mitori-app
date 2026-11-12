@@ -18,6 +18,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Backup and sync")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     // The settings as rows of its own: the name of the setting as a small caps line above its
     // field (the clickdummy's forms), not the desktop's form layout.
     ColumnLayout {

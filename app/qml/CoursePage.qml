@@ -99,6 +99,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Notebook")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     actions: [
         // The notebook as a ZIP (notizbuch.md, photos, voice notes): the sheet shows, shares, saves it.
         Kirigami.Action {

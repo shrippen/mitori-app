@@ -34,6 +34,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Exam mode")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     function averageText(value) {
         return Number(value).toLocaleString(Qt.locale(), "f", 1)
     }

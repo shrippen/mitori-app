@@ -6379,7 +6379,63 @@ TestCase {
         }
     }
 
-    // The on-screen keyboard is a lower window (not a device's here): while a field of the page is
+    // ---- Polish pass: reading width, start grid, small-phone wrapping ----
+
+    // Left and right edge of what a page shows (texts, controls, pictures that can be seen).
+    function extent(root) {
+        let left = Infinity
+        let right = -Infinity
+        let first = ""
+        let last = ""
+        const walk = item => {
+            if (!item.visible || item.opacity === 0) {
+                return
+            }
+            if (item.width > 0 && item.height > 0 && !/MouseArea/.test(String(item))
+                    && (item.text !== undefined || item.clicked !== undefined || item.cellSize !== undefined)) {
+                const x = item.mapToItem(window.contentItem, 0, 0).x
+                if (x >= 0 && x < window.width) {
+                    if (x < left) {
+                        first = String(item)
+                    }
+                    if (x + item.width > right) {
+                        last = String(item)
+                    }
+                    left = Math.min(left, x)
+                    right = Math.max(right, x + item.width)
+                }
+            }
+            for (let i = 0; i < item.children.length; ++i) {
+                walk(item.children[i])
+            }
+        }
+        walk(root)
+        return { left: left, right: right, first: first, last: last }
+    }
+
+    // Single-column pages on a wide window: a page of reading width in the middle, never the whole
+    // window (the composer bars of the notes too).
+    function test_8s_reading_width_data() {
+        return ["ExamPage", "CourseNewPage", "NotebooksPage", "AllNotesPage", "NotesPage", "CoursePage", "SearchPage",
+                "VideosPage", "BackupPage", "AppearancePage", "WelcomePage", "YearsPage"].map(name => ({ tag: name, name: name }))
+    }
+    function test_8s_reading_width(data) {
+        window.width = 1280
+        window.height = 800
+        wait(100)
+        const uid = Courses.create("Lesebreite", "2030-01-10", "2030-01-11", "", "")
+        const props = data.name === "NotesPage" ? { entry: Programme.entries("aikido", "k5").find(r => r.kind === "entry") }
+                    : data.name === "CoursePage" ? { uid: uid } : {}
+        const page = push(data.name, props)
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        wait(400)
+        const box = extent(page)
+        Courses.remove(uid)
+        verify(box.right > box.left, "the page shows something")
+        verify(box.right - box.left <= Tablet.pageWidth + 1, data.name + " is " + Math.round(box.right - box.left)
+               + " wide, at most " + Math.round(Tablet.pageWidth) + " (" + box.first + " to " + box.last + ")")
+        verify(Math.abs(box.left - (window.width - box.right)) < Look.unit(40), "in the middle: " + box.left + " / " + box.right)
+    }    // The on-screen keyboard is a lower window (not a device's here): while a field of the page is
     // typed in, and until the page is high again, the live page keeps its columns, both ways.
     function test_8r_typing_holds_columns_data() {
         const place = page => findChild(findChild(page, "grades_daitoryu"), "gradePlace")
@@ -6480,6 +6536,8 @@ TestCase {
             tryVerify(() => pane.item && pane.item.title === title)
             verify(findChild(host, row).selected)
             compare(window.pageStack.depth, depth)
+            // Beside the list the page is below the reading width: its margins stay as they are.
+            compare(pane.item.leftPadding, pane.item.padding, title + ": margin")
             tryVerify(() => overflowing(host, data.width).length === 0, 3000, title + ": past the edge: " + overflowing(host, data.width))
         }
 

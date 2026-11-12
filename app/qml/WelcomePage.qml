@@ -17,6 +17,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Welcome")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     property int step: 0
     readonly property int lastStep: 2
 

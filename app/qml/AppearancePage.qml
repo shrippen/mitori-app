@@ -13,6 +13,10 @@ Kirigami.ScrollablePage {
     background: Rectangle { color: Look.backgroundColor }
 
     title: qsTr("Appearance")
+
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
     // A new window (a change of style) comes back here (Main.keptPageList).
     readonly property string keptPage: "AppearancePage.qml"
 

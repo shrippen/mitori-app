@@ -32,6 +32,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Videos")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     actions: [
         Kirigami.Action {
             icon.name: "view-refresh"
