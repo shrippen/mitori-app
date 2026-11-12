@@ -3678,7 +3678,15 @@ TestCase {
         slidIn()
         compare(page.grade, "k4")
         verify(page.matrix)
-        compare(findChildren(page, "gradeChip").length, Programme.grades("aikido").length)
+        // The grade is one control: another grade changes the grids.
+        const gradeBox = findChild(page, "gradeBox")
+        compare(gradeBox.count, Programme.grades("aikido").length)
+        const gridsBefore = page.grids
+        gradeBox.activated(0)
+        tryCompare(page, "grade", page.grades[0].id)
+        verify(JSON.stringify(page.grids) !== JSON.stringify(gridsBefore), "another grade, other grids")
+        page.grade = "k4"
+        tryCompare(gradeBox, "currentIndex", page.grades.findIndex(g => g.id === "k4"))
 
         // Techniques × attacks (KanteHeatGrid); combinations not in the programme are gaps.
         const heat = findChild(page, "techniqueMatrix")
@@ -3793,6 +3801,113 @@ TestCase {
         for (const name of multi.names)
             verify(heat.tipOf(multi.r, multi.c).indexOf(name) > 0, heat.tipOf(multi.r, multi.c))
         shot("11-map-tablet")
+        popPage()
+    }
+
+    // The map on a tablet sideways: the matrix centred in its area, a tap shows the technique in the
+    // panel beside it (no sheet), a ring marks the place; Shinki Toho's forms the same.
+    function test_9k_map_wide() {
+        failOnWarning(/ReferenceError|TypeError/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k4")
+        window.width = 1280
+        window.height = 800
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => page.wide, 2000, "a wide window")
+        const panel = findChild(page, "mapPanel")
+        verify(panel.visible)
+        verify(findChild(page, "mapPanelHint").visible, "a hint before the first tap")
+        const heat = findChild(page, "techniqueMatrix")
+        const area = heat.parent
+        tryVerify(() => heat.width > 0 && area.width > heat.width, 2000, "narrower than its area")
+        const left = heat.mapToItem(area, 0, 0).x
+        const right = area.width - left - heat.width
+        verify(Math.abs(left - right) <= 1, "centred: " + left + " / " + right)
+        verify(panel.mapToItem(page, 0, 0).x > heat.mapToItem(page, heat.width, 0).x, "the panel stands right of the map")
+
+        let target = null
+        for (let r = 0; r < heat.rowCount && !target; r++) {
+            for (let c = 0; c < heat.columnCount; c++) {
+                if (!heat.isEmpty(r, c)) {
+                    target = { r: r, c: c }
+                    break
+                }
+            }
+        }
+        verify(target)
+        const data = page.shown.rows[target.r].cells[target.c]
+        const cell = heat.cellAt(target.r, target.c)
+        const sheet = findChild(page, "techniqueSheet")
+        mouseClick(cell)
+        tryVerify(() => page.paneEntry !== null)
+        compare(page.paneEntry.id, data.entry.id)
+        verify(!findChild(page, "mapPanelHint").visible)
+        compare(findChild(panel, "paneSheet").entry.id, data.entry.id)
+        verify(!sheet.visible, "no sheet on a wide window")
+        verify(findChild(page, "mapHint").text.indexOf("open") < 0, "the hint does not say open: " + findChild(page, "mapHint").text)
+        // Another technique from the panel (same one in a video) opens the sheet; panel and ring stay.
+        const paneBody = findChild(panel, "paneSheet")
+        const shownId = page.paneEntry.id
+        paneBody.lessonRequested({ id: "other/x", title: "Other", discipline: "aikido" })
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, "other/x")
+        compare(page.paneEntry.id, shownId, "the panel keeps its technique")
+        verify(findChild(cell, "placeRing") !== null, "the ring stays")
+        sheet.close()
+        tryVerify(() => !sheet.visible)
+        tryVerify(() => findChild(cell, "placeRing") !== null, 2000, "the tapped place is marked")
+        shot("11-map-wide")
+
+        // Shinki Toho's forms: the same panel.
+        page.discipline = "shinkitoho"
+        page.grade = "chuden"
+        const forms = findChild(page, "formGrid")
+        tryVerify(() => forms.visible && forms.rowCount > 0)
+        verify(page.paneEntry === null, "another grid, no mark")
+        waitForRendering(forms)
+        const form = forms.cellAt(0, 1)
+        mouseClick(form)
+        tryVerify(() => page.paneEntry !== null)
+        compare(page.paneEntry.id, page.shown.cells[1].entry.id)
+        verify(!sheet.visible)
+        tryVerify(() => findChild(form, "placeRing") !== null)
+        popPage()
+    }
+
+    // The same page on a phone: a tap opens the sheet, no panel.
+    function test_9k_map_phone() {
+        failOnWarning(/ReferenceError|TypeError/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k4")
+        window.width = 420
+        window.height = 860
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => !page.wide, 2000, "a phone")
+        verify(!findChild(page, "mapPanel").visible)
+        // The filters: at most three lines (discipline; grade and groups).
+        const filters = findChild(page, "mapFilters")
+        tryVerify(() => filters.height > 0 && filters.height <= 3 * findChild(page, "gradeBox").height + 4 * Kirigami.Units.smallSpacing, 2000, "filters " + filters.height)
+        const heat = findChild(page, "techniqueMatrix")
+        let target = null
+        for (let r = 0; r < heat.rowCount && !target; r++) {
+            for (let c = 0; c < heat.columnCount; c++) {
+                if (!heat.isEmpty(r, c)) {
+                    target = { r: r, c: c }
+                    break
+                }
+            }
+        }
+        verify(target)
+        shot("11-map-phone")
+        const sheet = findChild(page, "techniqueSheet")
+        mouseClick(heat.cellAt(target.r, target.c))
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, page.shown.rows[target.r].cells[target.c].entry.id)
+        verify(page.paneEntry === null)
+        sheet.close()
+        tryVerify(() => !sheet.visible)
         popPage()
     }
 
