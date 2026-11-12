@@ -182,11 +182,16 @@ Kirigami.ScrollablePage {
                     onActivated: (row, column) => page.pick(list[row * perRow + column].entry, row, column)
                 }
                 LookLabel {
+                    objectName: "mapHint"
                     Layout.fillWidth: true
                     visible: !!page.shown
                     text: page.matrix
-                          ? qsTr("Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to open the technique.").arg(page.gradeName)
-                          : qsTr("A place per form: its number, after the dot its level (12·3). Tap a place to open the form.")
+                          ? (page.wide
+                             ? qsTr("Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to show the technique.")
+                             : qsTr("Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to open the technique.")).arg(page.gradeName)
+                          : (page.wide
+                             ? qsTr("A place per form: its number, after the dot its level (12·3). Tap a place to show the form.")
+                             : qsTr("A place per form: its number, after the dot its level (12·3). Tap a place to open the form."))
                     color: Look.mutedTextColor
                     font: Look.smallFont
                     wrapMode: Text.Wrap
@@ -233,8 +238,9 @@ Kirigami.ScrollablePage {
                     playable: page.paneEntry ? page.playable(page.paneEntry) : false
                     onScrollKey: event => paneBody.scrollIn(page.flickable, event)
                     onPlayRequested: entry => page.play(entry)
-                    onProgrammeRequested: entry => page.paneEntry = entry
-                    onLessonRequested: entry => page.paneEntry = entry
+                    // Not on the map: the sheet shows it, the panel and the ring keep their place.
+                    onProgrammeRequested: entry => page.open(entry)
+                    onLessonRequested: entry => page.open(entry)
                     onCommentRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: entry })
                     onNotesRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
                     onVideosRequested: page.Kirigami.PageStack.push(Qt.resolvedUrl("VideosPage.qml"))

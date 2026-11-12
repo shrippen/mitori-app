@@ -3678,6 +3678,17 @@ TestCase {
         verify(!findChild(page, "mapPanelHint").visible)
         compare(findChild(panel, "paneSheet").entry.id, data.entry.id)
         verify(!sheet.visible, "no sheet on a wide window")
+        verify(findChild(page, "mapHint").text.indexOf("open") < 0, "the hint does not say open: " + findChild(page, "mapHint").text)
+        // Another technique from the panel (same one in a video) opens the sheet; panel and ring stay.
+        const paneBody = findChild(panel, "paneSheet")
+        const shownId = page.paneEntry.id
+        paneBody.lessonRequested({ id: "other/x", title: "Other", discipline: "aikido" })
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, "other/x")
+        compare(page.paneEntry.id, shownId, "the panel keeps its technique")
+        verify(findChild(cell, "placeRing") !== null, "the ring stays")
+        sheet.close()
+        tryVerify(() => !sheet.visible)
         tryVerify(() => findChild(cell, "placeRing") !== null, 2000, "the tapped place is marked")
         shot("11-map-wide")
 
