@@ -332,6 +332,36 @@ private slots:
         QCOMPARE(again.level(QStringLiteral("b")), 1);
     }
 
+    void ratingHistoryKeepsTheLastRatings()
+    {
+        QTemporaryDir dir;
+        Practice practice(dir.filePath(QStringLiteral("mitori.sqlite")));
+        const QString a = QStringLiteral("a");
+
+        QVERIFY(practice.ratingHistory(a, 8).isEmpty());
+
+        for (const int level : {1, 2, 2, 3, 4}) {
+            practice.rate(a, level);
+        }
+        practice.rate(QStringLiteral("b"), 1);
+
+        // Oldest first, the last `count` only, other entries left out.
+        const QVariantList all = practice.ratingHistory(a, 8);
+        QCOMPARE(all.size(), 5);
+        QCOMPARE(all.first().toMap().value(QStringLiteral("level")).toInt(), 1);
+        QCOMPARE(all.last().toMap().value(QStringLiteral("level")).toInt(), 4);
+
+        const QVariantList last = practice.ratingHistory(a, 2);
+        QCOMPARE(last.size(), 2);
+        QCOMPARE(last.first().toMap().value(QStringLiteral("level")).toInt(), 3);
+        QCOMPARE(last.last().toMap().value(QStringLiteral("level")).toInt(), 4);
+
+        // The day is the local one, as a date string.
+        const QVariantMap row = last.last().toMap();
+        QCOMPARE(row.value(QStringLiteral("day")).toString(), QDate::currentDate().toString(Qt::ISODate));
+        QVERIFY(row.value(QStringLiteral("at")).toDateTime().isValid());
+    }
+
     void dueAndIntervals()
     {
         QTemporaryDir dir;

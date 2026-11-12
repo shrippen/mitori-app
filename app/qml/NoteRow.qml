@@ -15,6 +15,8 @@ ColumnLayout {
     readonly property var today: Practice.notesRevision >= 0 && Practice.today && entry.id ? Practice.notesToday(entry.id) : []
     // The technique the field's text belongs to.
     property string draftFor: ""
+    // Only the field and Add: the upright player lists the notes and opens them itself.
+    property bool fieldOnly: false
 
     signal notesRequested()
     // The field got the keyboard focus (the player scrolls it into view above the keyboard).
@@ -58,7 +60,7 @@ ColumnLayout {
     LookLabel {
         objectName: "notedToday"
         Layout.fillWidth: true
-        visible: noteRow.today.length > 0
+        visible: !noteRow.fieldOnly && noteRow.today.length > 0
         text: qsTr("Noted today: %1").arg(noteRow.today.map(n => noteRow.noteText(n)).join(" · "))
         color: Look.mutedTextColor
         wrapMode: Text.Wrap
@@ -68,7 +70,7 @@ ColumnLayout {
     LookLabel {
         Layout.fillWidth: true
         readonly property string shown: noteRow.today.length > 0 ? "" : noteRow.noteText(noteRow.last)
-        visible: shown !== ""
+        visible: !noteRow.fieldOnly && shown !== ""
         text: qsTr("Last note: %1").arg(shown)
         color: Look.mutedTextColor
         wrapMode: Text.Wrap
@@ -118,6 +120,7 @@ ColumnLayout {
             text: qsTr("Notes")
             display: QQC2.AbstractButton.IconOnly
             objectName: "openNotes"
+            visible: !noteRow.fieldOnly
             onClicked: noteRow.notesRequested()
         }
     }

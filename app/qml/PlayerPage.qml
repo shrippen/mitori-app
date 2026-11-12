@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 import Mitori
 
 // The player as a page (PlayerView): from the programme, today's practice and the search; in
-// landscape without the page header (the rail or the bands of PlayerView have its controls).
+// landscape without the page header (the plate and the overlays of PlayerView, "Kino", have its controls).
 Kirigami.Page {
     id: page
 
@@ -39,6 +39,9 @@ Kirigami.Page {
     function seek(ms) { view.seek(ms) }
     readonly property alias practisedCount: view.practisedCount
     readonly property alias hasVideo: view.hasVideo
+    // Kino: the dark page with a picture; upright it has the history in the middle.
+    readonly property alias kino: view.kino
+    readonly property alias upright: view.upright
     function go(direction) { view.go(direction) }
     function jump(ms) { view.jump(ms) }
     function step(direction) { view.step(direction) }

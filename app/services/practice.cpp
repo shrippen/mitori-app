@@ -145,6 +145,23 @@ QDateTime Practice::lastRated(const QString &entry) const
     return it == m_latest.constEnd() ? QDateTime() : it->at.toLocalTime();
 }
 
+QVariantList Practice::ratingHistory(const QString &entry, int count) const
+{
+    QVariantList result;
+    if (!m_open || count <= 0) {
+        return result;
+    }
+
+    const QList<PracticeLog::Rating> all = m_log->history(entry);
+    for (qsizetype i = std::max<qsizetype>(0, all.size() - count); i < all.size(); ++i) {
+        const QDateTime at = all[i].at.toLocalTime();
+        result << QVariantMap{{QStringLiteral("day"), at.date().toString(Qt::ISODate)},
+                              {QStringLiteral("at"), at},
+                              {QStringLiteral("level"), all[i].level}};
+    }
+    return result;
+}
+
 QVariantList Practice::counts(const QStringList &entries) const
 {
     QList<int> n(5, 0);

@@ -15,6 +15,7 @@
 #### Improved
 - Tablets and wide windows: pages keep a width that reads, in the middle, instead of running across the screen; the start tiles fill a tablet's screen; the welcome's "Next" stands below its text.
 - Small phones: long titles, the exam hint and the rating "exam-ready" show whole; the year calendar stands in two halves with its weekday names; the forms of My grades line up; the player's subtitle switch shares the row with sound and screen.
+- Player: a new dark layout with a video. Sideways the picture fills the page, with the name and Notes at the top, the four ratings at the right edge and one plate at the foot (timeline, tempo, frames, loop, subtitles, sound, full screen, next). Upright the middle shows how the technique was rated over time and its last notes, with a field for today's, and the controls, ratings and the way on lie in reach of the thumb.
 
 #### Removed
 - Videos: the "Video folder" setting for video files of one's own. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
@@ -32,6 +33,7 @@
 #### Verbessert
 - Tablets und breite Fenster: Seiten behalten eine lesbare Breite in der Mitte, statt über den ganzen Bildschirm zu laufen; die Kacheln der Startseite füllen ein Tablet; „Weiter“ in der Einführung steht unter dem Text.
 - Kleine Telefone: lange Titel, der Prüfungshinweis und die Einschätzung „prüfungsreif“ stehen ganz da; der Jahreskalender steht in zwei Hälften mit seinen Wochentagen; die Felder in Meine Grade fluchten; der Untertitel-Schalter im Player steht in der Zeile mit Ton und Bildschirm.
+- Player: neues dunkles Layout mit Video. Quer füllt das Bild die Seite; oben stehen der Name und „Notizen“, am rechten Rand die vier Einschätzungen, unten eine Leiste (Zeitleiste, Tempo, Einzelbilder, Schleife, Untertitel, Ton, Vollbild, weiter). Hochkant zeigt die Mitte, wie die Technik eingeschätzt wurde, und die letzten Notizen mit einem Feld für die heutige; Steuerung, Einschätzung und Weiter liegen in Daumenreichweite.
 
 #### Entfernt
 - Videos: die Einstellung „Videoordner“ für eigene Videodateien. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.

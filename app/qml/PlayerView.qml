@@ -12,7 +12,15 @@ import Mitori
 // without the black bars, in a loop by default; the style's transport bar with four tempi (sound off
 // below 100 %) and single frames; double tap left/right = 2 s back/on. Landscape: the controls in
 // a column on the right, or around the picture when there is room. PlayerPage shows it as a page; on a tablet the programme shows it beside
-// the list (`compact`: picture above the controls, no Back). Swipe up/down on the left half of
+// the list (`compact`: picture above the controls, no Back).
+//
+// With a picture (and not `compact`) the design "Kino" (owner's choice B): a dark page. Sideways
+// (`landscape`, also full screen) the picture fills the page; over it the back button and the name
+// at the top left, "Notes" at the top right, the four ratings as a column at the right edge and a
+// plate at the foot with the timeline and all controls. Upright: the name, the picture, the
+// timeline; in the middle how the technique was rated and its last notes (PlayerHistory) with a
+// field for a note; in the thumb zone below the controls, the ratings and the way on. Without a
+// picture and beside the list the controls below the picture stay as they were. Swipe up/down on the left half of
 // the picture: the screen's brightness, on the right half: the volume (Levels); the picture's
 // height is the whole range. Leaving the player gives the screen its brightness back.
 Item {
@@ -72,14 +80,9 @@ Item {
     // Sideways only with a picture; without a video the card and the controls stand as upright.
     // By the window's height: the page's own changes with the head that this property hides.
     readonly property bool landscape: !compact && hasVideo && (big || width > Window.height)
-    // On the rail: 62 px on the phone (CD .qrail), 84 px on a tablet in landscape (CD .tab .qrail).
-    // The phone held sideways is about 360 dp tall, a tablet sideways 720 dp.
-    readonly property bool tabletSideways: page.landscape && height >= Tablet.minHeight
-    // Enough room above and below the picture (a tablet 16:10, a wide video): the title and the
-    // controls stand there instead of on the rail (the clickdummy's `.qbands`).
-    readonly property bool bands: landscape && bandHeight * 2 >= Look.unit(120)
-    readonly property real bandHeight: (height - width / stage.ratio) / 2
-    readonly property bool onRail: landscape && !bands
+    // Kino: the dark page with its own controls; upright its middle shows the history.
+    readonly property bool kino: !compact && hasVideo
+    readonly property bool upright: kino && !landscape
     readonly property string titleWithAddition: (current.title || "") + (current.extra && !current.nr ? " (" + current.extra + ")" : "")
     readonly property string titleText: (current.nr ? current.nr + " · " : "") + titleWithAddition
     readonly property string timeText2: timeText(player.position - from) + " / " + timeText(to - from)
@@ -130,6 +133,7 @@ Item {
     // A note begun: saved now (the page is left, but stays).
     function keepDraft() {
         noteRow.keepDraft()
+        kinoNote.item?.keepDraft()
     }
 
     // The entry on screen, for the programme list to mark it when the user comes back.
@@ -258,6 +262,11 @@ Item {
         player.pause()
         player.position = Math.max(from, Math.min(to, player.position + direction * frameMs))
     }
+    // One tempo faster (1) or slower (-1), at the ends no further.
+    function stepTempo(direction) {
+        const at = Math.max(0, Math.min(tempi.length - 1, tempi.indexOf(player.playbackRate) + direction))
+        setSpeed(tempi[at])
+    }
     function jump(ms) {
         player.position = Math.max(from, Math.min(to, player.position + ms))
     }
@@ -330,6 +339,26 @@ Item {
     Keys.onSpacePressed: page.togglePlay()
     Keys.onLeftPressed: page.step(-1)
     Keys.onRightPressed: page.step(1)
+    // The bar's keys also in Kino, where the bar is not in view and forwards nothing.
+    Keys.onPressed: event => {
+        // A handler accepts every key unless told otherwise: the others (Back, Escape) go on.
+        event.accepted = false
+        if (!page.kino) {
+            return
+        }
+        event.accepted = true
+        switch (event.key) {
+        case Qt.Key_K: page.togglePlay(); break
+        case Qt.Key_L: page.looping = !page.looping; break
+        case Qt.Key_Home: player.position = page.from; break
+        case Qt.Key_Comma: page.step(-1); break
+        case Qt.Key_Period: page.step(1); break
+        case Qt.Key_Plus:
+        case Qt.Key_Equal: page.stepTempo(1); break
+        case Qt.Key_Minus: page.stepTempo(-1); break
+        default: event.accepted = false
+        }
+    }
     Keys.onEscapePressed: event => {
         // Beside the programme's list there is nothing to leave.
         event.accepted = page.big || !page.compact || page.training
@@ -418,73 +447,161 @@ Item {
         }
     }
 
-    // Sideways everything stands on the dark ground (the clickdummy's `.qrail`, `.qbands`).
+    // The timeline of Kino with a mark every few seconds (the video has no chapters inside a
+    // technique's cut): 5 s for a short one, 10 and 30 s for a longer, never more than a dozen.
+    component Scrub: QQC2.Slider {
+        id: scrub
+
+        readonly property real span: Math.max(1, page.to - page.from)
+        readonly property real tickMs: span <= 60000 ? 5000 : span <= 120000 ? 10000 : 30000
+
+        from: page.from
+        to: page.to > page.from ? page.to : page.from + 1
+        value: player.position
+        onMoved: player.position = value
+        Accessible.name: qsTr("Position")
+
+        LookSliderSkin {
+            control: scrub
+            trackColor: Qt.alpha(Look.stageTextColor, 0.3)
+        }
+        Repeater {
+            model: Math.max(0, Math.ceil(scrub.span / scrub.tickMs) - 1)
+
+            Rectangle {
+                required property int index
+
+                x: scrub.leftPadding + scrub.availableWidth * (index + 1) * scrub.tickMs / scrub.span - width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                width: Look.borderWidth
+                height: Look.unit(10)
+                color: Qt.alpha(Look.stageTextColor, 0.6)
+            }
+        }
+    }
+
+    // The four tempi as a row of fields (25, 50, 75, 100 %), the one in use filled.
+    component TempoRow: Row {
+        spacing: Look.unit(4)
+
+        Repeater {
+            model: page.tempi
+
+            LookToggle {
+                required property real modelData
+
+                onStage: true
+                checkable: false
+                focusPolicy: Qt.TabFocus    // Space stays with the player
+                checked: player.playbackRate === modelData
+                leftPadding: Look.unit(6)
+                rightPadding: Look.unit(6)
+                text: String(Math.round(modelData * 100))
+                Accessible.name: qsTr("Tempo %1 %").arg(Math.round(modelData * 100))
+                onClicked: page.setSpeed(modelData)
+            }
+        }
+    }
+
+    // The player's switches, kept for the next start: sound (always off in slow motion) and the
+    // screen staying on while a video plays.
+    component SoundToggle: LookToggle {
+        readonly property bool sounds: Levels.sound && player.playbackRate >= 1
+
+        // On only where it sounds: slow motion is always silent.
+        enabled: player.playbackRate >= 1     // a tap in slow motion would change it unseen
+        checkable: true
+        checked: sounds
+        icon.name: sounds ? "audio-volume-high" : "audio-volume-muted"
+        text: player.playbackRate < 1 ? qsTr("Silent in slow motion") : qsTr("Sound")
+        onClicked: {
+            checked = Qt.binding(() => sounds)
+            Levels.setSound(Levels.sound ? Levels.Switch.Off : Levels.Switch.On)
+        }
+    }
+    component AwakeToggle: LookToggle {
+        checkable: true
+        checked: Levels.awake
+        icon.name: "brightness-high"
+        text: qsTr("Screen on")
+        onClicked: Levels.setAwake(Levels.awake ? Levels.Switch.Off : Levels.Switch.On)
+    }
+
+    // The play button, in a circle under Shinki.
+    component PlayButton: LookPlayButton {
+        readonly property string symbol: player.playing ? "media-playback-pause" : "media-playback-start"
+
+        icon.name: symbol
+        icon.color: Look.shinki ? "transparent" : Look.stageTextColor   // Shinki: white on red
+        text: player.playing ? qsTr("Pause") : qsTr("Play")
+        onClicked: page.togglePlay()
+    }
+
+    // "Notes · 3": opens the technique's notes (the page decides how).
+    component NotesButton: LookToggle {
+        readonly property int noted: Practice.notesRevision >= 0 && page.current.id ? Practice.notes(page.current.id).length : 0
+
+        onStage: true
+        checkable: false
+        focusPolicy: Qt.TabFocus
+        icon.name: "view-pim-notes"
+        text: qsTr("Notes · %1").arg(noted)
+        onClicked: page.notesRequested(page.current)
+    }
+
+    // The ratings at the right edge, or in the thumb zone: a tap rates, the training moves on.
+    component RatingBar: PlayerRatings {
+        entry: page.current.id || ""
+        onRated: {
+            if (page.training) {
+                page.nextOpen()
+            }
+        }
+    }
+
+    // The dark ground of Kino, upright and sideways (the clickdummy's `.qrail`).
     Rectangle {
         anchors.fill: parent
-        visible: page.landscape
+        visible: page.kino
         color: Look.stageColor
     }
 
-    GridLayout {
+    ColumnLayout {
         anchors.fill: parent
-        columns: page.onRail ? 2 : 1
-        rowSpacing: 0
-        columnSpacing: 0
+        spacing: 0
 
-        // Above the picture when there is room: back, where the technique stands, its name.
+        // Upright: the name, the kanji and the notes button above the picture.
         RowLayout {
-            objectName: "bandTop"
-            visible: page.bands
+            objectName: "kinoTitleRow"
+            visible: page.upright
             Layout.fillWidth: true
-            Layout.preferredHeight: page.bandHeight
-            Layout.leftMargin: Look.unit(24)
-            Layout.rightMargin: Look.unit(24)
-            spacing: Look.unit(14)
+            Layout.leftMargin: Look.unit(16)
+            Layout.rightMargin: Look.unit(16)
+            Layout.topMargin: Look.unit(8)
+            Layout.bottomMargin: Look.unit(8)
+            spacing: Look.unit(10)
 
-            RailButton {
-                objectName: "bandBack"
-                symbol: page.leaveSymbol
-                text: page.leaveText
-                onClicked: page.leave()
-            }
-            ColumnLayout {
+            LookLabel {
+                objectName: "kinoTitle"
                 Layout.fillWidth: true
-                spacing: 0
-
-                LookLabel {
-                    Layout.fillWidth: true
-                    visible: page.placeText !== ""
-                    elide: Text.ElideRight
-                    text: page.placeText
-                    color: Look.stageTextColor
-                    opacity: 0.7
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Look.unit(10)
-
-                    LookLabel {
-                        objectName: "bandTitle"
-                        // Of the page: the row's own width would feed back into its layout (upright, narrow).
-                        Layout.maximumWidth: page.current.jp ? page.width * 0.6 : page.width
-                        elide: Text.ElideRight
-                        text: page.titleText
-                        color: Look.stageTextColor
-                        font: Look.sheetTitleFont
-                    }
-                    LookLabel {
-                        objectName: "bandJapanese"
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                        text: page.current.jp || ""
-                        font: Look.japaneseFont(Look.defaultFont)
-                        color: Look.stageTextColor
-                        opacity: 0.7
-                    }
-                }
+                elide: Text.ElideRight
+                text: page.titleText
+                color: Look.stageTextColor
+                font: Look.sheetTitleFont
+            }
+            LookLabel {
+                // Of the page: the row's own width would feed back into its layout.
+                Layout.maximumWidth: page.width * 0.2
+                elide: Text.ElideRight
+                text: page.current.jp || ""
+                font: Look.japaneseFont(Look.defaultFont)
+                color: Look.stageTextColor
+                opacity: 0.7
+            }
+            NotesButton {
+                objectName: "kinoNotes"
             }
         }
-
         // The picture: VideoOutput taller than the stage and shifted up, the stage clips the bars.
         Item {
             id: stage
@@ -493,8 +610,8 @@ Item {
             visible: page.hasVideo
             readonly property real ratio: page.crop.verhaeltnis || 16 / 9
             Layout.fillWidth: true
-            Layout.fillHeight: page.onRail
-            Layout.preferredHeight: page.onRail ? -1 : width / ratio
+            Layout.fillHeight: page.landscape
+            Layout.preferredHeight: page.landscape ? -1 : width / ratio
             // Beside the list the controls keep the room they need, on a small tablet half the height,
             // less if the transport bar would leave the view (a taller head, Shinki).
             Layout.maximumHeight: page.compact ? Math.max(page.height - controlsView.neededHeight,
@@ -526,13 +643,13 @@ Item {
 
                 // The subtitle at the foot of the visible picture (this item is it: the bars are
                 // clipped). The text on a plate of the stage's ground, so that it reads on any frame.
-                // On the rail the timeline and the time lie over the picture's foot; upright the
-                // full-screen button lies at its corner: the plate keeps clear of both.
+                // Sideways the plate lies over the picture's foot; upright the full-screen button lies
+                // at its corner: the subtitles keep clear of both.
                 SubtitleTrack {
                     id: subtitle
 
                     objectName: "subtitleTrack"
-                    source: page.subtitleLanguage !== "" ? page.subtitleTracks.find(t => t.language === page.subtitleLanguage).source : ""
+                    source: page.subtitleLanguage !== "" ? page.subtitleTracks.find(t => t.language === page.subtitleLanguage)?.source ?? "" : ""
                     position: player.position
                 }
                 Rectangle {
@@ -540,11 +657,13 @@ Item {
 
                     objectName: "subtitlePlate"
                     readonly property real inset: Look.unit(8)
-                    readonly property real corner: fullButton.visible && !page.onRail ? fullButton.width + Look.unit(16) : 0
+                    readonly property real corner: fullButton.visible ? fullButton.width + Look.unit(16) : 0
                     visible: subtitle.text !== ""
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
-                    anchors.bottomMargin: page.onRail ? Look.unit(64) : Look.unit(10)
+                    // Sideways above the plate, which covers the foot of the picture.
+                    anchors.bottomMargin: page.landscape ? Math.max(Look.unit(10), stage.y + picture.y + picture.height - plate.y + Look.unit(10))
+                                                         : Look.unit(10)
                     width: Math.min(subtitleText.implicitWidth, maxWidth - 2 * inset) + 2 * inset
                     height: subtitleText.height + 2 * inset
                     readonly property real maxWidth: Math.min(parent.width * 0.9, parent.width - 2 * corner)
@@ -570,26 +689,11 @@ Item {
             LookLabel {
                 objectName: "railTitle"
                 // The small player has it on the picture too (the clickdummy's `.qname`).
-                visible: page.onRail || (page.paneColumns && page.hasVideo)
+                visible: page.paneColumns && page.hasVideo
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.margins: Kirigami.Units.largeSpacing
                 text: page.titleText + (!page.compact && page.current.attack ? "  ·  " + page.current.attack : "")
-                color: Look.stageTextColor
-                style: Text.Outline
-                styleColor: Look.stageColor
-            }
-
-            // The time at the foot of the picture, above the timeline (the clickdummy's `.qtb`).
-            LookLabel {
-                objectName: "railTime"
-                visible: page.onRail
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.rightMargin: Look.unit(14)
-                anchors.bottomMargin: Look.unit(34)
-                z: 4
-                text: page.timeText2
                 color: Look.stageTextColor
                 style: Text.Outline
                 styleColor: Look.stageColor
@@ -685,17 +789,17 @@ Item {
                 }
             }
 
-            // Into full screen (the clickdummy's `.fs`); on the rail the time holds that corner.
+            // Into full screen (the clickdummy's `.fs`); sideways the plate has the button.
             RailButton {
                 id: fullButton
 
                 objectName: "fullButton"
 
-                visible: !page.big
+                visible: !page.big && !page.landscape
                 z: 11
                 anchors.right: parent.right
                 anchors.margins: Look.unit(8)
-                y: page.onRail ? Look.unit(8) : parent.height - height - Look.unit(8)
+                y: parent.height - height - Look.unit(8)
                 symbol: "view-fullscreen"
                 text: qsTr("Full screen")
                 onClicked: page.bigRequested()
@@ -709,130 +813,236 @@ Item {
             }
         }
 
-        // Sideways: a narrow rail on the right with the buttons (the clickdummy). Phone 62 px (CD
-        // .qrail), tablet 84 px (CD .tab .qrail). With room around the picture the same buttons
-        // stand in a row below it (CD .qrow2), the time on the left. Upright: the controls below.
-        GridLayout {
-            id: rail
+        // Upright, below the picture: the timeline with its marks, where the technique stands, the time.
+        ColumnLayout {
+            objectName: "kinoScrub"
+            visible: page.upright
+            Layout.fillWidth: true
+            Layout.leftMargin: Look.unit(16)
+            Layout.rightMargin: Look.unit(16)
+            spacing: 0
 
-            objectName: "rail"
-            visible: page.landscape
-            columns: page.bands ? 5 : 1
-            Layout.preferredWidth: page.bands ? -1 : page.tabletSideways ? Look.unit(84) : Look.unit(62)
-            Layout.fillWidth: page.bands
-            Layout.fillHeight: page.onRail
-            Layout.preferredHeight: page.bands ? page.bandHeight - Layout.topMargin : -1
-            Layout.topMargin: page.bands ? railTimeline.height + Look.unit(2) : 0
-            Layout.leftMargin: page.bands ? Look.unit(24) : 0
-            Layout.rightMargin: page.bands ? Look.unit(24) : 0
-            rowSpacing: Look.unit(6)
-            columnSpacing: page.bands ? Look.unit(18) : 0
-
-            // A third of the row each side, so the transport stands in the middle.
-            Item {
-                visible: page.bands
+            Scrub {
+                objectName: "kinoTimeline"
                 Layout.fillWidth: true
-                Layout.preferredWidth: 0
-                Layout.preferredHeight: bandTime.implicitHeight
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Look.unit(10)
 
                 LookLabel {
-                    id: bandTime
-
-                    objectName: "bandTime"
-                    anchors.verticalCenter: parent.verticalCenter
+                    objectName: "kinoPlace"
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    text: page.placeText
+                    color: Look.stageTextColor
+                    opacity: 0.7
+                    font: Look.smallFont
+                }
+                LookLabel {
+                    objectName: "kinoTime"
                     text: page.timeText2
                     color: Look.stageTextColor
+                    font: Look.smallFont
                 }
             }
-            RailButton {
-                objectName: "railBack"
-                visible: !page.bands
-                Layout.alignment: Qt.AlignHCenter
-                symbol: page.leaveSymbol
-                text: page.leaveText
-                onClicked: page.leave()
-            }
-            RailButton {
-                objectName: "railFrameBack"
-                caption: page.bands ? qsTr("1 frame") : qsTr("Frame")
-                Layout.alignment: Qt.AlignCenter
-                symbol: "go-previous"
-                text: qsTr("Frame back")
-                onClicked: page.step(-1)
-            }
-            // The play button: under Shinki the red circle (the clickdummy).
-            LookPlayButton {
-                objectName: "railPlay"
-                readonly property string symbol: player.playing ? "media-playback-pause" : "media-playback-start"
-                Layout.alignment: Qt.AlignCenter
-                Layout.preferredWidth: page.bands ? Math.min(Look.unit(56), page.bandHeight - railTimeline.height - Look.unit(2)) : page.tabletSideways ? Look.unit(52) : Look.unit(40)
-                Layout.preferredHeight: Layout.preferredWidth
-                icon.name: symbol
-                icon.color: Look.shinki ? "transparent" : Look.stageTextColor   // Shinki: white on red
-                text: player.playing ? qsTr("Pause") : qsTr("Play")
-                onClicked: page.togglePlay()
-            }
-            RailButton {
-                objectName: "railFrameOn"
-                caption: page.bands ? qsTr("1 frame") : qsTr("Frame")
-                Layout.alignment: Qt.AlignCenter
-                symbol: "go-next"
-                text: qsTr("Frame on")
-                onClicked: page.step(1)
-            }
-            GridLayout {
-                columns: page.bands ? 4 : 1
-                Layout.alignment: Qt.AlignCenter
-                Layout.fillWidth: page.bands
-                Layout.preferredWidth: page.bands ? 0 : -1
-                rowSpacing: rail.rowSpacing
-                columnSpacing: Look.unit(8)
+        }
 
+        // Upright, the middle: how it was rated, the last notes and a field for today's. It scrolls
+        // when the phone is short; it never ends up empty (PlayerHistory says so).
+        Flickable {
+            id: middle
+
+            objectName: "kinoMiddle"
+            visible: page.upright
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: Look.unit(64)
+            contentHeight: middleColumn.implicitHeight + Look.unit(16)
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+
+            // The note field while it has the focus, kept in view as the height changes (keyboard).
+            property Item focusedField: null
+            function showFocusedField() {
+                if (!focusedField || !focusedField.activeFocus) {
+                    return
+                }
+                const y = focusedField.mapToItem(middleColumn, 0, 0).y
+                contentY = Math.max(0, Math.min(contentHeight - height,
+                                                y - height + focusedField.height + Look.unit(16)))
+            }
+            onHeightChanged: Qt.callLater(showFocusedField)
+            readonly property LookFocusFollow focusFollow: LookFocusFollow { flickable: middle }
+
+            ColumnLayout {
+                id: middleColumn
+
+                x: Look.unit(16)
+                y: Look.unit(8)
+                width: middle.width - Look.unit(32)
+                spacing: Look.unit(10)
+
+                PlayerHistory {
+                    objectName: "kinoHistory"
+                    Layout.fillWidth: true
+                    entry: page.current.id || ""
+                }
+                // Only upright: beside the list the one in the controls is the note field.
+                Loader {
+                    id: kinoNote
+
+                    objectName: "kinoNote"
+                    Layout.fillWidth: true
+                    active: page.upright
+
+                    sourceComponent: NoteRow {
+                        fieldOnly: true
+                        entry: page.current
+                        onFieldFocused: field => {
+                            middle.focusedField = field
+                            Qt.callLater(middle.showFocusedField)
+                        }
+                    }
+                }
+
+                // The training's playlist and the positions of a sequence below the note field, as
+                // in the controls (the picture does not give way to them).
+                PlayerTrainingList {
+                    Layout.fillWidth: true
+                    visible: page.training && page.upright
+                    playlist: page.playlist
+                    current: page.index
+                    practised: page.practisedCount
+                    onChosen: index => page.index = index
+                }
+                Loader {
+                    Layout.fillWidth: true
+                    active: page.upright
+
+                    sourceComponent: StepList {
+                        steps: page.current.steps || []
+                    }
+                }
+            }
+        }
+
+        // Upright, the thumb zone: tempo, loop and subtitles; the transport; the ratings; the way on.
+        ColumnLayout {
+            objectName: "thumbZone"
+            visible: page.upright
+            Layout.fillWidth: true
+            Layout.leftMargin: Look.unit(16)
+            Layout.rightMargin: Look.unit(16)
+            Layout.topMargin: Look.unit(6)
+            Layout.bottomMargin: Look.unit(12)
+            spacing: Look.unit(8)
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                TempoRow {}
                 Item {
-                    visible: page.bands
                     Layout.fillWidth: true
                 }
-                // The tempo: a tap goes on to the next (the clickdummy; four fields do not fit a phone).
                 LookToggle {
-                    objectName: "railTempo"
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: Look.unit(52)
+                    objectName: "thumbLoop"
                     onStage: true
-                    checkable: false
-                    text: page.tempoText
-                    Accessible.name: qsTr("Tempo")
-                    onClicked: page.setSpeed(page.tempi[(page.tempi.indexOf(player.playbackRate) + 1) % page.tempi.length])
-                }
-                // On the rail only the symbol (no word fits it in every language), in the row with
-                // the word (the clickdummy).
-                LookToggle {
-                    objectName: "railLoop"
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: page.bands ? -1 : Look.unit(52)
-                    onStage: true
+                    focusPolicy: Qt.TabFocus
                     icon.name: "media-playlist-repeat"
-                    text: page.bands ? qsTr("Loop") : ""
                     Accessible.name: qsTr("Loop")
                     checkable: false
                     checked: page.looping
                     onClicked: page.looping = !page.looping
                 }
                 SubtitleSwitch {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: page.bands ? -1 : Look.unit(52)
                     onStage: true
-                    text: page.bands ? qsTr("Subtitles") : ""
+                    focusPolicy: Qt.TabFocus
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Look.unit(8)
+
+                SoundToggle {
+                    objectName: "thumbSound"
+                    onStage: true
+                    focusPolicy: Qt.TabFocus
+                    text: ""
+                    Accessible.name: player.playbackRate < 1 ? qsTr("Silent in slow motion") : qsTr("Sound")
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                RailButton {
+                    objectName: "thumbFrameBack"
+                    symbol: "go-previous"
+                    text: qsTr("Frame back")
+                    onClicked: page.step(-1)
+                }
+                PlayButton {
+                    objectName: "thumbPlay"
+                    Layout.preferredWidth: Look.unit(56)
+                    Layout.preferredHeight: Look.unit(56)
+                }
+                RailButton {
+                    objectName: "thumbFrameOn"
+                    symbol: "go-next"
+                    text: qsTr("Frame on")
+                    onClicked: page.step(1)
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                AwakeToggle {
+                    objectName: "thumbAwake"
+                    onStage: true
+                    focusPolicy: Qt.TabFocus
+                    text: ""
+                    Accessible.name: qsTr("Screen on")
+                }
+            }
+            RatingBar {
+                objectName: "kinoRating"
+                Layout.fillWidth: true
+            }
+            // Short words: as wide as they need.
+            RowLayout {
+                objectName: "kinoNeighbours"
+                Layout.fillWidth: true
+
+                LookToggle {
+                    onStage: true
+                    checkable: false
+                    focusPolicy: Qt.TabFocus
+                    enabled: page.index > 0
+                    icon.name: "media-skip-backward"
+                    text: qsTr("Previous")
+                    Accessible.name: qsTr("Previous technique")
+                    onClicked: page.go(-1)
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                LookToggle {
+                    onStage: true
+                    checkable: false
+                    focusPolicy: Qt.TabFocus
+                    enabled: page.index < page.playlist.length - 1
+                    icon.name: "media-skip-forward"
+                    text: qsTr("Next")
+                    Accessible.name: qsTr("Next technique")
+                    onClicked: page.go(1)
                 }
             }
         }
-
         // The controls scroll when they do not fit.
         Flickable {
             id: controlsView
 
             objectName: "controlsView"
-            visible: !page.landscape
-            Layout.fillWidth: !page.landscape
+            visible: !page.kino
+            Layout.fillWidth: true
             Layout.fillHeight: true             // portrait: the picture stays at the top
             contentHeight: controls.implicitHeight + Kirigami.Units.largeSpacing * 2
             // What the controls need without the positions of a sequence (they scroll below).
@@ -992,27 +1202,11 @@ Item {
                         }
                         columns: page.paneColumns ? 1 : oneRow ? 3 : 2
 
-                        LookToggle {
+                        SoundToggle {
                             objectName: "soundSwitch"
-                            // On only where it sounds: slow motion is always silent.
-                            readonly property bool sounds: Levels.sound && player.playbackRate >= 1
-                            enabled: player.playbackRate >= 1     // a tap in slow motion would change it unseen
-                            checkable: true
-                            checked: sounds
-                            icon.name: sounds ? "audio-volume-high" : "audio-volume-muted"
-                            text: player.playbackRate < 1 ? qsTr("Silent in slow motion") : qsTr("Sound")
-                            onClicked: {
-                                checked = Qt.binding(() => sounds)
-                                Levels.setSound(Levels.sound ? Levels.Switch.Off : Levels.Switch.On)
-                            }
                         }
-                        LookToggle {
+                        AwakeToggle {
                             objectName: "awakeSwitch"
-                            checkable: true
-                            checked: Levels.awake
-                            icon.name: "brightness-high"
-                            text: qsTr("Screen on")
-                            onClicked: Levels.setAwake(Levels.awake ? Levels.Switch.Off : Levels.Switch.On)
                         }
                         SubtitleSwitch {
                             text: qsTr("Subtitles")
@@ -1121,41 +1315,13 @@ Item {
                 }
 
                 // The training's playlist: numbered, ✓ for the rated ones, a tap jumps there.
-                ColumnLayout {
-                    objectName: "trainingList"
+                PlayerTrainingList {
                     Layout.fillWidth: true
                     visible: page.training && !page.compact
-                    spacing: 0
-
-                    LookSectionLabel {
-                        Layout.fillWidth: true
-                        rule: true
-                        text: qsTr("Today's playlist · %1 of %2 practised").arg(page.practisedCount).arg(page.playlist.length)
-                    }
-                    Repeater {
-                        model: page.training && !page.compact ? page.playlist : []
-
-                        LookListRow {
-                            id: trainingRow
-
-                            required property var modelData
-                            required property int index
-                            readonly property bool done: Practice.revision >= 0 && Practice.ratedToday(modelData.id)
-
-                            objectName: "trainingRow"
-                            Layout.fillWidth: true
-                            focusOnClick: false     // Space stays with the player (play, pause)
-                            selected: trainingRow.index === page.index
-                            text: (trainingRow.index + 1) + ". " + (modelData.title || "")
-                            subtitle: [modelData.attack, modelData.gradeName].filter(x => !!x).join(" · ")
-                            trailing: LookLabel {
-                                text: trainingRow.done ? "✓" : ""
-                                color: Look.positiveTextColor
-                                Accessible.name: trainingRow.done ? qsTr("practised") : ""
-                            }
-                            onClicked: page.index = trainingRow.index
-                        }
-                    }
+                    playlist: page.playlist
+                    current: page.index
+                    practised: page.practisedCount
+                    onChosen: index => page.index = index
                 }
 
                 // The positions of a sequence (Kamae exercise): beside the list on a tablet no
@@ -1172,28 +1338,236 @@ Item {
         }
     }
 
-    // The timeline in landscape: at the foot of the picture beside the rail (the clickdummy's
-    // `.qb .qtrk`), or under the picture above the row (`.qbot`); z above the stage so a tap on the
-    // track lands on the slider and not on a gesture.
-    QQC2.Slider {
-        id: railTimeline
-
-        objectName: "railTimeline"
-        x: page.bands ? Look.unit(24) : Look.unit(10)
-        width: page.bands ? parent.width - 2 * x : parent.width - rail.width - 2 * x
-        height: page.bands ? Look.unit(20) : implicitHeight
-        y: page.bands ? stage.y + stage.height + Look.unit(2) : parent.height - height - Look.unit(10)
+    // Sideways, over the picture (design Kino): the name at the top left with a veil behind it, the
+    // notes at the top right, the ratings at the right edge and the plate at the foot. All of it
+    // stays in view; z above the stage so that a tap lands here and not on the picture's gestures.
+    Rectangle {
+        objectName: "kinoVeil"
         visible: page.landscape
-        z: 20
-        from: page.from
-        to: page.to > page.from ? page.to : page.from + 1
-        value: player.position
-        onMoved: player.position = value
-        Accessible.name: qsTr("Position")
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: kinoHeader.height + 2 * Look.unit(12)
+        z: 19
+        gradient: Gradient {
+            GradientStop { position: 0; color: Qt.alpha(Look.stageColor, 0.75) }
+            GradientStop { position: 1; color: Qt.alpha(Look.stageColor, 0) }
+        }
+    }
+    RowLayout {
+        id: kinoHeader
 
-        LookSliderSkin {
-            control: railTimeline
-            trackColor: Qt.alpha(Look.stageTextColor, 0.3)      // the clickdummy's `.qtrk`
+        objectName: "kinoHeader"
+        visible: page.landscape
+        anchors.left: parent.left
+        anchors.right: kinoNotes.left
+        anchors.top: parent.top
+        anchors.margins: Look.unit(12)
+        spacing: Look.unit(12)
+        z: 20
+
+        RailButton {
+            objectName: "railBack"
+            symbol: page.leaveSymbol
+            text: page.leaveText
+            onClicked: page.leave()
+        }
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 0
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Look.unit(10)
+
+                LookLabel {
+                    objectName: "kinoName"
+                    // Of the page: the row's own width would feed back into its layout.
+                    Layout.maximumWidth: page.current.jp ? page.width * 0.5 : page.width
+                    elide: Text.ElideRight
+                    text: page.titleText
+                    color: Look.stageTextColor
+                    font: Look.sheetTitleFont
+                }
+                LookLabel {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    text: page.current.jp || ""
+                    font: Look.japaneseFont(Look.defaultFont)
+                    color: Look.stageTextColor
+                    opacity: 0.7
+                }
+            }
+            LookLabel {
+                Layout.fillWidth: true
+                visible: page.placeText !== ""
+                elide: Text.ElideRight
+                text: page.placeText
+                color: Look.stageTextColor
+                opacity: 0.7
+            }
+        }
+    }
+    NotesButton {
+        id: kinoNotes
+
+        objectName: "kinoNotesButton"
+        visible: page.landscape
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: Look.unit(12)
+        z: 20
+    }
+
+    // The ratings between the notes button and the plate: the buttons shrink on a short phone.
+    Item {
+        id: ratingArea
+
+        objectName: "ratingArea"
+        visible: page.landscape
+        anchors.right: parent.right
+        anchors.top: kinoNotes.bottom
+        anchors.bottom: plate.top
+        anchors.margins: Look.unit(12)
+        width: ratingColumn.width
+        z: 20
+
+        RatingBar {
+            id: ratingColumn
+
+            objectName: "ratingColumn"
+            vertical: true
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
+            buttonHeight: Math.max(Look.unit(36), Math.min(Look.unit(64), (ratingArea.height - 3 * rowSpacing) / 4))
+        }
+    }
+
+    // The plate: the timeline with its marks, then time | tempo | transport | switches | next.
+    Rectangle {
+        id: plate
+
+        objectName: "plate"
+        visible: page.landscape
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: plateColumn.implicitHeight + 2 * Look.unit(10)
+        color: Qt.alpha(Look.stageColor, 0.8)
+        z: 20
+
+        ColumnLayout {
+            id: plateColumn
+
+            anchors.fill: parent
+            anchors.margins: Look.unit(10)
+            anchors.leftMargin: Look.unit(14)
+            anchors.rightMargin: Look.unit(14)
+            spacing: Look.unit(4)
+
+            Scrub {
+                objectName: "railTimeline"
+                Layout.fillWidth: true
+                Layout.preferredHeight: Look.unit(20)
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Look.unit(4)
+
+                LookLabel {
+                    objectName: "plateTime"
+                    Layout.minimumWidth: Look.unit(96)
+                    text: page.timeText2
+                    color: Look.stageTextColor
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                TempoRow {
+                    objectName: "plateTempo"
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                RailButton {
+                    objectName: "railFrameBack"
+                    symbol: "go-previous"
+                    text: qsTr("Frame back")
+                    onClicked: page.step(-1)
+                }
+                PlayButton {
+                    objectName: "railPlay"
+                    Layout.preferredWidth: Look.unit(48)
+                    Layout.preferredHeight: Look.unit(48)
+                }
+                RailButton {
+                    objectName: "railFrameOn"
+                    symbol: "go-next"
+                    text: qsTr("Frame on")
+                    onClicked: page.step(1)
+                }
+                RailButton {
+                    objectName: "plateBack2s"
+                    symbol: "media-seek-backward"
+                    text: qsTr("2 s back")
+                    onClicked: page.jump(-page.jumpMs)
+                }
+                RailButton {
+                    objectName: "plateOn2s"
+                    symbol: "media-seek-forward"
+                    text: qsTr("2 s on")
+                    onClicked: page.jump(page.jumpMs)
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                LookToggle {
+                    objectName: "railLoop"
+                    onStage: true
+                    focusPolicy: Qt.TabFocus
+                    icon.name: "media-playlist-repeat"
+                    Accessible.name: qsTr("Loop")
+                    checkable: false
+                    checked: page.looping
+                    onClicked: page.looping = !page.looping
+                }
+                SubtitleSwitch {
+                    onStage: true
+                    focusPolicy: Qt.TabFocus
+                }
+                SoundToggle {
+                    objectName: "plateSound"
+                    onStage: true
+                    focusPolicy: Qt.TabFocus
+                    text: ""
+                    Accessible.name: player.playbackRate < 1 ? qsTr("Silent in slow motion") : qsTr("Sound")
+                }
+                AwakeToggle {
+                    objectName: "plateAwake"
+                    onStage: true
+                    focusPolicy: Qt.TabFocus
+                    text: ""
+                    Accessible.name: qsTr("Screen on")
+                }
+                // Not in full screen, which has its own way out (the back button).
+                RailButton {
+                    objectName: "plateFull"
+                    visible: !page.big
+                    symbol: "view-fullscreen"
+                    text: qsTr("Full screen")
+                    onClicked: page.bigRequested()
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                RailButton {
+                    objectName: "plateNext"
+                    enabled: page.index < page.playlist.length - 1
+                    symbol: "media-skip-forward"
+                    text: qsTr("Next technique")
+                    onClicked: page.go(1)
+                }
+            }
         }
     }
 }

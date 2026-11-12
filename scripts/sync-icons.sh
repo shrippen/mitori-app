@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 # The app's icon.name values, the pause state of the player, and what Kirigami itself shows
 # (back, menus, dialog close, search, overflow).
 ICONS="configure data-error documentinfo go-next go-previous go-previous-view media-playback-pause
-media-playback-start media-playlist-repeat media-skip-backward media-skip-forward view-list-details
+media-playback-start media-playlist-repeat media-skip-backward media-skip-forward media-seek-backward media-seek-forward view-list-details
 application-menu dialog-close edit-clear go-up go-down open-menu-symbolic overflow-menu list-add edit-delete document-save view-pim-notes
 overflow-menu-left overflow-menu-right search arrow-left arrow-right window-close window-close-symbolic dialog-cancel
 view-calendar internet-services view-refresh camera-photo audio-input-microphone insert-image media-record
