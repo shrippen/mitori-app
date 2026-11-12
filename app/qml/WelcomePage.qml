@@ -80,6 +80,9 @@ Kirigami.ScrollablePage {
         StackLayout {
             objectName: "welcomeSteps"
             Layout.fillWidth: true
+            // The height of the step shown, not of the tallest (the tour): the button stands below
+            // the text.
+            Layout.preferredHeight: children[currentIndex].implicitHeight
             currentIndex: page.step
 
             ColumnLayout {

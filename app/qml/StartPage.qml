@@ -46,6 +46,9 @@ Kirigami.ScrollablePage {
     }
 
     readonly property bool wide: Tablet.wide(width, height)
+    readonly property bool tablet: width >= Tablet.minWidth && height >= Tablet.minHeight
+    // The tiles grow with a tall page (a tablet), up to this: higher they would read as stretched.
+    readonly property real tileMaxHeight: Look.unit(240)
 
     actions: [
         Kirigami.Action {
@@ -63,6 +66,10 @@ Kirigami.ScrollablePage {
     ]
 
     ColumnLayout {
+        // On a tablet the page's height at least: the tiles share what the hints leave (Kirigami
+        // gives the content only its own height). A phone keeps its tiles.
+        height: page.tablet && page.flickable ? Math.max(implicitHeight, page.flickable.height - page.topPadding - page.bottomPadding)
+                                              : implicitHeight
         spacing: Kirigami.Units.largeSpacing
 
         LookEmptyState {
@@ -124,6 +131,7 @@ Kirigami.ScrollablePage {
             readonly property int smallTiles: visibleChildren.length - (programmeTile.visible ? 1 : 0)
 
             Layout.fillWidth: true
+            Layout.fillHeight: true         // the page's height below the hints, to the tiles' maximum
             columns: page.wide ? 4 : 2
             uniformCellHeights: true    // every row as high as the highest, so no tile is smaller
             rowSpacing: Kirigami.Units.largeSpacing
@@ -137,6 +145,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 Layout.columnSpan: page.wide ? 1 : 2    // on the phone over the whole width
                 visible: Programme.errorString === ""
                 big: true
@@ -155,6 +164,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 visible: Programme.errorString === ""
                 glyph: "稽"
                 text: qsTr("Practice today")
@@ -171,6 +181,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 visible: Programme.errorString === ""
                 glyph: "試"
                 text: qsTr("Exam mode")
@@ -186,6 +197,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 visible: Programme.errorString === ""
                 glyph: "記"
                 text: qsTr("Statistics")
@@ -203,6 +215,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 glyph: "講"
                 text: qsTr("Courses")
                 hint: !next ? qsTr("Calendar and notebooks")
@@ -214,6 +227,7 @@ Kirigami.ScrollablePage {
                 objectName: "mapTile"
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 visible: Programme.errorString === ""
                 glyph: "図"
                 text: qsTr("Technique map")
@@ -226,6 +240,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 visible: Programme.errorString === ""
                 glyph: "辞"
                 text: qsTr("Glossary")
@@ -242,6 +257,7 @@ Kirigami.ScrollablePage {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1          // equal columns
+                Layout.maximumHeight: page.tileMaxHeight
                 // Last of an odd number of small tiles on the phone: over both columns, no gap.
                 Layout.columnSpan: !page.wide && tiles.smallTiles % 2 === 1 ? 2 : 1
                 visible: Library.packages.length > 0

@@ -6435,6 +6435,52 @@ TestCase {
         verify(box.right - box.left <= Tablet.pageWidth + 1, data.name + " is " + Math.round(box.right - box.left)
                + " wide, at most " + Math.round(Tablet.pageWidth) + " (" + box.first + " to " + box.last + ")")
         verify(Math.abs(box.left - (window.width - box.right)) < Look.unit(40), "in the middle: " + box.left + " / " + box.right)
+    }
+
+    // The start menu's tiles use the height of a tablet; a phone keeps its tiles.
+    function test_8s_start_fills_tablet_data() {
+        return [ { tag: "1280x800", width: 1280, height: 800, fills: true }, { tag: "800x1280", width: 800, height: 1280, fills: true },
+                 { tag: "360x640", width: 360, height: 640, fills: false }, { tag: "420x860", width: 420, height: 860, fills: false },
+                 { tag: "860x420", width: 860, height: 420, fills: false } ]
+    }
+    function test_8s_start_fills_tablet(data) {
+        window.width = data.width
+        window.height = data.height
+        wait(300)
+        const start = window.pageStack.items[0]
+        const tiles = findChild(start, "tiles")
+        const bottom = tiles.mapToItem(start, 0, tiles.height).y
+        if (data.fills) {
+            const tile = findChild(start, "todayTile")
+            verify(tile.height > tile.implicitHeight + Look.unit(16), "the tiles grow: " + tile.height + " from " + tile.implicitHeight)
+            verify(tile.height <= start.tileMaxHeight + 0.5, "no stretched bar: " + tile.height)
+            // The page's height is used, or the tiles stand at their maximum.
+            verify(bottom >= start.height - Look.unit(48) || tile.height >= start.tileMaxHeight - 0.5,
+                   "the tiles end at " + Math.round(bottom) + " of " + start.height)
+        } else {
+            compare(tiles.height, tiles.implicitHeight, "the tiles keep their size")
+        }
+    }
+
+    // The welcome page: the button stands right below the text of the step, at every size.
+    function test_8s_welcome_next_below_text_data() {
+        return [ { tag: "360x640", width: 360, height: 640 }, { tag: "1280x800", width: 1280, height: 800 },
+                 { tag: "800x1280", width: 800, height: 1280 } ]
+    }
+    function test_8s_welcome_next_below_text(data) {
+        window.width = data.width
+        window.height = data.height
+        wait(100)
+        const page = push("WelcomePage")
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        wait(300)
+        const next = findChild(page, "welcomeNext")
+        const text = findChild(page, "welcomeSteps").children[page.step]
+        const textBottom = text.mapToItem(page, 0, text.height).y
+        const nextTop = next.mapToItem(page, 0, 0).y
+        verify(nextTop - textBottom < Look.unit(40), "the button is " + Math.round(nextTop - textBottom) + " below the text")
+        const content = extent(page)
+        verify(Math.abs(next.mapToItem(window.contentItem, next.width, 0).x - content.right) < 1, "right-aligned")
     }    // The on-screen keyboard is a lower window (not a device's here): while a field of the page is
     // typed in, and until the page is high again, the live page keeps its columns, both ways.
     function test_8r_typing_holds_columns_data() {
