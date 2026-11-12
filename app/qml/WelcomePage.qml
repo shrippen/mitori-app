@@ -17,6 +17,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Welcome")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     property int step: 0
     readonly property int lastStep: 2
 
@@ -76,6 +80,9 @@ Kirigami.ScrollablePage {
         StackLayout {
             objectName: "welcomeSteps"
             Layout.fillWidth: true
+            // The height of the step shown, not of the tallest (the tour): the button stands below
+            // the text.
+            Layout.preferredHeight: children[currentIndex].implicitHeight
             currentIndex: page.step
 
             ColumnLayout {

@@ -137,6 +137,10 @@ Kirigami.ScrollablePage {
         objectName: "glossaryList"
         model: page.rows
         reuseItems: true
+        // The page's padding does not reach a list that is the page's content: on a wide window the
+        // rows keep the reading width (Tablet.pageWidth) in the middle, each at `sideGap`.
+        readonly property real sideGap: Tablet.sidePadding(width, 0)
+        readonly property real rowWidth: width - 2 * sideGap
         // The list stays at its top while the head changes height (a query's results, the speech
         // hint, letters wrapping anew), only if it stood there: not once the reader has moved it
         // (flick, wheel, keys, a letter). A head that changes height leaves contentY as it is.
@@ -157,7 +161,8 @@ Kirigami.ScrollablePage {
             required property string section
 
             objectName: "letterHeading"
-            width: ListView.view.width
+            x: list.sideGap
+            width: list.rowWidth
             topPadding: Kirigami.Units.largeSpacing
             bottomPadding: Kirigami.Units.smallSpacing
             leftPadding: Kirigami.Units.largeSpacing
@@ -179,7 +184,8 @@ Kirigami.ScrollablePage {
 
         // Hints and headings keep the page's margin; rows bring their own.
         header: ColumnLayout {
-            width: ListView.view.width
+            x: list.sideGap
+            width: list.rowWidth
             spacing: Kirigami.Units.largeSpacing
             onHeightChanged: Qt.callLater(list.toTop)
 
@@ -251,6 +257,8 @@ Kirigami.ScrollablePage {
             required property var modelData
             required property int index
 
+            // Full width, so that the view's own placing of its items does not matter: the row
+            // inside keeps the reading width.
             width: ListView.view.width
             sourceComponent: modelData.kind === "hint" ? hintRow : resultRow
 
@@ -260,6 +268,10 @@ Kirigami.ScrollablePage {
                 LookListRow {
                     id: row
 
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: list.sideGap
+                    anchors.rightMargin: list.sideGap
                     readonly property var found: rowLoader.modelData.data
                     readonly property string kind: rowLoader.modelData.kind
 
@@ -297,6 +309,10 @@ Kirigami.ScrollablePage {
                 id: hintRow
 
                 LookLabel {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: list.sideGap
+                    anchors.rightMargin: list.sideGap
                     objectName: rowLoader.modelData.data.name
                     leftPadding: Kirigami.Units.largeSpacing
                     rightPadding: Kirigami.Units.largeSpacing
@@ -310,7 +326,8 @@ Kirigami.ScrollablePage {
         }
 
         footer: ColumnLayout {
-            width: ListView.view.width
+            x: list.sideGap
+            width: list.rowWidth
             spacing: Kirigami.Units.largeSpacing
 
             LookLabel {

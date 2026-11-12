@@ -34,6 +34,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("Exam mode")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     function averageText(value) {
         return Number(value).toLocaleString(Qt.locale(), "f", 1)
     }
@@ -63,6 +67,7 @@ Kirigami.ScrollablePage {
             Layout.fillWidth: true
             visible: !!page.exam.course
             compact: true
+            wrapTitle: true
             importance: LookHint.Importance.Important
             titleText: page.exam.course ? qsTr("Planned: %1").arg(Grades.examText(page.exam)) : ""
             meta: page.exam.place || page.exam.title || ""
@@ -112,6 +117,7 @@ Kirigami.ScrollablePage {
         LookSettingRow {
             Layout.fillWidth: true
             title: qsTr("Random order")
+            narrow: false       // a switch stays at the right, also on a small phone
             hint: qsTr("off: as in the exam programme")
 
             LookSwitch {
@@ -124,6 +130,7 @@ Kirigami.ScrollablePage {
         LookSettingRow {
             Layout.fillWidth: true
             title: qsTr("Techniques from earlier grades")
+            narrow: false       // a switch stays at the right, also on a small phone
             hint: page.hasEarlier ? qsTr("2–5 samples, always first") : qsTr("first grade, none before")
 
             LookSwitch {

@@ -36,6 +36,10 @@ Kirigami.ScrollablePage {
     objectName: "techniquePicker"
     title: qsTr("Link technique")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as its search bar.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     header: LookToolBar {
         LookTextField {
             id: field

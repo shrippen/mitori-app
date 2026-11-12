@@ -5,8 +5,9 @@ import QtQuick.Controls as QQC2
 // (the buttons themselves are the style's).
 QQC2.ToolBar {
     // All four: Material sets each side itself (the safe area), so `padding` would not reach them.
-    leftPadding: Look.unit(8) + SafeArea.margins.left
-    rightPadding: Look.unit(8) + SafeArea.margins.right
+    // On a wide window the content keeps the page's reading width (Tablet.pageWidth), in the middle.
+    leftPadding: Tablet.sidePadding(width, Look.unit(8) + SafeArea.margins.left)
+    rightPadding: Tablet.sidePadding(width, Look.unit(8) + SafeArea.margins.right)
     topPadding: Look.unit(8) + SafeArea.margins.top
     bottomPadding: Look.unit(8) + SafeArea.margins.bottom
 

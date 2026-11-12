@@ -22,6 +22,10 @@ Kirigami.ScrollablePage {
 
     title: qsTr("My notebooks")
 
+    // On a wide window a page of reading width in the middle (Tablet.pageWidth), as Today.
+    leftPadding: Tablet.sidePadding(width, padding)
+    rightPadding: leftPadding
+
     ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
 
