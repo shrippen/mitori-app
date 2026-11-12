@@ -72,6 +72,7 @@ Kirigami.ScrollablePage {
             onActivated: index => page.discipline = index === 0 ? "" : Programme.disciplines[index - 1].id
         }
         LookLegend {
+            objectName: "yearsLegend"
             Layout.fillWidth: true
             model: [{ color: Look.levelColor(0), text: qsTr("no practice") },
                     { color: Look.levelColor(1), text: qsTr("1–2 techniques") },
