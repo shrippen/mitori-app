@@ -268,6 +268,12 @@ Kirigami.ScrollablePage {
                 onClicked: page.Kirigami.PageStack.push(Qt.resolvedUrl("ListAndPage.qml"), { listSource: "LessonsPage.qml" })
             }
         }
+
+        // What the tiles' maximum leaves goes below them, not between the hints and the tiles.
+        Item {
+            Layout.fillHeight: true
+            Layout.preferredHeight: 0
+        }
     }
 
     // A discipline's short name (`title`: "Aikido") and the name of its practice grade.
