@@ -2600,6 +2600,10 @@
         <source>A place per form: its number, after the dot its level (12·3). Tap a place to open the form.</source>
         <translation>Ein Platz je Form: ihre Nummer, nach dem Punkt ihre Stufe (12·3). Tippen öffnet die Form.</translation>
     </message>
+    <message>
+        <source>Tap a place to see it here.</source>
+        <translation>Tippe auf einen Platz, um ihn hier zu sehen.</translation>
+    </message>
     <message numerus="yes">
         <source>%n entries</source>
         <translation>

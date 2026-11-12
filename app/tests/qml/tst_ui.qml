@@ -3629,6 +3629,99 @@ TestCase {
         popPage()
     }
 
+    // The map on a tablet sideways: the matrix centred in its area, a tap shows the technique in the
+    // panel beside it (no sheet), a ring marks the place; Shinki Toho's forms the same.
+    function test_9k_map_wide() {
+        failOnWarning(/ReferenceError|TypeError/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k4")
+        window.width = 1280
+        window.height = 800
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => page.wide, 2000, "a wide window")
+        const panel = findChild(page, "mapPanel")
+        verify(panel.visible)
+        verify(findChild(page, "mapPanelHint").visible, "a hint before the first tap")
+        const heat = findChild(page, "techniqueMatrix")
+        const area = heat.parent
+        tryVerify(() => heat.width > 0 && area.width > heat.width, 2000, "narrower than its area")
+        const left = heat.mapToItem(area, 0, 0).x
+        const right = area.width - left - heat.width
+        verify(Math.abs(left - right) <= 1, "centred: " + left + " / " + right)
+        verify(panel.mapToItem(page, 0, 0).x > heat.mapToItem(page, heat.width, 0).x, "the panel stands right of the map")
+
+        let target = null
+        for (let r = 0; r < heat.rowCount && !target; r++) {
+            for (let c = 0; c < heat.columnCount; c++) {
+                if (!heat.isEmpty(r, c)) {
+                    target = { r: r, c: c }
+                    break
+                }
+            }
+        }
+        verify(target)
+        const data = page.shown.rows[target.r].cells[target.c]
+        const cell = heat.cellAt(target.r, target.c)
+        const sheet = findChild(page, "techniqueSheet")
+        mouseClick(cell)
+        tryVerify(() => page.paneEntry !== null)
+        compare(page.paneEntry.id, data.entry.id)
+        verify(!findChild(page, "mapPanelHint").visible)
+        compare(findChild(panel, "paneSheet").entry.id, data.entry.id)
+        verify(!sheet.visible, "no sheet on a wide window")
+        tryVerify(() => findChild(cell, "placeRing") !== null, 2000, "the tapped place is marked")
+        shot("11-map-wide")
+
+        // Shinki Toho's forms: the same panel.
+        page.discipline = "shinkitoho"
+        page.grade = "chuden"
+        const forms = findChild(page, "formGrid")
+        tryVerify(() => forms.visible && forms.rowCount > 0)
+        verify(page.paneEntry === null, "another grid, no mark")
+        waitForRendering(forms)
+        const form = forms.cellAt(0, 1)
+        mouseClick(form)
+        tryVerify(() => page.paneEntry !== null)
+        compare(page.paneEntry.id, page.shown.cells[1].entry.id)
+        verify(!sheet.visible)
+        tryVerify(() => findChild(form, "placeRing") !== null)
+        popPage()
+    }
+
+    // The same page on a phone: a tap opens the sheet, no panel.
+    function test_9k_map_phone() {
+        failOnWarning(/ReferenceError|TypeError/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k4")
+        window.width = 420
+        window.height = 860
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => !page.wide, 2000, "a phone")
+        verify(!findChild(page, "mapPanel").visible)
+        const heat = findChild(page, "techniqueMatrix")
+        let target = null
+        for (let r = 0; r < heat.rowCount && !target; r++) {
+            for (let c = 0; c < heat.columnCount; c++) {
+                if (!heat.isEmpty(r, c)) {
+                    target = { r: r, c: c }
+                    break
+                }
+            }
+        }
+        verify(target)
+        shot("11-map-phone")
+        const sheet = findChild(page, "techniqueSheet")
+        mouseClick(heat.cellAt(target.r, target.c))
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, page.shown.rows[target.r].cells[target.c].entry.id)
+        verify(page.paneEntry === null)
+        sheet.close()
+        tryVerify(() => !sheet.visible)
+        popPage()
+    }
+
     // Glossary: without a query A–Z with headings, the source below; a query finds words by
     // romaji, kanji and German next to techniques; without a Japanese voice no speaker buttons.
     SignalSpy {
