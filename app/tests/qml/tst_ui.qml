@@ -4309,7 +4309,9 @@ TestCase {
         // Every day says what it was, also one without practice.
         const dayBefore = new Date()
         dayBefore.setDate(dayBefore.getDate() - 1)
-        const yearHeat = findChild(block, "yearHeatmap")
+        // On a phone the year stands in two halves: the one that holds the day.
+        const yearHeat = findChildren(block, "yearHeatmap")
+            .find(h => h.cells.some(c => c.shown && c.iso === h.isoDay(dayBefore)))
         if (dayBefore.getFullYear() === year) {
             verify(yearHeat.tipOf(dayBefore).indexOf(qsTr("no practice")) > 0, yearHeat.tipOf(dayBefore))
         }
