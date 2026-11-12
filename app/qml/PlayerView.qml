@@ -44,6 +44,11 @@ Item {
     readonly property string subtitleLanguage: Videos.subtitlesOn !== undefined && Videos.subtitleChoice !== undefined
                                                && subtitleTracks.length >= 0 ? Videos.subtitleLanguage(video) : ""
     readonly property real subtitlePlateAlpha: 0.75
+    // The subtitles' text: a share of the picture's height, as on television, so that it grows with
+    // the picture (a tablet's is three times a phone's); never below the smallest that reads on a
+    // small upright picture. Settings → Videos scales it (Videos.subtitleScale).
+    readonly property real subtitleShare: 0.035
+    readonly property real subtitleMinPixels: Look.unit(14)
     // Where the technique stands: attack · addition · grade · position ("Shomen-uchi · 5. Kyu · 3 / 8").
     readonly property string placeText: [current.attack, current.attackExtra, current.gradeName,
                                          playlist.length > 1 ? (index + 1) + " / " + playlist.length : ""]
@@ -555,6 +560,8 @@ Item {
                         wrapMode: Text.Wrap
                         text: subtitle.text
                         color: Look.stageTextColor
+                        font.pixelSize: Math.max(page.subtitleMinPixels, subtitlePlate.parent.height * page.subtitleShare)
+                                        * Videos.subtitleScale
                     }
                 }
             }

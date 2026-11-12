@@ -25,8 +25,15 @@ class Videos : public QObject
     // ("" = none chosen: subtitleLanguage() decides). Not saved.
     Q_PROPERTY(bool subtitlesOn READ subtitlesOn NOTIFY subtitleChoiceChanged)
     Q_PROPERTY(QString subtitleChoice READ subtitleChoice NOTIFY subtitleChoiceChanged)
+    // The subtitles' size, saved (Settings → Videos), and its factor on the size the player gives
+    // them from the picture's height.
+    Q_PROPERTY(SubtitleSize subtitleSize READ subtitleSize WRITE setSubtitleSize NOTIFY subtitleSizeChanged)
+    Q_PROPERTY(qreal subtitleScale READ subtitleScale NOTIFY subtitleSizeChanged)
 
 public:
+    enum class SubtitleSize { Small, Normal, Large, Huge };
+    Q_ENUM(SubtitleSize)
+
     explicit Videos(QObject *parent = nullptr);
     explicit Videos(const Catalog &catalog, QObject *parent = nullptr);
 
@@ -35,6 +42,9 @@ public:
     bool decodersReady() const;
     bool subtitlesOn() const { return m_subtitlesOn; }
     QString subtitleChoice() const { return m_subtitleChoice; }
+    SubtitleSize subtitleSize() const;
+    void setSubtitleSize(SubtitleSize size);
+    qreal subtitleScale() const;
 
     // Whether the file of a video key ("aikido/k5") is on the device.
     Q_INVOKABLE bool available(const QString &video) const;
@@ -67,6 +77,7 @@ signals:
     void folderChanged();
     void decodersReadyChanged();
     void subtitleChoiceChanged();
+    void subtitleSizeChanged();
 
 private:
     QString path(const QString &video) const;

@@ -1087,6 +1087,31 @@ private slots:
         QVERIFY(videos.subtitles(u"subs/v"_s).isEmpty());
     }
 
+    // The subtitle size: Normal until chosen, saved for the next start; a value of another version
+    // counts as Normal.
+    void videosSubtitleSize()
+    {
+        const QString key = u"videos/subtitleSize"_s;
+        QSettings().remove(key);
+        const Catalog catalog;
+        Videos videos(catalog);
+        QCOMPARE(videos.subtitleSize(), Videos::SubtitleSize::Normal);
+        QCOMPARE(videos.subtitleScale(), 1.0);
+
+        QSignalSpy changed(&videos, &Videos::subtitleSizeChanged);
+        videos.setSubtitleSize(Videos::SubtitleSize::Large);
+        videos.setSubtitleSize(Videos::SubtitleSize::Large);
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(Videos(catalog).subtitleSize(), Videos::SubtitleSize::Large);
+        QVERIFY(videos.subtitleScale() > 1.0);
+        videos.setSubtitleSize(Videos::SubtitleSize::Small);
+        QVERIFY(videos.subtitleScale() < 1.0);
+
+        QSettings().setValue(key, 9);
+        QCOMPARE(videos.subtitleSize(), Videos::SubtitleSize::Normal);
+        QSettings().remove(key);
+    }
+
     // File names from the manifest may not leave the bundle's folder.
     void fileNamesStayInTheFolder()
     {
