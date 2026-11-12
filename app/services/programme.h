@@ -68,7 +68,8 @@ public:
     // rules and language as search(), at most `limit`.
     Q_INVOKABLE QVariantList searchComments(const QString &query, int limit = 50) const;
     // The techniques that hold `word` (a glossary word) as a whole word in their name or attack, at most
-    // `limit`, rows as in search(). Hyphenated parts are words: "Kote" names Kote-gaeshi, "Ago" nothing.
+    // `limit`, rows as in search(). Hyphens and spaces do not matter ("Kesagake" names Kesa-gake), a part of a word
+    // is none: "Kote" names Kote-gaeshi, "Ago" nothing.
     Q_INVOKABLE QVariantList techniquesNamed(const QString &word, int limit = 50) const;
     // Builds what search() compares (16 ms), when the search opens, not on the first letter.
     Q_INVOKABLE void prepareSearch() const { searchRows(); }

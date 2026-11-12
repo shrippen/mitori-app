@@ -2157,6 +2157,7 @@ TestCase {
         failOnWarning(/SearchPage.qml.*(TypeError|ReferenceError)|WordDetail.qml.*(TypeError|ReferenceError)/)
         window.width = 1280
         window.height = 800
+        wait(100)       // the page opens with the keyboard focus on the field: it takes its columns from this size
         const page = push("SearchPage")
         tryVerify(() => page.wide)
         slidIn()
@@ -2183,6 +2184,19 @@ TestCase {
         compare(after.y, before.y)
         verify(rail.current !== "A" && rail.current !== "", "the rail follows the list: " + rail.current)
         verify(rail.mapToItem(page, 0, 0).x + rail.width <= list.mapToItem(page, 0, 0).x + 0.5, "the rail is left of the list")
+
+        // The rail is for the keyboard and the screen reader too.
+        const letterA = railLetter(rail, page.usedLetters[0])
+        compare(letterA.Accessible.role, Accessible.Button)
+        verify(letterA.Accessible.name.indexOf(page.usedLetters[0]) >= 0, letterA.Accessible.name)
+        rail.forceActiveFocus()
+        tryVerify(() => rail.activeFocus)
+        const here = list.currentSection
+        keyClick(Qt.Key_Down)
+        tryVerify(() => list.currentSection !== here, 1000, "Down goes to the next letter")
+        keyClick(Qt.Key_Up)
+        tryCompare(list, "currentSection", here)
+        list.positionViewAtBeginning()
 
         // A letter without words is grey and does not react.
         const none = page.alphabet.find(l => page.usedLetters.indexOf(l) < 0)
@@ -2227,6 +2241,10 @@ TestCase {
         tryCompare(findChild(page, "detailKanji"), "text", kiri.jp)
         compare(findChild(page, "detailWord").text, "Kiri-otoshi")
         tryVerify(() => findChildren(page, "detailHit").length > 0, 2000, "techniques of the word")
+        // All of them, not the first five; none looks like another (the attack tells them apart).
+        const hits = findChildren(page, "detailHit")
+        verify(hits.length >= 10, "every technique named Kiri-otoshi: " + hits.length)
+        compare(new Set(hits.map(h => h.leadingText + h.subtitle)).size, hits.length, "subtitles: " + hits.map(h => h.leadingText + h.subtitle))
         shot("9-glossary-wide-hits")
 
         // A search keeps working, the rail goes.
@@ -6898,6 +6916,37 @@ TestCase {
         tryVerify(() => page.wide === !data.wide, 2000, "released: the low window counts")
     }
 
+    // The glossary on a tablet sideways: typing in the search keeps the three parts when the keyboard
+    // shrinks the window.
+    function test_8r_typing_holds_glossary() {
+        window.width = 1280
+        window.height = 800
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        tryVerify(() => page.wide)
+        const field = findChild(page, "searchField")
+        field.forceActiveFocus()
+        tryVerify(() => field.activeFocus)
+        const high = page.height
+        window.height = 450
+        tryVerify(() => page.height < high, 5000, "the page got lower")
+        wait(200)
+        verify(page.wide, "the keyboard leaves the three parts alone")
+        verify(findChild(page, "glossaryDetail").visible)
+        field.text = "kiri"
+        tryVerify(() => page.query === "kiri", 2000)
+        verify(page.wide, "typing keeps them")
+        window.contentItem.forceActiveFocus()
+        tryVerify(() => !field.activeFocus)
+        window.height = 800
+        wait(200)
+        verify(page.wide)
+        window.height = 450
+        tryVerify(() => !page.wide, 2000, "released: the low window counts (holding " + page.hold.holding + ", typing " + page.hold.typing + ", high " + page.hold.high + ", held " + page.hold.heldHeight + " of " + page.height + ", focus " + window.activeFocusItem + ")")
+        popPage()
+    }
+
     // Turned with the keyboard open: the tablet's real shape counts, not the low window, also once
     // the keyboard closes with the focus kept.
     function test_8r_turned_with_keyboard_open() {
@@ -7614,7 +7663,31 @@ TestCase {
         waitForRendering(list)
         verify(list.contentY > list.height, "stays at " + far + ": " + list.contentY)
 
+        // The head grows (the hints wrap in a narrower window) while the list stands where the wheel
+        // left it (it sets contentY, no flick): it stays there.
+        const header = list.headerItem
+        const before = header.height
+        list.positionViewAtBeginning()
+        list.contentY = list.originY + 3 * list.height
+        const scrolled = list.contentY
+        window.width = 320
+        tryVerify(() => header.height > before, 1000, "the head grows: " + header.height)
+        waitForRendering(list)
+        verify(list.contentY > list.height, "stays where the wheel left it (" + scrolled + "): " + list.contentY)
+        window.width = 420
+        tryVerify(() => header.height === before, 1000, "the head shrinks: " + header.height)
+
+        // At the top, the list stays at its top while the head grows.
+        list.positionViewAtBeginning()
+        window.width = 320
+        tryVerify(() => header.height > before, 1000, "the head grows at the top: " + header.height)
+        tryVerify(() => list.atYBeginning, 1000, "at the top: " + list.contentY + " from " + list.originY)
+        window.width = 420
+        tryVerify(() => list.atYBeginning, 1000, "at the top again: " + list.contentY + " from " + list.originY)
+
         // Far down, then a search: its results from the top, no rail.
+        mouseClick(railLetter(rail, far))
+        verify(list.contentY > list.height, "jumped again: " + list.contentY)
         findChild(page, "searchField").text = "ko"
         tryCompare(page, "searching", true)
         verify(!rail.visible, "words found have no letters")

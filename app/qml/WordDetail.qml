@@ -13,9 +13,10 @@ ColumnLayout {
     id: detail
 
     property var word: null
-    // Techniques that name the word as a whole word.
-    readonly property int maxHits: 5
-    readonly property var hits: word ? Programme.techniquesNamed(word.word, maxHits) : []
+    // Techniques that name the word as a whole word, one more than shown to know there are more.
+    readonly property int maxHits: 50
+    readonly property var found: word ? Programme.techniquesNamed(word.word, maxHits + 1) : []
+    readonly property var hits: found.slice(0, maxHits)
     readonly property bool canSpeak: Glossary.speech === Glossary.Ready
 
     signal techniqueRequested(var technique)
@@ -91,14 +92,24 @@ ColumnLayout {
             required property var modelData
 
             objectName: "detailHit"
+            leadingText: modelData.nr ? String(modelData.nr) : ""
             Layout.fillWidth: true
             text: modelData.title + (modelData.extra && !modelData.nr ? " (" + modelData.extra + ")" : "")
-            subtitle: modelData.disciplineName + " " + modelData.gradeName
+            // As the search's row: the attack tells apart the same technique of one grade.
+            subtitle: [modelData.disciplineName + " " + modelData.gradeName, modelData.groupName,
+                       (modelData.attack || "") + (modelData.attackExtra ? " (" + modelData.attackExtra + ")" : ""),
+                       modelData.extra]
+                      .filter(x => x).join(" · ")
             onClicked: detail.techniqueRequested(modelData)
         }
     }
 
-    Item {
-        Layout.fillHeight: true
+    LookLabel {
+        objectName: "detailHitsMore"
+        Layout.fillWidth: true
+        visible: detail.found.length > detail.maxHits
+        text: qsTr("More than %1 techniques. Search for the word to see them all.").arg(detail.maxHits)
+        color: Look.mutedTextColor
+        wrapMode: Text.Wrap
     }
 }

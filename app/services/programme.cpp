@@ -449,10 +449,23 @@ QVariantList Programme::search(const QString &query, int limit) const
 
 namespace {
 
-// Whether `words` stand in `text` one after the other.
-bool containsRun(const QStringList &text, const QStringList &words)
+// Whether `joined` (a name without spaces and hyphens) is a run of whole words of `text`:
+// "kesagake" is "kesa" "gake", not a part of "kesagakeshi".
+bool containsRun(const QStringList &text, const QString &joined)
 {
-    return std::search(text.cbegin(), text.cend(), words.cbegin(), words.cend()) != text.cend();
+    for (qsizetype from = 0; from < text.size(); ++from) {
+        QString run;
+        for (qsizetype to = from; to < text.size() && run.size() < joined.size(); ++to) {
+            run += text.at(to);
+            if (run == joined) {
+                return true;
+            }
+            if (!joined.startsWith(run)) {
+                break;
+            }
+        }
+    }
+    return false;
 }
 
 QStringList wordsOf(const QString &text)
@@ -465,15 +478,15 @@ QStringList wordsOf(const QString &text)
 QVariantList Programme::techniquesNamed(const QString &word, int limit) const
 {
     QVariantList result;
-    const QStringList words = searchKey(word).split(u' ', Qt::SkipEmptyParts);
-    if (words.isEmpty()) {
+    const QString joined = searchKey(word).remove(u' ');
+    if (joined.isEmpty()) {
         return result;
     }
     for (const SearchRow &r : searchRows()) {
         if (result.size() >= limit) {
             break;
         }
-        if (containsRun(r.titleWords, words) || containsRun(r.attackWords, words)) {
+        if (containsRun(r.titleWords, joined) || containsRun(r.attackWords, joined)) {
             result << r.row;
         }
     }

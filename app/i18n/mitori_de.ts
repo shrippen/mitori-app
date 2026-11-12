@@ -1496,6 +1496,17 @@
     </message>
 </context>
 <context>
+    <name>LetterRail</name>
+    <message>
+        <source>Letters</source>
+        <translation>Buchstaben</translation>
+    </message>
+    <message>
+        <source>Words with %1</source>
+        <translation>Wörter mit %1</translation>
+    </message>
+</context>
+<context>
     <name>ListAndPage</name>
     <message>
         <source>Choose a course from the list.</source>
@@ -3176,6 +3187,10 @@
     <message>
         <source>In techniques</source>
         <translation>In Techniken</translation>
+    </message>
+    <message>
+        <source>More than %1 techniques. Search for the word to see them all.</source>
+        <translation>Mehr als %1 Techniken. Suche nach dem Wort, um alle zu sehen.</translation>
     </message>
 </context>
 <context>

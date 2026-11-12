@@ -607,6 +607,37 @@ private slots:
         QVERIFY(programme.techniquesNamed(QStringLiteral("Kat")).isEmpty());
     }
 
+    // Hyphens and spaces do not matter, and no hit is cut off by a small default.
+    void techniquesNamedIgnoreHyphens()
+    {
+        const auto ids = [](const QVariantList &rows) {
+            QStringList out;
+            for (const QVariant &r : rows) {
+                out << r.toMap().value(QStringLiteral("id")).toString();
+            }
+            out.sort();
+            return out;
+        };
+        const QStringList pairs[] = {{QStringLiteral("Kesagake"), QStringLiteral("Kesa-gake")},
+                                     {QStringLiteral("Fukiage"), QStringLiteral("Fuki-age")},
+                                     {QStringLiteral("Kiriotoshi"), QStringLiteral("Kiri-otoshi")}};
+        for (const QStringList &pair : pairs) {
+            const QStringList joined = ids(programme.techniquesNamed(pair.at(0), 1000));
+            QVERIFY2(!joined.isEmpty(), qPrintable(pair.at(0)));
+            QCOMPARE(joined, ids(programme.techniquesNamed(pair.at(1), 1000)));
+        }
+        // Still whole words: a part of a word is none.
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kesagak")).isEmpty());
+
+        // Every discipline that has it (Aikido, Daitoryu, Shinki Toho).
+        QSet<QString> disciplines;
+        const QVariantList kiri = programme.techniquesNamed(QStringLiteral("Kiri-otoshi"), 1000);
+        for (const QVariant &r : kiri) {
+            disciplines << r.toMap().value(QStringLiteral("discipline")).toString();
+        }
+        QVERIFY2(kiri.size() >= 10 && disciplines.size() >= 2, qPrintable(QString::number(kiri.size())));
+    }
+
     // Search across disciplines: every word must match; case, accents and hyphens do not matter.
     void searchFindsTechniques()
     {

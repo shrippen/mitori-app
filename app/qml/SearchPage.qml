@@ -29,7 +29,9 @@ Kirigami.Page {
     id: page
 
     padding: 0
-    readonly property bool wide: Tablet.wide(width, height)
+    // The on-screen keyboard shrinks the window: the columns stay while a field is typed in.
+    readonly property TypingHold hold: TypingHold { target: page }
+    readonly property bool wide: hold.wide
     // The word the detail shows (wide): the one tapped, else the first found.
     property var chosen: null
     readonly property var detailWord: chosen || (glossary.length > 0 ? glossary[0] : null)
@@ -38,7 +40,7 @@ Kirigami.Page {
     readonly property var usedLetters: searching ? [] : Array.from(new Set(glossary.map(w => w.letter)))
     readonly property real railWidth: Look.unit(28)
 
-    // ScrollablePage keeps the platform's colours (Theme.inherit: false): give it the style's, and
+    // A page keeps the platform's colours (Theme.inherit: false): give it the style's, and
     // the style's page ground (Look: Kante or Shinki).
     property Item lookScope: LookScope { target: page }
     background: Rectangle { color: Look.backgroundColor }
@@ -123,7 +125,6 @@ Kirigami.Page {
             anchors.fill: parent
             placeholderText: qsTr("Kiriotoshi, 切り落とし or Hüftwurf")
             Accessible.name: qsTr("Search")
-            Component.onCompleted: forceActiveFocus()
             onTextChanged: pause.restart()
             onAccepted: page.query = text
             // Down goes into the list.
@@ -142,11 +143,18 @@ Kirigami.Page {
         onTriggered: page.query = field.text
     }
 
-    // Once the page has slid in: what the search compares is built now, not on the first letter.
+    // Once the page has slid in: the field has the focus, and what the search compares is built now,
+    // not on the first letter.
     Timer {
         running: true
         interval: Kirigami.Units.longDuration
         onTriggered: {
+            // The field takes the focus once the page has its size: TypingHold keeps the columns and
+            // the height of the moment typing starts.
+            // Not once the reader has typed or gone into the list.
+            if (field.text === "" && !list.activeFocus) {
+                field.forceActiveFocus()
+            }
             Programme.prepareSearch()
             Practice.prepareSearch()
         }
@@ -230,7 +238,7 @@ Kirigami.Page {
         Keys.onEnterPressed: page.openRow(page.rows[list.currentIndex])
         Keys.onSpacePressed: page.openRow(page.rows[list.currentIndex])
 
-        // Hints and headings keep the page's margin; rows bring their own.
+        // The hints; rows and headings bring their own margin.
         header: ColumnLayout {
             width: list.width
             spacing: Kirigami.Units.smallSpacing
@@ -416,11 +424,18 @@ Kirigami.Page {
                 color: Look.ruleColor
             }
 
-            WordDetail {
+            QQC2.ScrollView {
+                id: detailScroll
+
                 anchors.fill: parent
                 anchors.margins: Kirigami.Units.largeSpacing * 2
-                word: page.detailWord
-                onTechniqueRequested: technique => page.openRow({ kind: "technique", data: technique })
+                contentWidth: availableWidth
+
+                WordDetail {
+                    width: detailScroll.availableWidth
+                    word: page.detailWord
+                    onTechniqueRequested: technique => page.openRow({ kind: "technique", data: technique })
+                }
             }
         }
     }
