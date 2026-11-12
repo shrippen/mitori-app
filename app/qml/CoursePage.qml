@@ -184,6 +184,7 @@ Kirigami.ScrollablePage {
                     level: 2
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
+                    elide: Text.ElideRight
                     text: page.course.title || ""
                 }
                 LookLabel {

@@ -14,7 +14,7 @@
 
 #### Improved
 - Tablets and wide windows: pages keep a width that reads, in the middle, instead of running across the screen; the start tiles fill a tablet's screen; the welcome's "Next" stands below its text.
-- Small phones: long titles, the exam hint and the rating "exam-ready" show whole; the year calendar stands in two halves with its weekday names; the forms of My grades line up; the player's subtitle switch shares the row with sound and screen.
+- Small phones: long titles, the exam hint and the rating "exam-ready" show whole; the year calendar stands in two halves with its weekday names; the forms of My grades line up; the player's subtitle switch shares the row with sound and screen; a legend that wraps leaves no key alone on its last line; a notebook title longer than two lines ends in "…".
 - Glossary: on a tablet sideways a letter rail, the list and a detail of the word tapped (kanji, reading, translation, pronunciation, techniques); on a phone a slim letter rail at the edge that you can drag over, with a bubble, and headings that stay at the top. The hints above the list are shorter.
 
 #### Removed
@@ -32,7 +32,7 @@
 
 #### Verbessert
 - Tablets und breite Fenster: Seiten behalten eine lesbare Breite in der Mitte, statt über den ganzen Bildschirm zu laufen; die Kacheln der Startseite füllen ein Tablet; „Weiter“ in der Einführung steht unter dem Text.
-- Kleine Telefone: lange Titel, der Prüfungshinweis und die Einschätzung „prüfungsreif“ stehen ganz da; der Jahreskalender steht in zwei Hälften mit seinen Wochentagen; die Felder in Meine Grade fluchten; der Untertitel-Schalter im Player steht in der Zeile mit Ton und Bildschirm.
+- Kleine Telefone: lange Titel, der Prüfungshinweis und die Einschätzung „prüfungsreif“ stehen ganz da; der Jahreskalender steht in zwei Hälften mit seinen Wochentagen; die Felder in Meine Grade fluchten; der Untertitel-Schalter im Player steht in der Zeile mit Ton und Bildschirm; eine umbrechende Legende lässt keinen Eintrag allein in der letzten Zeile; ein Notizbuchtitel über zwei Zeilen endet mit „…“.
 - Glossar: auf einem Tablet quer eine Buchstabenleiste, die Liste und ein Detail zum angetippten Wort (Kanji, Lesung, Übersetzung, Aussprache, Techniken); auf dem Handy eine schmale Buchstabenleiste am Rand, über die man ziehen kann, mit Blase, und Überschriften, die oben stehen bleiben. Die Hinweise über der Liste sind kürzer.
 
 #### Entfernt

@@ -6668,6 +6668,41 @@ TestCase {
         verify(Math.abs(next.mapToItem(window.contentItem, next.width, 0).x - content.right) < 1, "right-aligned")
     }
 
+    // A legend that wraps on a small phone leaves no key alone on its last line ("10 and more").
+    function test_8s_legend_lines_balanced() {
+        window.width = 360
+        window.height = 800
+        wait(100)
+        const page = push("YearsPage")
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        const legend = findChild(page, "yearsLegend")
+        const keys = legend.children.filter(c => c.visible && c.modelData !== undefined)
+        compare(keys.length, 5)
+        const lines = {}
+        for (const k of keys) {
+            lines[k.y] = (lines[k.y] || 0) + 1
+        }
+        const counts = Object.keys(lines).sort((a, b) => a - b).map(y => lines[y])
+        verify(counts.length === 1 || counts[counts.length - 1] > 1, "keys per line: " + counts)
+        popPage()
+    }
+
+    // A notebook's title longer than two lines ends in "…" in every style (Shinki cut it off).
+    function test_8s_long_title_elides() {
+        window.width = 320
+        window.height = 568
+        wait(100)
+        const uid = plannedCourse("Aikido Kyu-Lehrgang mit Prüfung und Dan-Prüfung, Sommerlehrgang am See mit Gastlehrern aus Japan")
+        const book = push("CoursePage", { uid: uid })
+        wait(300)
+        const title = findChild(book, "courseTitle")
+        compare(title.lineCount, 2, "two lines")
+        verify(title.truncated, "cut after two lines")
+        compare(title.elide, Text.ElideRight, "ends in an ellipsis")
+        popPage()
+        verify(Courses.remove(uid))
+    }
+
     // The notebook's title and the exam hints break their lines instead of eliding, on the smallest phone.
     function test_8s_titles_wrap_small_phone() {
         window.width = 320
@@ -6787,7 +6822,7 @@ TestCase {
         const before = findChildren(findChild(page, "year_" + year), "yearHeatmap")
         compare(before.length, 2, "halves at 420")
         window.width = 400
-        wait(300)
+        tryCompare(page, "width", 400, 3000)
         const after = findChildren(findChild(page, "year_" + year), "yearHeatmap")
         verify(after.length === 2 && after.every((h, i) => h === before[i]), "the same heatmaps at 400")
         window.width = 1280
