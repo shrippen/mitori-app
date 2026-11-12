@@ -85,6 +85,8 @@ private slots:
             c.title = u"Training mit Gastlehrer"_s;
             c.first = QDate(2026, 11, 7);
             c.last = QDate(2026, 11, 6);        // before the first day: one day
+            QCOMPARE(book.entryCount(), 0);
+            QVERIFY(!book.newestEntry());
             const CourseBook::Course made = book.addCourse(c, at, u"dev"_s);
             QVERIFY2(!made.uid.isEmpty(), qPrintable(book.errorString()));
             QCOMPARE(made.last, made.first);
@@ -95,6 +97,8 @@ private slots:
             QVERIFY(book.deleteEntry(gone, at.addSecs(2)));
             QVERIFY(!book.deleteEntry(gone, at.addSecs(3)));            // already deleted
             QVERIFY(book.changeEntry(kept, u"Hüfte früher"_s, at.addSecs(4)));
+            QCOMPARE(book.entryCount(), 1);
+            QCOMPARE(book.newestEntry()->uid, kept);
         }
         CourseBook book;
         QVERIFY(book.open(path));
@@ -108,6 +112,8 @@ private slots:
         QVERIFY(entries.first().changed > entries.first().created);
         QCOMPARE(book.entryCounts().value(list.first().uid), 1);
         QVERIFY(book.deleteCourse(list.first().uid, at.addSecs(5)));
+        QCOMPARE(book.entryCount(), 0);     // the notebook's entries go with it
+        QVERIFY(!book.newestEntry());
         QVERIFY(book.courses().isEmpty());
         // Its entries go with it, as marks (a later sync must not bring them back).
         QVERIFY(book.entries(list.first().uid).isEmpty());

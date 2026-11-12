@@ -89,6 +89,9 @@ public:
     Q_INVOKABLE QVariantList allNotes() const;
     // The same as records, newest first (C++ only: AllNotes builds its rows without maps).
     QList<PracticeLog::Note> noteRecords() const;
+    // The number of notes and the newest one, from two small queries (C++ only: StartBoard).
+    int noteCount() const;
+    std::optional<PracticeLog::Note> newestNote() const;
     // Notes containing every word of `query` (case and accents do not matter), newest first:
     // {uid, entry, text, created, changed}.
     Q_INVOKABLE QVariantList searchNotes(const QString &query, int limit = 50) const;

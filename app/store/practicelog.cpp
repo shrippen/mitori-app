@@ -404,6 +404,21 @@ QList<PracticeLog::Note> PracticeLog::allNotes() const
     return result;
 }
 
+int PracticeLog::noteCount() const
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.exec(QStringLiteral("SELECT COUNT(*) FROM notes WHERE deleted = 0"));
+    return q.next() ? q.value(0).toInt() : 0;
+}
+
+std::optional<PracticeLog::Note> PracticeLog::newestNote() const
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.exec(QStringLiteral("SELECT uid, entry, text, created, changed, device, deleted, media FROM notes"
+                          " WHERE deleted = 0 ORDER BY created DESC, rowid DESC LIMIT 1"));
+    return q.next() ? std::optional<Note>(note(q)) : std::nullopt;
+}
+
 QHash<QString, PracticeLog::Note> PracticeLog::lastNotes() const
 {
     QHash<QString, Note> result;

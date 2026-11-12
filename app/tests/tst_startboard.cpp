@@ -1,4 +1,10 @@
+#include <atomic>
+#include <thread>
+
+#include <QElapsedTimer>
 #include <QFile>
+#include <QSemaphore>
+#include <QThread>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -59,10 +65,11 @@ class TstStartBoard : public QObject
         std::unique_ptr<Exam> exam;
         std::unique_ptr<Glossary> glossary;
         QStringList ids;        // Aikido 5. Kyu, in programme order
+        const Catalog *catalog = nullptr;
 
         std::unique_ptr<StartBoard> board()
         {
-            return std::make_unique<StartBoard>(programme.get(), practice.get(), grades.get(), courses.get(), exam.get(), glossary.get());
+            return std::make_unique<StartBoard>(*catalog, programme.get(), practice.get(), grades.get(), courses.get(), glossary.get());
         }
     };
 
@@ -88,6 +95,7 @@ class TstStartBoard : public QObject
         s.exam = std::make_unique<Exam>(m_catalog, 1);
         s.glossary = std::make_unique<Glossary>(m_catalog, u"mock"_s);
         s.ids = entryIds(s.programme->entries(u"aikido"_s, u"k5"_s));
+        s.catalog = &m_catalog;
         return s;
     }
 
@@ -305,25 +313,115 @@ private slots:
         QCOMPARE(tile(*again, u"glossary"_s).value(u"word"_s), word.value(u"word"_s));
     }
 
-    // The GUI thread only copies: a snapshot takes little, however much the programme holds. The
-    // programme's rows and the days are the worker's.
+    // The GUI thread only copies: a snapshot takes little, however much the programme holds and
+    // however many notes there are. The programme's rows and the days are the worker's; the notes
+    // are two small queries.
     void snapshotIsCheap()
     {
         constexpr qint64 kBudgetUs = 5000;
+        constexpr int kNotes = 2000;
         Services s = made(u"cheap"_s);
         for (const QString &id : s.ids) {
             QVERIFY(s.practice->rate(id, 2));
         }
-        QVERIFY(s.practice->addNote(s.ids[0], u"Notiz"_s));
+        for (int i = 0; i < kNotes; ++i) {
+            QVERIFY(s.practice->addNote(s.ids[i % s.ids.size()], u"Notiz %1 mit einigen Worten dazu"_s.arg(i)));
+        }
         const auto board = s.board();
         tiles(*board);
+        QCOMPARE(tile(*board, u"notes"_s).value(u"techniques"_s).toInt(), kNotes);
 
-        // The next run: the notes are read, the rest is copies.
+        // The next run reads the notes again (a note came): the count and the newest one.
         QSignalSpy spy(board.get(), &StartBoard::tilesChanged);
-        QVERIFY(s.practice->rate(s.ids[0], 3));
+        QVERIFY(s.practice->addNote(s.ids[0], u"Die neueste"_s));
         QVERIFY(spy.wait(5000));
-        qInfo() << "snapshot on the GUI thread:" << board->snapshotUs() << "us";
+        qInfo() << "snapshot on the GUI thread with" << kNotes << "notes:" << board->snapshotUs() << "us";
         QVERIFY2(board->snapshotUs() < kBudgetUs, qPrintable(QString::number(board->snapshotUs())));
+        QCOMPARE(tile(*board, u"notes"_s).value(u"techniques"_s).toInt(), kNotes + 1);
+        QCOMPARE(tile(*board, u"notes"_s).value(u"text"_s).toString(), u"Die neueste"_s);
+    }
+
+    // The derivation runs in a thread of its own; a change while a run is in flight leads to exactly
+    // one more run, and that one shows the change.
+    void followsChangeDuringRun()
+    {
+        Services s = made(u"again"_s);
+        const auto board = s.board();
+
+        std::atomic<int> runs{0};
+        std::atomic<QThread *> where{nullptr};
+        std::atomic<bool> entered{false};
+        QSemaphore release;
+        board->setRunHook([&] {
+            where = QThread::currentThread();
+            if (runs.fetch_add(1) == 0) {
+                entered = true;
+                release.acquire();      // the first run stays in flight
+            }
+        });
+
+        QTRY_VERIFY_WITH_TIMEOUT(entered.load(), 5000);
+        QVERIFY(where.load() != nullptr);
+        QVERIFY2(where.load() != QThread::currentThread(), "the derivation runs off the GUI thread");
+
+        // The change comes while the run works: the run's result is the state before it.
+        QVERIFY(s.practice->rate(s.ids[0], 3));
+        QTest::qWait(StartBoard::kPauseMs * 3);
+        QCOMPARE(runs.load(), 1);
+        release.release();
+
+        QTRY_COMPARE_WITH_TIMEOUT(tile(*board, u"programme"_s).value(u"sure"_s).toInt(), 1, 5000);
+        QTest::qWait(StartBoard::kPauseMs * 5);
+        QCOMPARE(runs.load(), 2);       // one follow-up, not more
+    }
+
+    // The services may go while a run is in flight (their order at the end of the app is not fixed):
+    // the worker reads its own copies, and the board waits for it.
+    void outlivesServices()
+    {
+        auto s = std::make_unique<Services>(made(u"life"_s));
+        auto board = s->board();
+
+        std::atomic<bool> entered{false};
+        QSemaphore release;
+        std::atomic<int> runs{0};
+        board->setRunHook([&] {
+            if (runs.fetch_add(1) == 0) {
+                entered = true;
+                release.acquire();
+            }
+        });
+        QTRY_VERIFY_WITH_TIMEOUT(entered.load(), 5000);
+
+        s.reset();                      // every service, while the worker holds the run
+        release.release();
+        QTest::qWait(StartBoard::kPauseMs * 5);
+        board.reset();                  // no crash on the way, and none at the end
+    }
+
+    // The board itself goes while its run is in flight: the destructor waits for it.
+    void destroyedDuringRun()
+    {
+        Services s = made(u"gone"_s);
+        auto board = s.board();
+
+        std::atomic<bool> entered{false};
+        QSemaphore release;
+        board->setRunHook([&] {
+            entered = true;
+            release.acquire();
+        });
+        QTRY_VERIFY_WITH_TIMEOUT(entered.load(), 5000);
+
+        QElapsedTimer timer;
+        timer.start();
+        std::thread later([&release] {
+            QThread::msleep(100);
+            release.release();
+        });
+        board.reset();                  // returns after the worker finished
+        later.join();
+        QVERIFY2(timer.elapsed() >= 90, "the destructor waited for the run");
     }
 
     // A burst of ratings is a run or two, and the tiles show the last state.

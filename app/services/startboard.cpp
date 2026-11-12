@@ -1,7 +1,6 @@
 #include "startboard.h"
 
 #include "courses.h"
-#include "exam.h"
 #include "glossary.h"
 #include "practice.h"
 #include "practicegrade.h"
@@ -25,6 +24,7 @@ constexpr int kLevels = 5;              // none, seen, with help, sure, exam-rea
 constexpr int kStreakDays = 400;        // how far back a streak counts
 constexpr int kNoteWords = 12;          // the notes tile's words of the latest note
 constexpr qint64 kNsPerUs = 1000;
+constexpr quint32 kExamSeed = 1;    // the worker draws no round: any
 constexpr int kNoPlace = -1;            // a map cell with no technique
 
 QString text(const QVariant &map, const QString &key)
@@ -65,6 +65,7 @@ struct StartSnapshot {
     // functions touch), so the GUI thread does not build them.
     const Programme *programme = nullptr;
     const Exam *exam = nullptr;
+    std::function<void()> hook;         // tests: called in the worker
     QVariantList entries;               // the entries up to the practice grade
     QVariantMap grid;                   // the map's first group
     QHash<QString, PracticeLog::Rating> latest;
@@ -314,6 +315,10 @@ QVariantMap notesTile(const StartSnapshot &s)
 // What the worker builds from the copies and the immutable catalog.
 void derive(StartSnapshot &s)
 {
+    if (s.hook) {
+        s.hook();
+    }
+
     for (const QHash<QDate, QSet<QString>> &year : s.dayEntries) {
         for (auto it = year.cbegin(); it != year.cend(); ++it) {
             s.perDay.insert(it.key(), int(it.value().size()));
@@ -358,23 +363,24 @@ QString firstWords(const QString &note)
 
 StartBoard *StartBoard::create(QQmlEngine *engine, QJSEngine *)
 {
-    return new StartBoard(engine->singletonInstance<Programme *>("Mitori", "Programme"),
+    return new StartBoard(Catalog::bundled(),
+                          engine->singletonInstance<Programme *>("Mitori", "Programme"),
                           engine->singletonInstance<Practice *>("Mitori", "Practice"),
                           engine->singletonInstance<PracticeGrade *>("Mitori", "PracticeGrade"),
                           engine->singletonInstance<Courses *>("Mitori", "Courses"),
-                          engine->singletonInstance<Exam *>("Mitori", "Exam"),
                           engine->singletonInstance<Glossary *>("Mitori", "Glossary"));
 }
 
-StartBoard::StartBoard(Programme *programme, Practice *practice, PracticeGrade *grades, Courses *courses, Exam *exam,
-                       Glossary *glossary, QObject *parent)
+StartBoard::StartBoard(const Catalog &catalog, Programme *programme, Practice *practice, PracticeGrade *grades,
+                       Courses *courses, Glossary *glossary, QObject *parent)
     : QObject(parent)
     , m_programme(programme)
     , m_practice(practice)
     , m_grades(grades)
     , m_courses(courses)
-    , m_exam(exam)
     , m_glossary(glossary)
+    , m_workProgramme(catalog)
+    , m_workExam(catalog, kExamSeed)
 {
     m_pause.setSingleShot(true);
     m_pause.setInterval(kPauseMs);
@@ -438,27 +444,23 @@ void StartBoard::done()
     }
 }
 
-// The notes: the newest of the notes on techniques and the entries of the notebooks.
+// The notes: how many, and the newest of the notes on techniques and the entries of the notebooks.
+// Two small queries each, not every note.
 void StartBoard::readNotes()
 {
     m_notes = {};
-    for (const PracticeLog::Note &n : m_practice->noteRecords()) {
-        ++m_notes.techniques;
-        if (n.created <= m_notes.at) {
-            continue;
-        }
-        m_notes.at = n.created;
-        m_notes.text = firstWords(n.text);
-        m_notes.media = !n.media.isEmpty();
+    m_notes.techniques = m_practice->noteCount();
+    m_notes.courses = m_courses->entryCount();
+
+    if (const auto n = m_practice->newestNote()) {
+        m_notes.at = n->created;
+        m_notes.text = firstWords(n->text);
+        m_notes.media = !n->media.isEmpty();
     }
-    for (const CourseBook::Entry &e : m_courses->allEntries()) {
-        ++m_notes.courses;
-        if (e.created <= m_notes.at) {
-            continue;
-        }
-        m_notes.at = e.created;
-        m_notes.text = firstWords(e.text);
-        m_notes.media = !e.media.isEmpty();
+    if (const auto e = m_courses->newestEntry(); e && e->created > m_notes.at) {
+        m_notes.at = e->created;
+        m_notes.text = firstWords(e->text);
+        m_notes.media = !e->media.isEmpty();
     }
     m_notes.at = m_notes.at.toLocalTime();
     m_notesStale = false;
@@ -492,8 +494,9 @@ StartSnapshot StartBoard::snapshot()
     }
     s.ladder = m_courses->ladder(s.discipline);
 
-    s.programme = m_programme;
-    s.exam = m_exam;
+    s.programme = &m_workProgramme;
+    s.exam = &m_workExam;
+    s.hook = m_hook;
 
     s.latest = m_practice->ratings();
     s.first = m_practice->firstDays();

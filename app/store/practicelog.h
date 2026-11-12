@@ -5,6 +5,8 @@
 #include <QList>
 #include <QString>
 
+#include <optional>
+
 #include "tablemerge.h"
 
 // The practice log in SQLite: every rating of a technique as its own entry with a time stamp
@@ -93,6 +95,10 @@ public:
     QList<Note> notes(const QString &entry) const;
     // Every note that is not deleted, newest first.
     QList<Note> allNotes() const;
+    // How many notes there are, and the newest one (the same order as allNotes()): two cheap queries
+    // for what only needs these.
+    int noteCount() const;
+    std::optional<Note> newestNote() const;
     // The newest note of every entry that has one.
     QHash<QString, Note> lastNotes() const;
 

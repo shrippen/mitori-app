@@ -7,14 +7,17 @@
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
+#include "exam.h"
 #include "practicelog.h"
+#include "programme.h"
 
+#include <functional>
+
+class Catalog;
 class Courses;
-class Exam;
 class Glossary;
 class Practice;
 class PracticeGrade;
-class Programme;
 class QJSEngine;
 class QQmlEngine;
 
@@ -68,7 +71,9 @@ public:
 
     // The app's: the engine's services.
     static StartBoard *create(QQmlEngine *engine, QJSEngine *);
-    StartBoard(Programme *programme, Practice *practice, PracticeGrade *grades, Courses *courses, Exam *exam,
+    // The worker reads the programme through a Programme and an Exam of its own, made from `catalog`
+    // and owned by the board, so that they live as long as a run: the services may go first.
+    StartBoard(const Catalog &catalog, Programme *programme, Practice *practice, PracticeGrade *grades, Courses *courses,
                Glossary *glossary, QObject *parent = nullptr);
     ~StartBoard() override;
 
@@ -77,6 +82,9 @@ public:
 
     // How long the GUI thread took for the last snapshot, in microseconds (tests, diagnosis).
     qint64 snapshotUs() const { return m_snapshotUs; }
+
+    // Tests: called by the worker at the start of each run, in its thread.
+    void setRunHook(std::function<void()> hook) { m_hook = std::move(hook); }
 
     // A run for the services' state of now (after the pause); the signals of the services do it.
     Q_INVOKABLE void refresh();
@@ -94,8 +102,12 @@ private:
     QPointer<Practice> m_practice;
     QPointer<PracticeGrade> m_grades;
     QPointer<Courses> m_courses;
-    QPointer<Exam> m_exam;
     QPointer<Glossary> m_glossary;
+
+    // What the worker reads (programme, exam): own instances, never the services'.
+    Programme m_workProgramme;
+    Exam m_workExam;
+    std::function<void()> m_hook;
 
     QTimer m_pause;
     QFutureWatcher<QVariantMap> m_watcher;

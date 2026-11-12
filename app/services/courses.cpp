@@ -374,6 +374,16 @@ QList<CourseBook::Entry> Courses::allEntries() const
     return m_open ? m_book->allEntries() : QList<CourseBook::Entry>();
 }
 
+int Courses::entryCount() const
+{
+    return m_open ? m_book->entryCount() : 0;
+}
+
+std::optional<CourseBook::Entry> Courses::newestEntry() const
+{
+    return m_open ? m_book->newestEntry() : std::nullopt;
+}
+
 QHash<QString, QString> Courses::courseTitles() const
 {
     QHash<QString, QString> titles;

@@ -386,6 +386,8 @@ private slots:
         PracticeLog log;
         QVERIFY(log.open(dir.filePath(QStringLiteral("log.sqlite"))));
         const QDateTime t = QDateTime(QDate(2026, 11, 2), QTime(18, 0), QTimeZone::UTC);
+        QCOMPARE(log.noteCount(), 0);
+        QVERIFY(!log.newestNote());
         const auto a = log.addNote(QStringLiteral("e"), QStringLiteral("  Hüfte früher drehen  "), t, QStringLiteral("phone"));
         QVERIFY(!a.uid.isEmpty());
         QCOMPARE(a.text, QStringLiteral("Hüfte früher drehen"));
@@ -397,11 +399,15 @@ private slots:
         QCOMPARE(log.notes(QStringLiteral("e")).first().text, QStringLiteral("Hüfte früher"));
         QCOMPARE(log.notes(QStringLiteral("e")).first().changed, t.addSecs(120));
         QCOMPARE(log.lastNotes().value(QStringLiteral("e")).uid, b.uid);
+        QCOMPARE(log.noteCount(), 2);
+        QCOMPARE(log.newestNote()->uid, b.uid);
         QVERIFY(log.deleteNote(b.uid, t.addSecs(180)));
         QVERIFY(!log.deleteNote(b.uid, t.addSecs(190)));
         QVERIFY(!log.changeNote(b.uid, QStringLiteral("again"), t.addSecs(200)));
         QCOMPARE(log.notes(QStringLiteral("e")).size(), 1);
         QCOMPARE(log.lastNotes().value(QStringLiteral("e")).uid, a.uid);
+        QCOMPARE(log.noteCount(), 1);
+        QCOMPARE(log.newestNote()->uid, a.uid);
     }
 
     // A log of schema 1 (ratings only) gets the notes table and keeps its ratings.
