@@ -11,12 +11,14 @@
 - Search: also finds words in the Shinki Toho comments (a hit opens the comment) and in your course notes (a hit opens the notebook at that entry).
 - Player: subtitles, where a video brings them (learning videos), shown by default; a button turns them off or picks the language. The text grows with the picture; its size is set in Settings → Videos.
 - Videos: choose where the loaded videos lie: on the device, on an SD card (Android) or in a folder of your own (Linux). A new place takes the videos along.
+- Start menu: a new look with tiles of different sizes. The programme tile is always twice as wide and high as the others and shows the grade ladder, how well the techniques up to your practice grade sit and the technique to continue with; Today shows what is due with a button that starts the training; the exam tile counts down to a planned exam with the share of its techniques you know; statistics show the last 30 days and your streak; courses the next date; the technique map as a miniature; the glossary a word a day; and a new tile the latest note. The tiles fill in after the page is drawn, so the start stays fast.
 
 #### Improved
 - Tablets and wide windows: pages keep a width that reads, in the middle, instead of running across the screen; the start tiles fill a tablet's screen; the welcome's "Next" stands below its text.
 - Small phones: long titles, the exam hint and the rating "exam-ready" show whole; the year calendar stands in two halves with its weekday names; the forms of My grades line up; the player's subtitle switch shares the row with sound and screen; a legend that wraps leaves no key alone on its last line; a notebook title longer than two lines ends in "…".
 - Glossary: on a tablet sideways a letter rail, the list and a detail of the word tapped (kanji, reading, translation, pronunciation, techniques); on a phone a slim letter rail at the edge that you can drag over, with a bubble, and headings that stay at the top. The hints above the list are shorter.
 - Technique map: on a tablet the map stands in the middle with the tapped technique beside it (rating, note, video), the place marked; the filters stand compactly at the top (on a phone too).
+- Start menu: the planned exam is no longer a hint box above the tiles; the exam tile shows it.
 
 #### Removed
 - Videos: the "Video folder" setting for video files of one's own. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
@@ -30,12 +32,14 @@
 - Suche: findet auch Wörter in den Shinki-Toho-Kommentaren (ein Treffer öffnet den Kommentar) und in deinen Lehrgangsnotizen (ein Treffer öffnet das Notizbuch an dieser Notiz).
 - Player: Untertitel, wo ein Video welche mitbringt (Lernvideos), standardmäßig an; ein Knopf schaltet sie aus oder wählt die Sprache. Die Schrift wächst mit dem Bild; ihre Größe steht in Einstellungen → Videos.
 - Videos: Wähle, wo die geladenen Videos liegen: auf dem Gerät, auf einer SD-Karte (Android) oder in einem eigenen Ordner (Linux). Ein neuer Ort nimmt die Videos mit.
+- Startmenü: ein neues Aussehen mit Kacheln unterschiedlicher Größe. Die Programmkachel ist immer doppelt so breit und hoch wie die anderen und zeigt die Gradleiter, wie sicher die Techniken bis zu deinem Übungsgrad sitzen und die Technik zum Weitermachen; Heute zeigt, was fällig ist, mit einem Knopf, der das Training startet; die Prüfungskachel zählt bis zur geplanten Prüfung herunter, mit dem Anteil der Techniken, die du sicher kannst; die Statistik zeigt die letzten 30 Tage und deine Serie; die Lehrgänge den nächsten Termin; die Landkarte als Miniatur; das Glossar ein Wort am Tag; und eine neue Kachel die letzte Notiz. Die Kacheln füllen sich, nachdem die Seite steht, damit der Start schnell bleibt.
 
 #### Verbessert
 - Tablets und breite Fenster: Seiten behalten eine lesbare Breite in der Mitte, statt über den ganzen Bildschirm zu laufen; die Kacheln der Startseite füllen ein Tablet; „Weiter“ in der Einführung steht unter dem Text.
 - Kleine Telefone: lange Titel, der Prüfungshinweis und die Einschätzung „prüfungsreif“ stehen ganz da; der Jahreskalender steht in zwei Hälften mit seinen Wochentagen; die Felder in Meine Grade fluchten; der Untertitel-Schalter im Player steht in der Zeile mit Ton und Bildschirm; eine umbrechende Legende lässt keinen Eintrag allein in der letzten Zeile; ein Notizbuchtitel über zwei Zeilen endet mit „…“.
 - Glossar: auf einem Tablet quer eine Buchstabenleiste, die Liste und ein Detail zum angetippten Wort (Kanji, Lesung, Übersetzung, Aussprache, Techniken); auf dem Handy eine schmale Buchstabenleiste am Rand, über die man ziehen kann, mit Blase, und Überschriften, die oben stehen bleiben. Die Hinweise über der Liste sind kürzer.
 - Landkarte: Auf einem Tablet steht die Karte in der Mitte, daneben die angetippte Technik mit Stand, Notiz und Video, der Ort ist markiert; die Filter stehen kompakt oben (auch auf dem Telefon).
+- Startmenü: die geplante Prüfung steht nicht mehr als Hinweis über den Kacheln, die Prüfungskachel zeigt sie.
 
 #### Entfernt
 - Videos: die Einstellung „Videoordner“ für eigene Videodateien. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.

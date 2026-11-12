@@ -1,5 +1,7 @@
 #include "catalog.h"
 
+#include <atomic>
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -12,7 +14,8 @@ constexpr QLatin1StringView kEnglishSuffix("_en");
 constexpr QLatin1StringView kGerman("de");
 constexpr QLatin1StringView kEnglish("en");
 
-Catalog::Language g_language = Catalog::Language::German;
+// Read by worker threads (StartBoard), written by the GUI thread on a change of language.
+std::atomic<Catalog::Language> g_language{Catalog::Language::German};
 
 int at(Catalog::Language language) { return int(language); }
 
@@ -48,12 +51,12 @@ QVariant english(const QVariant &value)
 
 Catalog::Language Catalog::language()
 {
-    return g_language;
+    return g_language.load();
 }
 
 void Catalog::setLanguage(Language language)
 {
-    g_language = language;
+    g_language.store(language);
 }
 
 Catalog::Language Catalog::languageOf(const QLocale &locale)
@@ -87,17 +90,17 @@ const Catalog &Catalog::bundled()
 
 QVariantList Catalog::disciplines() const
 {
-    return m_disciplines[at(g_language)];
+    return m_disciplines[at(g_language.load())];
 }
 
 QVariantList Catalog::glossary() const
 {
-    return m_glossary[at(g_language)];
+    return m_glossary[at(g_language.load())];
 }
 
 QString Catalog::glossarySource() const
 {
-    return m_glossarySource[at(g_language)];
+    return m_glossarySource[at(g_language.load())];
 }
 
 bool Catalog::load(const QString &path)

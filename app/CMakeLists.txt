@@ -124,6 +124,10 @@ qt_add_qml_module(mitori_app
         qml/LookSample.qml
         qml/AppearancePage.qml
         qml/WelcomePage.qml
+        qml/StartTile.qml
+        qml/StartRing.qml
+        qml/StartDays.qml
+        qml/StartMap.qml
         qml/Look/Look.qml
         qml/Look/LookRoles.qml
         qml/Look/LookTile.qml
@@ -253,6 +257,8 @@ qt_add_qml_module(mitori_app
         services/keyedlistmodel.cpp
         services/allnotes.h
         services/allnotes.cpp
+        services/startboard.h
+        services/startboard.cpp
         store/mediastore.h
         store/mediastore.cpp
         store/zipwriter.h
@@ -534,6 +540,26 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     add_dependencies(tst_allnotes mitori)
     add_test(NAME allnotes COMMAND tst_allnotes)
 
+    qt_add_executable(tst_startboard tests/tst_startboard.cpp services/startboard.cpp services/startboard.h
+        services/practice.cpp services/practice.h services/practicegrade.cpp services/practicegrade.h
+        services/courses.cpp services/courses.h services/programme.cpp services/programme.h
+        services/exam.cpp services/exam.h services/glossary.cpp services/glossary.h player/speaker.cpp player/speaker.h
+        store/practicelog.cpp store/practicelog.h store/tablemerge.cpp store/tablemerge.h store/schedule.cpp store/schedule.h
+        store/coursebook.cpp store/coursebook.h store/icsreader.cpp store/icsreader.h store/device.h
+        platform/devicecalendar.cpp platform/devicecalendar.h platform/sharefile.cpp platform/sharefile.h
+        catalog/catalog.cpp catalog/catalog.h store/mediastore.cpp store/mediastore.h store/zipwriter.cpp store/zipwriter.h
+        store/notebookexport.cpp store/notebookexport.h)
+    target_include_directories(tst_startboard PRIVATE catalog services store platform player)
+    target_compile_definitions(tst_startboard PRIVATE MITORI_DATEN_JSON="${MITORI_DATEN_JSON}")
+    target_link_libraries(tst_startboard PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Sql Qt6::Network Qt6::Concurrent Qt6::Test)
+    if(TARGET Qt6::TextToSpeech)
+        target_link_libraries(tst_startboard PRIVATE Qt6::TextToSpeech)
+        target_compile_definitions(tst_startboard PRIVATE MITORI_SPEECH)
+    endif()
+    set_target_properties(tst_startboard PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
+    add_dependencies(tst_startboard mitori)
+    add_test(NAME startboard COMMAND tst_startboard)
+
     qt_add_executable(tst_media tests/tst_media.cpp store/mediastore.cpp store/mediastore.h
         services/practice.cpp services/practice.h store/practicelog.cpp store/practicelog.h store/tablemerge.cpp store/tablemerge.h
         store/schedule.cpp store/schedule.h services/courses.cpp services/courses.h
@@ -621,7 +647,7 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
         target_sources(${target} PRIVATE services/programme.cpp services/programme.h)
     endforeach()
     # Programme and Videos read the Lernpakete (Lessons, from the bundle shelf).
-    foreach(target tst_programme tst_exam tst_allnotes tst_media tst_backup tst_sync tst_export tst_courses)
+    foreach(target tst_programme tst_exam tst_allnotes tst_startboard tst_media tst_backup tst_sync tst_export tst_courses)
         target_sources(${target} PRIVATE catalog/lessons.cpp catalog/lessons.h store/bundleshelf.cpp store/bundleshelf.h)
     endforeach()
     target_compile_definitions(tst_export PRIVATE MITORI_DATEN_JSON="${MITORI_DATEN_JSON}")

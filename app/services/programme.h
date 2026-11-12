@@ -52,6 +52,8 @@ public:
     //               steps [{title, jp}]: the positions of a sequence (Kamae exercise), else empty
     //   "info"      id, title, jp, text, comment   an introduction with a comment only (Kumidachi)
     //   "text"      id, title            a theory item of the exam (essay, oral exam): no video, no rating
+    // grades(), entries(), practiceEntries() and techniqueMap() read the catalog only (no cache, no
+    // Lessons): StartBoard calls them from a worker thread. Keep it so, or change StartBoard.
     Q_INVOKABLE QVariantList entries(const QString &discipline, const QString &grade) const;
     // What today's practice draws from: the entry rows of every grade up to `grade` (the practice
     // grade, see PracticeGrade), in programme order, each with `current` (part of that grade) and
