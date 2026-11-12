@@ -6,6 +6,7 @@ import Mitori
 // Style and language change while the app runs (Appearance): the window built anew, the texts
 // retranslated, nothing lost. Run by tst_ui from Leinen (ctest look) and from Shinki (look_shinki),
 // in a file of its own: tst_ui.qml holds page types of the start's style through its own uses.
+// The CPU time of a change: look_cpu and look_cpu_shinki, each a process of its own.
 TestCase {
     id: test
 
@@ -19,8 +20,9 @@ TestCase {
     readonly property string otherName: uiShinki ? "Kante" : "Shinki"
     readonly property string pages: "qrc:/qt/qml/Mitori/qml/"
     // ms CPU of the fastest of `switchRuns` changes, as tst_allnotes: the machine's other work only
-    // adds, so the fastest is the app's own cost. 1.3 times the most measured on a busy machine
-    // (load 12–17), debug build: Leinen to Shinki 584, Shinki to Kante 1496 (mostly 885–916).
+    // adds, so the fastest is the app's own cost. Most measured on a busy machine (load 9–17),
+    // debug build: Leinen to Shinki 584 (budget 1.3 times), Shinki to Kante 1618 (mostly 856–916;
+    // budget 1.2 times).
     readonly property int switchBudget: uiShinki ? 1950 : 760
     readonly property int switchRuns: 5
     readonly property string switchCase: "Look::test_style_switch_cpu"
@@ -235,7 +237,7 @@ TestCase {
     // this file's other cases, 540 alone).
     function test_style_switch_cpu() {
         if (Qt.application.arguments.indexOf(switchCase) < 0) {
-            skip("in a process of its own: ctest look_cpu")
+            skip("in a process of its own: ctest " + (uiShinki ? "look_cpu_shinki" : "look_cpu"))
         }
         openAppearance()
         let fastest = Infinity
