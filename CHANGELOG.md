@@ -12,6 +12,10 @@
 - Player: subtitles, where a video brings them (learning videos), shown by default; a button turns them off or picks the language. The text grows with the picture; its size is set in Settings → Videos.
 - Videos: choose where the loaded videos lie: on the device, on an SD card (Android) or in a folder of your own (Linux). A new place takes the videos along.
 
+#### Improved
+- Tablets and wide windows: pages keep a width that reads, in the middle, instead of running across the screen; the start tiles fill a tablet's screen; the welcome's "Next" stands below its text.
+- Small phones: long titles, the exam hint and the rating "exam-ready" show whole; the year calendar stands in two halves with its weekday names; the forms of My grades line up; the player's subtitle switch shares the row with sound and screen.
+
 #### Removed
 - Videos: the "Video folder" setting for video files of one's own. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
 
@@ -24,6 +28,10 @@
 - Suche: findet auch Wörter in den Shinki-Toho-Kommentaren (ein Treffer öffnet den Kommentar) und in deinen Lehrgangsnotizen (ein Treffer öffnet das Notizbuch an dieser Notiz).
 - Player: Untertitel, wo ein Video welche mitbringt (Lernvideos), standardmäßig an; ein Knopf schaltet sie aus oder wählt die Sprache. Die Schrift wächst mit dem Bild; ihre Größe steht in Einstellungen → Videos.
 - Videos: Wähle, wo die geladenen Videos liegen: auf dem Gerät, auf einer SD-Karte (Android) oder in einem eigenen Ordner (Linux). Ein neuer Ort nimmt die Videos mit.
+
+#### Verbessert
+- Tablets und breite Fenster: Seiten behalten eine lesbare Breite in der Mitte, statt über den ganzen Bildschirm zu laufen; die Kacheln der Startseite füllen ein Tablet; „Weiter“ in der Einführung steht unter dem Text.
+- Kleine Telefone: lange Titel, der Prüfungshinweis und die Einschätzung „prüfungsreif“ stehen ganz da; der Jahreskalender steht in zwei Hälften mit seinen Wochentagen; die Felder in Meine Grade fluchten; der Untertitel-Schalter im Player steht in der Zeile mit Ton und Bildschirm.
 
 #### Entfernt
 - Videos: die Einstellung „Videoordner“ für eigene Videodateien. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.
