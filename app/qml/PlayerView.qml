@@ -156,6 +156,8 @@ Item {
     signal backRequested()
     signal trainingEnded()
     signal notesRequested(var entry)
+    // The notes of the technique with a note begun in Kino (a short middle has no field for it).
+    signal noteDraftRequested(var entry, string text)
     signal commentRequested(var entry)
     signal bigRequested()
     signal bigLeft()
@@ -169,6 +171,11 @@ Item {
         // On creating the page there was no technique before: startAt is the caller's (full screen).
         if (shownEntry !== "") {
             startAt = -1
+        }
+        // A begun note of Kino whose field is not built (sideways, or this technique has no video):
+        // saved on its own technique, as the field does when it is there (NoteRow.onEntryChanged).
+        if (!kinoNote?.item && kinoDraft.entry !== "" && kinoDraft.entry !== current.id) {
+            keepKinoDraft()
         }
         shownEntry = current.id
         shown(current.id)
@@ -901,7 +908,6 @@ Item {
             // the style decide), so the switch follows the style and not a fixed number.
             property real needed: 0
             readonly property bool tight: needed > 0 && height < needed && !(focusedField && focusedField.activeFocus)
-                                          && page.kinoDraft.text === ""
             function measure() {
                 if (tight || !kinoNote.item) {
                     return
@@ -959,8 +965,17 @@ Item {
                             checkable: false
                             focusPolicy: Qt.TabFocus
                             icon.name: "view-pim-notes"
-                            text: qsTr("Add note")
-                            onClicked: page.notesRequested(page.current)
+                            // A note begun in the field (the middle got short): it goes on in the notes.
+                            text: page.kinoDraft.text !== "" ? qsTr("Continue note …") : qsTr("Add note")
+                            onClicked: {
+                                const draft = page.kinoDraft
+                                if (draft.text.trim() === "") {
+                                    page.notesRequested(page.current)
+                                    return
+                                }
+                                page.kinoDraft = { entry: "", text: "" }
+                                page.noteDraftRequested(page.current, draft.text)
+                            }
                         }
                     }
                 }
@@ -972,6 +987,13 @@ Item {
                     Layout.fillWidth: true
                     active: page.upright && !middle.tight
                     visible: active
+                    // Gone with the technique (the next has no video): its draft is saved for it. A
+                    // turn or a short middle keeps the same technique, and the draft stays.
+                    onActiveChanged: {
+                        if (!active && page.kinoDraft.entry !== "" && page.kinoDraft.entry !== page.current.id) {
+                            page.keepKinoDraft()
+                        }
+                    }
 
                     sourceComponent: NoteRow {
                         fieldOnly: true

@@ -1259,7 +1259,7 @@ TestCase {
     function ratingBarOf(player) {
         for (const name of ["ratingRow", "kinoRating", "ratingColumn"]) {
             const found = findChild(player, name)
-            if (found) {
+            if (found && found.visible) {
                 return found
             }
         }
@@ -1383,20 +1383,87 @@ TestCase {
         compare(fieldOf().text, "halb getippt")
         compare(Practice.notes(id).length, before)
 
-        // A short middle keeps the field while there is a draft in it.
+        // A short middle (no focus in the field): the compact form, and its button says that a note
+        // is begun; it opens the notes page with the text, in view without scrolling.
         window.width = 360
         window.height = 640
-        wait(500)
+        const middle = findChild(page, "kinoMiddle")
+        tryVerify(() => middle.tight, 3000, "short")
+        wait(300)
         compare(Practice.notes(id).length, before, "a short middle makes no note")
-        compare(fieldOf().text, "halb getippt")
+        const add = findChild(page, "kinoAddNote")
+        verify(add.visible && add.text === qsTr("Continue note …"), "the button says so: " + add.text)
+        const at = edgesIn(page, add)
+        verify(at.top >= edgesIn(page, middle).top - 0.5 && at.bottom <= edgesIn(page, middle).bottom + 0.5, "the button in view")
+        add.clicked()
+        tryVerify(() => window.pageStack.currentItem !== page, 3000, "the notes page opens")
+        const compose = findChild(window.pageStack.currentItem, "compose")
+        compare(compose.text, "halb getippt", "with the begun text")
+        compose.clear()
+        window.back()
+        tryVerify(() => window.pageStack.currentItem === page, 3000)
+        compare(Practice.notes(id).length, before)
 
-        // Leaving keeps it as a note, as it always did.
+        // Leaving keeps a begun note as a note, as it always did.
+        window.width = 420
+        window.height = 960
+        tryVerify(() => page.upright && !!fieldOf(), 5000, "the field again")
+        compare(fieldOf().text, "", "the text went to the notes page")
+        fieldOf().text = "beim Verlassen"
         window.back()
         tryCompare(window.pageStack, "depth", 1)
         compare(Practice.notes(id).length, before + 1)
         for (const n of Practice.notes(id)) {
             Practice.deleteNote(n.uid)
         }
+    }
+
+    // The player moves on while a note is begun and its field is not built (sideways, or a technique
+    // without a video): the draft is saved on its own technique and the field is empty.
+    function test_4u_player_kino_draft_moves_on_data() {
+        return [{ tag: "sideways", noVideo: false }, { tag: "no video next", noVideo: true }]
+    }
+    function test_4u_player_kino_draft_moves_on(data) {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        useFolder(standInVideos)
+        const rows = Programme.entries("aikido", "k2").filter(r => r.kind === "entry" && r.video)
+        const list = [rows[3], data.noVideo ? Object.assign({}, rows[4], { video: null }) : rows[4]]
+        window.width = 420
+        window.height = 960
+        const page = push("PlayerPage", { playlist: list, index: 0 })
+        const a = list[0].id
+        const b = list[1].id
+        const fieldOf = () => findChild(findChild(page, "kinoNote"), "noteField")
+        tryVerify(() => page.upright && !!fieldOf(), 5000, "the field")
+        slidIn()
+        const before = Practice.notes(a).length
+        const beforeB = Practice.notes(b).length
+        fieldOf().text = "fuer A"
+
+        if (!data.noVideo) {
+            window.width = 860
+            window.height = 420
+            tryVerify(() => page.headless, 3000)
+        }
+        page.go(1)
+        compare(page.current.id, b)
+        tryVerify(() => Practice.notes(a).length === before + 1, 3000, "saved on its own technique")
+        compare(Practice.lastNote(a).text, "fuer A")
+        compare(Practice.notes(b).length, beforeB, "nothing for the next one")
+
+        // Back upright with a video: the field is empty under B, too.
+        if (!data.noVideo) {
+            window.width = 420
+            window.height = 960
+            tryVerify(() => page.upright && !!fieldOf(), 5000, "the field again")
+            compare(fieldOf().text, "", "empty under the next technique")
+            compare(page.kinoDraft.text, "")
+        }
+        for (const n of Practice.notes(a)) {
+            Practice.deleteNote(n.uid)
+        }
+        window.back()
+        tryCompare(window.pageStack, "depth", 1)
     }
 
     // Kino upright (a phone): the name, the picture and its timeline, in the middle how the technique

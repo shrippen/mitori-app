@@ -1855,6 +1855,10 @@
         <translation>Notiz hinzufügen</translation>
     </message>
     <message>
+        <source>Continue note …</source>
+        <translation>Notiz fortsetzen …</translation>
+    </message>
+    <message>
         <source>Loop</source>
         <translation>Schleife</translation>
     </message>

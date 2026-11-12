@@ -42,6 +42,8 @@ Kirigami.Page {
     // Kino: the dark page with a picture; upright it has the history in the middle.
     readonly property alias kino: view.kino
     readonly property alias upright: view.upright
+    // The note begun in the field of Kino, for the UI test.
+    readonly property alias kinoDraft: view.kinoDraft
     function go(direction) { view.go(direction) }
     function jump(ms) { view.jump(ms) }
     function step(direction) { view.step(direction) }
@@ -235,6 +237,11 @@ Kirigami.Page {
         onNotesRequested: entry => {
             view.pause()
             page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
+        }
+        // A note begun in the field goes on in the notes page.
+        onNoteDraftRequested: (entry, text) => {
+            view.pause()
+            page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry, draft: text })
         }
         // The same under the comment (only beside the list: the training on a tablet).
         onCommentRequested: entry => {
