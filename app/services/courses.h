@@ -124,6 +124,9 @@ public:
     Q_INVOKABLE QVariantList searchEntries(const QString &query, int limit = 50) const;
     // Every notebook's entries, newest first, and the notebooks' titles by uid (C++ only: AllNotes).
     QList<CourseBook::Entry> allEntries() const;
+    // The number of entries and the newest one, from two small queries (C++ only: StartBoard).
+    int entryCount() const;
+    std::optional<CourseBook::Entry> newestEntry() const;
     QHash<QString, QString> courseTitles() const;
     // Text, a photo or voice note (its name from Media), or both.
     Q_INVOKABLE bool addEntry(const QString &course, const QString &text, const QString &media = {});

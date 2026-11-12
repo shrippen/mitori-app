@@ -447,6 +447,52 @@ QVariantList Programme::search(const QString &query, int limit) const
     return result;
 }
 
+namespace {
+
+// Whether `joined` (a name without spaces and hyphens) is a run of whole words of `text`:
+// "kesagake" is "kesa" "gake", not a part of "kesagakeshi".
+bool containsRun(const QStringList &text, const QString &joined)
+{
+    for (qsizetype from = 0; from < text.size(); ++from) {
+        QString run;
+        for (qsizetype to = from; to < text.size() && run.size() < joined.size(); ++to) {
+            run += text.at(to);
+            if (run == joined) {
+                return true;
+            }
+            if (!joined.startsWith(run)) {
+                break;
+            }
+        }
+    }
+    return false;
+}
+
+QStringList wordsOf(const QString &text)
+{
+    return searchKey(text).split(u' ', Qt::SkipEmptyParts);
+}
+
+} // namespace
+
+QVariantList Programme::techniquesNamed(const QString &word, int limit) const
+{
+    QVariantList result;
+    const QString joined = searchKey(word).remove(u' ');
+    if (joined.isEmpty()) {
+        return result;
+    }
+    for (const SearchRow &r : searchRows()) {
+        if (result.size() >= limit) {
+            break;
+        }
+        if (containsRun(r.titleWords, joined) || containsRun(r.attackWords, joined)) {
+            result << r.row;
+        }
+    }
+    return result;
+}
+
 QVariantList Programme::searchComments(const QString &query, int limit) const
 {
     QVariantList result;
@@ -497,7 +543,9 @@ const QList<Programme::SearchRow> &Programme::searchRows() const
         if (!c.isEmpty()) {
             comment.emplace(c.value(QStringLiteral("titel")).toString() + u' ' + c.value(QStringLiteral("text")).toString());
         }
-        m_searchRows.append({row, SearchText((fields + stepFields).join(u' ')), comment});
+        m_searchRows.append({row, SearchText((fields + stepFields).join(u' ')), comment,
+                             wordsOf(row.value(QStringLiteral("title")).toString()),
+                             wordsOf(row.value(QStringLiteral("attack")).toString())});
         return true;
     });
     return m_searchRows;

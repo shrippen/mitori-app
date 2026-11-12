@@ -7,6 +7,8 @@
 #include <QString>
 #include <QStringList>
 
+#include <optional>
+
 #include "tablemerge.h"
 
 // Course notebooks and the user's grades in SQLite (a file of their own next to the practice log):
@@ -110,6 +112,9 @@ public:
     QList<Entry> entries(const QString &course) const;
     // The entries of every notebook that is not deleted, newest first (All notes).
     QList<Entry> allEntries() const;
+    // How many entries there are in the notebooks, and the newest one (as allEntries()).
+    int entryCount() const;
+    std::optional<Entry> newestEntry() const;
     // How many entries each notebook has: {course uid: count}.
     QHash<QString, int> entryCounts() const;
 

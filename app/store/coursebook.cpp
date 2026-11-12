@@ -616,6 +616,23 @@ QList<CourseBook::Entry> CourseBook::allEntries() const
     return result;
 }
 
+int CourseBook::entryCount() const
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.exec(QStringLiteral("SELECT COUNT(*) FROM entries e JOIN courses c ON c.uid = e.course"
+                          " WHERE e.deleted = 0 AND c.deleted = 0"));
+    return q.next() ? q.value(0).toInt() : 0;
+}
+
+std::optional<CourseBook::Entry> CourseBook::newestEntry() const
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.exec(QStringLiteral("SELECT e.uid, e.course, e.text, e.created, e.changed, e.device, e.deleted, e.media FROM entries e"
+                          " JOIN courses c ON c.uid = e.course WHERE e.deleted = 0 AND c.deleted = 0"
+                          " ORDER BY e.created DESC, e.rowid DESC LIMIT 1"));
+    return q.next() ? std::optional<Entry>(entry(q)) : std::nullopt;
+}
+
 QHash<QString, int> CourseBook::entryCounts() const
 {
     QHash<QString, int> result;

@@ -4,7 +4,12 @@ Ergänzt `app-konzept.html` (Stand 2). Stand 01.11.2026.
 
 ## Aufbau
 
-- Startmenü: **Variante 1** (Kacheln mit großer Programm-Kachel).
+- Startmenü: **Bento (Variante C)** (Owner, 12.11.2026, gewählt auf dem Design-Canvas; löst Variante 1 ab):
+  Kacheln unterschiedlicher Größe, die Programm-Kachel immer 2 × 2 (auf jeder Breite), Heute 2 × 1, die
+  übrigen 1 × 1; jede Kachel zeigt ihren Inhalt (Programm: Gradleiter, Stand, „Weiter mit“; Heute: fällige
+  Techniken mit Start; Prüfung: Countdown und Anteil sicherer Techniken, ersetzt den Hinweis über den Kacheln;
+  Statistik, Lehrgänge, Landkarte, Glossar, Notizen). Die Werte werden asynchron geladen (`StartBoard`):
+  die Kacheln stehen sofort, die Werte kommen nach. Der Clickdummy zeigt Variante 1 und ist hier überholt.
 - Jede Einzelansicht wird als Clickdummy durchgespielt (`clickdummy/index.html`, nur Theme Shinki),
   Fragen und Antworten je Ansicht stehen dort rechts neben dem Telefon.
 

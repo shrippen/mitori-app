@@ -190,7 +190,7 @@ TestCase {
         compare(window.pageStack.currentItem.title, "Mitori 見取り")
         // The tiles in the decided order: Today, Exam, Statistics, Courses (clickdummy "Startmenü").
         const start = window.pageStack.currentItem
-        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile"]
+        const order = ["todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "notesTile"]
         const items = order.map(n => findChild(start, n))
         const at = it => it.mapToItem(start, 0, 0)
         for (let i = 1; i < items.length; i++) {
@@ -200,6 +200,8 @@ TestCase {
         // The discipline by its short name (clickdummy: "Aikido · 5. Kyu · 7 of 20 exam-ready").
         const short = Programme.disciplines.find(d => d.id === Programme.discipline).kurzname
         verify(findChild(start, "programmeTile").hint.startsWith(short + " · "), findChild(start, "programmeTile").hint)
+        // The tiles fill in after the page is drawn (StartBoard, off the GUI thread).
+        tryVerify(() => order.concat("programmeTile").every(n => findChild(start, n).filled))
         verify(findChild(start, "todayTile").hint.endsWith(" · " + short), findChild(start, "todayTile").hint)
         shot("1-start")
     }
@@ -2326,6 +2328,178 @@ TestCase {
         popPage()
     }
 
+    // Glossary on a tablet sideways: a rail that stays, the list, the detail of the word tapped.
+    function test_9_glossary_wide() {
+        failOnWarning(/SearchPage.qml.*(TypeError|ReferenceError)|WordDetail.qml.*(TypeError|ReferenceError)/)
+        window.width = 1280
+        window.height = 800
+        wait(100)       // the page opens with the keyboard focus on the field: it takes its columns from this size
+        const page = push("SearchPage")
+        tryVerify(() => page.wide)
+        slidIn()
+        const list = findChild(page, "glossaryList")
+        const rail = findChild(page, "letterRail")
+        const detail = findChild(page, "glossaryDetail")
+        tryVerify(() => rail.visible && detail.visible)
+        verify(!findChild(page, "letterRailPhone").visible)
+        tryCompare(list, "count", Glossary.words.length)
+        verify(page.usedLetters.length > 10)
+        verify(page.usedLetters.every(l => page.alphabet.indexOf(l) >= 0), "every section is a letter of A–Z")
+
+        // Before a tap the pane shows the first word.
+        compare(findChild(detail, "detailWord").text, Glossary.words[0].word)
+        compare(findChild(page, "detailKanji").visible, Glossary.words[0].jp !== "")
+
+        // The rail stays in place, and follows the section in view.
+        const before = rail.mapToItem(page, 0, 0)
+        const far = page.usedLetters[Math.floor(page.usedLetters.length * 0.6)]     // the last sections are too short to reach the top
+        list.contentY = list.originY + 3 * list.height
+        waitForRendering(list)
+        const after = rail.mapToItem(page, 0, 0)
+        compare(after.x, before.x)
+        compare(after.y, before.y)
+        verify(rail.current !== "A" && rail.current !== "", "the rail follows the list: " + rail.current)
+        verify(rail.mapToItem(page, 0, 0).x + rail.width <= list.mapToItem(page, 0, 0).x + 0.5, "the rail is left of the list")
+
+        // The rail is for the keyboard and the screen reader too.
+        const letterA = railLetter(rail, page.usedLetters[0])
+        compare(letterA.Accessible.role, Accessible.Button)
+        verify(letterA.Accessible.name.indexOf(page.usedLetters[0]) >= 0, letterA.Accessible.name)
+        rail.forceActiveFocus()
+        tryVerify(() => rail.activeFocus)
+        const here = list.currentSection
+        keyClick(Qt.Key_Down)
+        tryVerify(() => list.currentSection !== here, 1000, "Down goes to the next letter")
+        keyClick(Qt.Key_Up)
+        tryCompare(list, "currentSection", here)
+        list.positionViewAtBeginning()
+
+        // A letter without words is grey and does not react.
+        const none = page.alphabet.find(l => page.usedLetters.indexOf(l) < 0)
+        if (none !== undefined) {
+            verify(!railLetter(rail, none).has)
+            const was = list.contentY
+            mouseClick(railLetter(rail, none))
+            wait(100)
+            compare(list.contentY, was)
+        }
+
+        // A tap on a letter goes to its section; the letter lights up.
+        mouseClick(railLetter(rail, far))
+        tryCompare(list, "currentSection", far)
+        tryCompare(rail, "current", far)
+        verify(railLetter(rail, far).isCurrent)
+        verify(list.contentY > list.height)
+        const idx = page.glossary.findIndex(w => w.letter === far)
+        tryVerify(() => Math.abs(list.itemAtIndex(idx).y - list.contentY) < list.height / 4, 1000, "the section is at the top")
+
+        // A tap on a word shows it in the pane and does not say it.
+        saySpy.clear()
+        list.positionViewAtBeginning()
+        const row = findChildren(list, "glossaryRow").find(r => r.found.word === "Ago")
+        tryVerify(() => !!row)
+        mouseClick(row, row.width / 3, row.height / 2)
+        tryCompare(findChild(page, "detailWord"), "text", "Ago")
+        compare(findChild(page, "detailMeaning").text, row.found.meaning)
+        compare(saySpy.count, 0)
+        // Ago is no whole word of any technique's name: no section.
+        compare(findChildren(page, "detailHit").length, 0)
+        verify(!findChild(page, "detailHitsHead").visible)
+        // The kanji at the row's end are not smaller than the row's word.
+        const kanji = findChild(row, "rowKanji")
+        const name = allChildren(row).find(c => c.text === "Ago" && c.objectName !== "rowKanji")
+        verify(kanji.visible && !!name, "kanji " + kanji.visible + " name " + name + " " + allChildren(row).filter(c => c.text !== undefined).map(c => c.text).join("|"))
+        verify(kanji.font.pixelSize >= name.font.pixelSize && kanji.font.pointSize >= name.font.pointSize,
+               "kanji " + kanji.font.pointSize + "/" + kanji.font.pixelSize + " word " + name.font.pointSize + "/" + name.font.pixelSize)
+        shot("9-glossary-wide")
+        const kiri = Glossary.words.find(w => w.word === "Kiri-otoshi")
+        page.chosen = kiri
+        tryCompare(findChild(page, "detailKanji"), "text", kiri.jp)
+        compare(findChild(page, "detailWord").text, "Kiri-otoshi")
+        tryVerify(() => findChildren(page, "detailHit").length > 0, 2000, "techniques of the word")
+        // All of them, not the first five; none looks like another (the attack tells them apart).
+        const hits = findChildren(page, "detailHit")
+        verify(hits.length >= 10, "every technique named Kiri-otoshi: " + hits.length)
+        // The addition stands once: in the title or, with a form number, in the subtitle.
+        for (const h of hits) {
+            const named = h.text.indexOf("(") >= 0 ? h.text.slice(h.text.indexOf("(") + 1, -1) : ""
+            verify(named === "" || h.subtitle.indexOf(named) < 0, "twice: " + h.text + " / " + h.subtitle)
+        }
+        compare(new Set(hits.map(h => h.leadingText + h.subtitle)).size, hits.length, "subtitles: " + hits.map(h => h.leadingText + h.subtitle))
+        shot("9-glossary-wide-hits")
+
+        // A search keeps working, the rail goes.
+        findChild(page, "searchField").text = "hüftwurf"
+        tryCompare(page, "searching", true)
+        tryVerify(() => !rail.visible)
+        verify(page.glossary.some(w => w.word === "Koshi-nage"))
+        tryCompare(findChild(page, "detailWord"), "text", page.glossary[0].word)
+        popPage()
+    }
+
+    // Glossary on a phone: the rail at the right edge, a tap or a drag over it jumps.
+    function test_9_glossary_phone() {
+        failOnWarning(/SearchPage.qml.*(TypeError|ReferenceError)|LetterRail.qml.*(TypeError|ReferenceError)/)
+        window.width = 360
+        window.height = 800
+        const page = push("SearchPage")
+        slidIn()
+        verify(!page.wide)
+        const list = findChild(page, "glossaryList")
+        const rail = findChild(page, "letterRailPhone")
+        tryVerify(() => rail.visible)
+        verify(!findChild(page, "glossaryDetail").visible)
+        tryCompare(list, "count", Glossary.words.length)
+        tryCompare(page, "width", 360)
+        tryVerify(() => Math.abs(rail.mapToItem(page, rail.width, 0).x - page.width) < 1, 2000,
+                  "the rail at the right edge: " + rail.mapToItem(page, rail.width, 0).x + " of " + page.width)
+        verify(rail.mapToItem(page, 0, 0).x > list.mapToItem(page, 0, 0).x + list.width / 2, "right of the list")
+        verify(findChildren(rail, "railLetter").length === page.alphabet.length, "all letters")
+        verify(list.headerItem.height < list.height / 4, "the hints stay short: " + list.headerItem.height)
+
+        // Pinned heading: the section's letter stays at the top while its rows scroll.
+        const mid = page.usedLetters[Math.floor(page.usedLetters.length / 2)]
+        mouseClick(railLetter(rail, mid))
+        tryCompare(list, "currentSection", mid)
+        list.contentY += list.height / 3
+        waitForRendering(list)
+        compare(list.currentSection, mid)
+        const heads = findChildren(list, "letterHeading").filter(h => h.text === mid)
+        verify(heads.some(h => h.mapToItem(list, 0, 0).y <= 1 && h.mapToItem(list, 0, 0).y >= -1), "the heading is pinned at the top")
+        shot("9-glossary-phone")
+
+        // A drag over the rail jumps, a bubble shows the letter beside the finger.
+        const first = page.usedLetters[0]
+        const last = page.usedLetters[Math.floor(page.usedLetters.length * 0.6)]
+        const start = railLetter(rail, first)
+        const stop = railLetter(rail, last)
+        const bubble = findChild(rail, "railBubble")
+        mousePress(start, start.width / 2, start.height / 2)
+        tryCompare(list, "currentSection", first)
+        verify(bubble.visible, "a bubble while dragging")
+        const sy = start.mapToItem(rail, 0, 0).y
+        const ey = stop.mapToItem(rail, 0, 0).y
+        for (let i = 1; i <= 10; i++) {
+            mouseMove(start, start.width / 2, start.height / 2 + (ey - sy) * i / 10)
+        }
+        tryCompare(list, "currentSection", last)
+        verify(bubble.x + bubble.width <= 0, "the bubble beside the rail")
+        shot("9-glossary-phone-drag")
+        mouseRelease(start, start.width / 2, start.height / 2 + (ey - sy))
+        verify(!bubble.visible)
+
+        // A tap on a word says it, as before.
+        saySpy.clear()
+        list.positionViewAtBeginning()
+        const inView = () => findChildren(list, "glossaryRow").find(r => r.mapToItem(list, 0, 0).y > list.headerItem.height
+                                                                         && r.mapToItem(list, 0, r.height).y < list.height)
+        tryVerify(() => !!inView())
+        const row = inView()
+        mouseClick(row, row.width / 3, row.height / 2)
+        compare(saySpy.count, 1)
+        popPage()
+    }
+
     // Search: techniques across disciplines and own notes; a result opens the sheet.
     function test_9_search() {
         // A reused row between notes, words and techniques reads its kind and data together.
@@ -2439,7 +2613,7 @@ TestCase {
         // The first day as a local day (no time zone moves it to the day before).
         compare(rows[0].firstDay.getDate(), new Date(Date.now() + 12 * 86400000).getDate())
         compare(findChildren(page, "notebookRow").length, 0, "the list lives on its own page")
-        verify(findChild(window.pageStack.items[0], "coursesTile").hint.indexOf("Siebeldingen") === 0)
+        tryVerify(() => findChild(window.pageStack.items[0], "coursesTile").hint.indexOf("Siebeldingen") === 0)
         shot("14-courses")
 
         // "My notebooks" says how many, and opens the list: empty, it says how to make one.
@@ -2805,9 +2979,9 @@ TestCase {
         const start = window.pageStack.items[0]
         tryCompare(Library.packages, "length", 0)
         verify(!findChild(start, "lessonsTile").visible)
-        // 6 small tiles in 2 columns: none spans both.
+        // 7 small tiles (today's practice spans both columns): the rest in pairs.
         const tiles = findChild(start, "tiles")
-        compare(tiles.smallTiles, 6)
+        compare(tiles.smallTiles, 7)
         verify(findChild(start, "glossaryTile").width < tiles.width)
         push("LessonsPage")
         tryVerify(() => window.pageStack.depth === 2)
@@ -2836,10 +3010,11 @@ TestCase {
         const start = window.pageStack.items[0]
         const tile = findChild(start, "lessonsTile")
         tryVerify(() => tile.visible)
-        // Last of 7 small tiles on the phone: after the glossary, over both columns.
-        const glossary = findChild(start, "glossaryTile")
-        verify(tile.mapToItem(start, 0, 0).y > glossary.mapToItem(start, 0, 0).y)
-        compare(tile.width, findChild(start, "tiles").width)
+        // Last of 8 small tiles on the phone: after the notes, over both columns.
+        const glossary = findChild(start, "notesTile")
+        tryVerify(() => tile.mapToItem(start, 0, 0).y > glossary.mapToItem(start, 0, 0).y)
+        tryCompare(tile, "width", findChild(start, "tiles").width)
+        wait(200)       // the rows settle with the new tile
         compare(tile.hint, qsTr("%n package(s)", "", 1) + " · " + qsTr("%n technique(s)", "", 4))
         slidIn()
         clickTile(tile)
@@ -3183,10 +3358,10 @@ TestCase {
         shot("16g-lessons-tablet-sheet", true)
         sheet.close()
         tryVerify(() => !sheet.opened)
-        // The tile, four to a row: eight tiles fill two rows.
+        // The tile, four to a row: after the notes, in a row of its own.
         popPage()
         const tiles = findChild(start, "tiles")
-        compare(tiles.smallTiles, 7)
+        compare(tiles.smallTiles, 8)
         compare(findChild(start, "lessonsTile").width, findChild(start, "glossaryTile").width)
     }
 
@@ -3601,12 +3776,13 @@ TestCase {
         popPage()
 
         const start = window.pageStack.items[0]
-        // CD-5 shot: the start menu with the planned exam hint box above the tiles.
+        // CD-5 shot: the start menu with the planned exam's countdown on the exam tile.
+        tryVerify(() => findChild(start, "examCountdown").visible)
         shot("1b-start-planned-exam")
-        // The planned exam is its own hint box (clickdummy "Startmenü"), not on a tile.
-        verify(findChild(start, "plannedExam").visible)
-        verify(findChild(start, "plannedExam").text.indexOf(qsTr("Exam %1 in %n day(s)", "", 12).arg("Aikido 4. Kyu")) >= 0,
-               findChild(start, "plannedExam").text)
+        compare(findChild(start, "examDays").text, qsTr("in %n day(s)", "", 12))
+        compare(findChild(start, "examTile").t.name, "Aikido 4. Kyu")
+        verify(findChild(start, "examRing").visible)
+        verify(!findChild(start, "plannedExam"), "the countdown is the exam tile's, no hint box above the tiles")
         Programme.discipline = "aikido"
         const today = push("TodayPage")
         verify(findChild(today, "plannedHint").visible)
@@ -3684,7 +3860,15 @@ TestCase {
         slidIn()
         compare(page.grade, "k4")
         verify(page.matrix)
-        compare(findChildren(page, "gradeChip").length, Programme.grades("aikido").length)
+        // The grade is one control: another grade changes the grids.
+        const gradeBox = findChild(page, "gradeBox")
+        compare(gradeBox.count, Programme.grades("aikido").length)
+        const gridsBefore = page.grids
+        gradeBox.activated(0)
+        tryCompare(page, "grade", page.grades[0].id)
+        verify(JSON.stringify(page.grids) !== JSON.stringify(gridsBefore), "another grade, other grids")
+        page.grade = "k4"
+        tryCompare(gradeBox, "currentIndex", page.grades.findIndex(g => g.id === "k4"))
 
         // Techniques × attacks (KanteHeatGrid); combinations not in the programme are gaps.
         const heat = findChild(page, "techniqueMatrix")
@@ -3799,6 +3983,113 @@ TestCase {
         for (const name of multi.names)
             verify(heat.tipOf(multi.r, multi.c).indexOf(name) > 0, heat.tipOf(multi.r, multi.c))
         shot("11-map-tablet")
+        popPage()
+    }
+
+    // The map on a tablet sideways: the matrix centred in its area, a tap shows the technique in the
+    // panel beside it (no sheet), a ring marks the place; Shinki Toho's forms the same.
+    function test_9k_map_wide() {
+        failOnWarning(/ReferenceError|TypeError/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k4")
+        window.width = 1280
+        window.height = 800
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => page.wide, 2000, "a wide window")
+        const panel = findChild(page, "mapPanel")
+        verify(panel.visible)
+        verify(findChild(page, "mapPanelHint").visible, "a hint before the first tap")
+        const heat = findChild(page, "techniqueMatrix")
+        const area = heat.parent
+        tryVerify(() => heat.width > 0 && area.width > heat.width, 2000, "narrower than its area")
+        const left = heat.mapToItem(area, 0, 0).x
+        const right = area.width - left - heat.width
+        verify(Math.abs(left - right) <= 1, "centred: " + left + " / " + right)
+        verify(panel.mapToItem(page, 0, 0).x > heat.mapToItem(page, heat.width, 0).x, "the panel stands right of the map")
+
+        let target = null
+        for (let r = 0; r < heat.rowCount && !target; r++) {
+            for (let c = 0; c < heat.columnCount; c++) {
+                if (!heat.isEmpty(r, c)) {
+                    target = { r: r, c: c }
+                    break
+                }
+            }
+        }
+        verify(target)
+        const data = page.shown.rows[target.r].cells[target.c]
+        const cell = heat.cellAt(target.r, target.c)
+        const sheet = findChild(page, "techniqueSheet")
+        mouseClick(cell)
+        tryVerify(() => page.paneEntry !== null)
+        compare(page.paneEntry.id, data.entry.id)
+        verify(!findChild(page, "mapPanelHint").visible)
+        compare(findChild(panel, "paneSheet").entry.id, data.entry.id)
+        verify(!sheet.visible, "no sheet on a wide window")
+        verify(findChild(page, "mapHint").text.indexOf("open") < 0, "the hint does not say open: " + findChild(page, "mapHint").text)
+        // Another technique from the panel (same one in a video) opens the sheet; panel and ring stay.
+        const paneBody = findChild(panel, "paneSheet")
+        const shownId = page.paneEntry.id
+        paneBody.lessonRequested({ id: "other/x", title: "Other", discipline: "aikido" })
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, "other/x")
+        compare(page.paneEntry.id, shownId, "the panel keeps its technique")
+        verify(findChild(cell, "placeRing") !== null, "the ring stays")
+        sheet.close()
+        tryVerify(() => !sheet.visible)
+        tryVerify(() => findChild(cell, "placeRing") !== null, 2000, "the tapped place is marked")
+        shot("11-map-wide")
+
+        // Shinki Toho's forms: the same panel.
+        page.discipline = "shinkitoho"
+        page.grade = "chuden"
+        const forms = findChild(page, "formGrid")
+        tryVerify(() => forms.visible && forms.rowCount > 0)
+        verify(page.paneEntry === null, "another grid, no mark")
+        waitForRendering(forms)
+        const form = forms.cellAt(0, 1)
+        mouseClick(form)
+        tryVerify(() => page.paneEntry !== null)
+        compare(page.paneEntry.id, page.shown.cells[1].entry.id)
+        verify(!sheet.visible)
+        tryVerify(() => findChild(form, "placeRing") !== null)
+        popPage()
+    }
+
+    // The same page on a phone: a tap opens the sheet, no panel.
+    function test_9k_map_phone() {
+        failOnWarning(/ReferenceError|TypeError/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k4")
+        window.width = 420
+        window.height = 860
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => !page.wide, 2000, "a phone")
+        verify(!findChild(page, "mapPanel").visible)
+        // The filters: at most three lines (discipline; grade and groups).
+        const filters = findChild(page, "mapFilters")
+        tryVerify(() => filters.height > 0 && filters.height <= 3 * findChild(page, "gradeBox").height + 4 * Kirigami.Units.smallSpacing, 2000, "filters " + filters.height)
+        const heat = findChild(page, "techniqueMatrix")
+        let target = null
+        for (let r = 0; r < heat.rowCount && !target; r++) {
+            for (let c = 0; c < heat.columnCount; c++) {
+                if (!heat.isEmpty(r, c)) {
+                    target = { r: r, c: c }
+                    break
+                }
+            }
+        }
+        verify(target)
+        shot("11-map-phone")
+        const sheet = findChild(page, "techniqueSheet")
+        mouseClick(heat.cellAt(target.r, target.c))
+        tryVerify(() => sheet.opened)
+        compare(sheet.entry.id, page.shown.rows[target.r].cells[target.c].entry.id)
+        verify(page.paneEntry === null)
+        sheet.close()
+        tryVerify(() => !sheet.visible)
         popPage()
     }
 
@@ -4150,7 +4441,7 @@ TestCase {
         Exam.shuffled = false
         Exam.samples = true
         const tile = findChild(window.pageStack.items[0], "examTile")
-        verify(tile.hint.indexOf("4. Kyu") >= 0, tile.hint)
+        tryVerify(() => tile.hint.indexOf("4. Kyu") >= 0, 5000, tile.hint)
 
         const page = push("ExamPage")
         compare(page.grade, "k4")
@@ -4499,7 +4790,7 @@ TestCase {
         Courses.removeGrade(Courses.grades.find(g => g.discipline === "daitoryu").uid)
         // The start tile counts the practice days.
         const tile = findChild(window.pageStack.items[0], "statsTile")
-        compare(tile.days, 1)
+        tryCompare(tile, "days", 1)
     }
 
     // Another video folder for this case; cleanup() brings the real one back.
@@ -5607,28 +5898,82 @@ TestCase {
         Programme.discipline = "aikido"
     }
 
-    // Tablet in landscape: the start menu as a grid of four; the fifth tile starts a second row.
+    // Tablet in landscape: the start menu as a bento of four columns. The programme tile takes two
+    // columns and two rows at the top left, today's practice two columns beside it, the exam and the
+    // statistics below that; then four to a row.
     function test_1b_start_tablet() {
         const start = window.pageStack.items[0]
         window.width = 1280
         window.height = 800
         const tiles = findChild(start, "tiles")
         tryCompare(tiles, "columns", 4)
-        const shown = tiles.children.filter(t => t.visible && t.width > 0)
-        verify(shown.length > 4, "a second row")
-        // Four to a row, in order: the fifth starts the next row under the first.
-        shown.forEach((t, i) => {
-            const first = shown[i - i % 4]
-            verify(Math.abs(t.y - first.y) < 1, "tile " + i + " in its row")
-            if (i % 4)
-                verify(t.x > shown[i - 1].x + shown[i - 1].width - 1, "tile " + i + " right of the one before")
-            else if (i)
-                verify(Math.abs(t.x - shown[0].x) < 1 && t.y > shown[i - 4].y, "tile " + i + " starts a row")
-        })
+        wait(200)
+        const at = n => findChild(start, n).mapToItem(tiles, 0, 0)
+        const programme = findChild(start, "programmeTile")
+        const small = findChild(start, "examTile")
+        compare(at("programmeTile").x, 0)
+        compare(at("programmeTile").y, 0)
+        verify(Math.abs(at("todayTile").y) < 1, "today beside the programme tile")
+        verify(Math.abs(at("todayTile").x - (programme.width + tiles.columnSpacing)) < 1, "today right of it")
+        const row2 = ["examTile", "statsTile"].map(at)
+        verify(row2[0].y > 0 && Math.abs(row2[0].y - row2[1].y) < 1, "exam and statistics in a row")
+        verify(Math.abs(row2[0].x - at("todayTile").x) < 1 && row2[1].x > row2[0].x, "under today's practice")
+        const row3 = ["coursesTile", "mapTile", "glossaryTile", "notesTile"].map(at)
+        for (let i = 0; i < 4; ++i) {
+            verify(Math.abs(row3[i].y - row3[0].y) < 1, "tile " + i + " in the last row")
+            verify(row3[i].y >= programme.height - 1, "below the programme tile")
+            if (i)
+                verify(row3[i].x > row3[i - 1].x, "tile " + i + " right of the one before")
+        }
+        compare(findChild(start, "notesTile").width, small.width)
         shot("1b-start-tablet")
         window.width = 420
         window.height = 800
         tryCompare(tiles, "columns", 2)      // two columns on the phone (the clickdummy)
+    }
+
+    // "Continue with" on the programme tile is a control: it takes the focus (Tab), Enter opens the
+    // technique, a screen reader hears what it leads to.
+    function test_1b_continue_is_a_control() {
+        const start = window.pageStack.items[0]
+        const next = findChild(start, "nextTechnique")
+        tryVerify(() => next.visible)
+        compare(next.focusPolicy, Qt.StrongFocus)
+        verify(next.Accessible.name.indexOf(qsTr("Continue with")) === 0, next.Accessible.name)
+        verify(next.Accessible.name.length > qsTr("Continue with").length + 2, next.Accessible.name)
+        next.forceActiveFocus(Qt.TabFocusReason)
+        verify(next.visualFocus)
+        keyClick(Qt.Key_Return)
+        tryCompare(window.pageStack, "depth", 2)
+        popPage()
+    }
+
+    // The programme tile is always twice as wide and twice as high as the others (plus the gap
+    // between two cells), at every width; each tile's value is there.
+    function test_1b_bento_sizes_data() {
+        return [ { tag: "1280x800", width: 1280, height: 800 }, { tag: "800x1280", width: 800, height: 1280 },
+                 { tag: "420x860", width: 420, height: 860 }, { tag: "360x640", width: 360, height: 640 } ]
+    }
+    function test_1b_bento_sizes(data) {
+        window.width = data.width
+        window.height = data.height
+        const start = window.pageStack.items[0]
+        const tiles = findChild(start, "tiles")
+        const names = ["programmeTile", "todayTile", "examTile", "statsTile", "coursesTile", "mapTile", "glossaryTile", "notesTile"]
+        tryVerify(() => names.every(n => findChild(start, n).filled), 5000, "every tile has its value")
+        wait(100)
+        const gap = tiles.columnSpacing
+        const programme = findChild(start, "programmeTile")
+        const where = data.tag + ": "
+        for (const n of names.slice(2)) {
+            const t = findChild(start, n)
+            verify(Math.abs(programme.width - (2 * t.width + gap)) <= 1, where + n + " is half as wide: " + t.width + " of " + programme.width)
+            verify(Math.abs(programme.height - (2 * t.height + gap)) <= 1, where + n + " is half as high: " + t.height + " of " + programme.height)
+        }
+        const today = findChild(start, "todayTile")
+        verify(Math.abs(today.width - programme.width) <= 1, where + "today's practice as wide as the programme tile")
+        verify(Math.abs(2 * today.height + gap - programme.height) <= 1, where + "today's practice is a row high")
+        shot("1b-bento-" + data.tag)
     }
 
     // The keyboard scrolls the programme list (Down, Page Down).
@@ -6194,6 +6539,8 @@ TestCase {
         PracticeGrade.setGrade("aikido", "k4")
         const start = window.pageStack.items[0]
         const tiles = ["programmeTile", "todayTile", "examTile"].map(n => findChild(start, n))
+        // The board's run for this grade is in (the exam tile names the grade).
+        tryVerify(() => tiles[2].hint.indexOf("4. Kyu") >= 0 && tiles[0].t.gradeName === "4. Kyu", 5000, tiles[2].hint)
         const hints = tiles.map(t => t.hint)
         verify(hints[0].indexOf("4. Kyu") >= 0, hints[0])
         verify(hints[2].indexOf("4. Kyu") >= 0, hints[2])
@@ -6255,7 +6602,7 @@ TestCase {
         verify(findChild(today, "practice_k4").checked)
         compare(dueIds(), dueAt("k4"), "what is due follows the grade")
         compare(hint.text, qsTranslate("TodayPage", "up to %1 (from My grades)").arg("4. Kyu"))
-        verify(examTile.hint.indexOf("4. Kyu") >= 0, examTile.hint)
+        tryVerify(() => examTile.hint.indexOf("4. Kyu") >= 0, 5000, examTile.hint)
 
         // By hand on Today, further than suggested. 2. Kyu: the training cases, with videos, have
         // used up today's new ones of 5. to 3. Kyu; what is due there may be the same (nothing).
@@ -6267,7 +6614,7 @@ TestCase {
         verify(findChild(today, "practice_k2").checked)
         verify(!findChild(today, "practice_k4").checked)
         compare(hint.text, qsTranslate("TodayPage", "up to %1 (chosen by you)").arg("2. Kyu"))
-        verify(examTile.hint.indexOf("2. Kyu") >= 0, examTile.hint)
+        tryVerify(() => examTile.hint.indexOf("2. Kyu") >= 0, 5000, examTile.hint)
 
         // A passed grade behind it leaves it.
         verify(Courses.addGrade(discipline, "k4", "2026-05-01", ""))
@@ -6282,7 +6629,7 @@ TestCase {
         compare(exam.grade, "k2")
         clickUntil(findChild(exam, "grade_k5"), () => exam.grade === "k5")
         compare(PracticeGrade.grade(discipline), "k5")
-        verify(examTile.hint.indexOf("5. Kyu") >= 0, examTile.hint)
+        tryVerify(() => examTile.hint.indexOf("5. Kyu") >= 0, 5000, examTile.hint)
 
         // A grade passed since moves a choice behind it forward.
         verify(Courses.addGrade(discipline, "k3", "2026-06-01", ""))
@@ -6607,9 +6954,9 @@ TestCase {
     }
 
     // Single-column pages on a wide window: a page of reading width in the middle, never the whole
-    // window (the composer bars of the notes too).
+    // window (the composer bars of the notes too). Not SearchPage: its glossary has three columns.
     function test_8s_reading_width_data() {
-        return ["ExamPage", "CourseNewPage", "NotebooksPage", "AllNotesPage", "NotesPage", "CoursePage", "SearchPage",
+        return ["ExamPage", "CourseNewPage", "NotebooksPage", "AllNotesPage", "NotesPage", "CoursePage",
                 "VideosPage", "BackupPage", "AppearancePage", "WelcomePage", "YearsPage", "TechniquePickerPage"]
             .map(name => ({ tag: name, name: name }))
     }
@@ -6630,6 +6977,26 @@ TestCase {
         verify(box.right - box.left <= Tablet.pageWidth + 1, data.name + " is " + Math.round(box.right - box.left)
                + " wide, at most " + Math.round(Tablet.pageWidth) + " (" + box.first + " to " + box.last + ")")
         verify(Math.abs(box.left - (window.width - box.right)) < Look.unit(40), "in the middle: " + box.left + " / " + box.right)
+    }
+
+    // The glossary in a broad window that is no tablet sideways (a desktop window, a tablet upright
+    // that is broad): one list, its rows of reading width in the middle.
+    function test_8s_search_reading_width() {
+        window.width = 1000
+        window.height = 1200
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        verify(!page.wide, "wide at " + page.width + "x" + page.height + " in " + window.width + "x" + window.height)
+        const list = findChild(page, "glossaryList")
+        tryCompare(list, "count", Glossary.words.length)
+        const rows = findChildren(list, "glossaryRow")
+        verify(rows.length > 0)
+        const row = rows[0]
+        verify(row.width <= Tablet.pageWidth + 1, "a row is " + Math.round(row.width) + " wide, at most " + Math.round(Tablet.pageWidth))
+        const left = row.mapToItem(list, 0, 0).x
+        verify(Math.abs(left - (list.width - left - row.width)) < 1, "in the middle: " + left)
+        popPage()
     }
 
     // The start menu's tiles use the height of a tablet; a phone keeps its tiles.
@@ -6676,6 +7043,41 @@ TestCase {
         verify(nextTop - textBottom < Look.unit(40), "the button is " + Math.round(nextTop - textBottom) + " below the text")
         const content = extent(page)
         verify(Math.abs(next.mapToItem(window.contentItem, next.width, 0).x - content.right) < 1, "right-aligned")
+    }
+
+    // A legend that wraps on a small phone leaves no key alone on its last line ("10 and more").
+    function test_8s_legend_lines_balanced() {
+        window.width = 360
+        window.height = 800
+        wait(100)
+        const page = push("YearsPage")
+        tryVerify(() => Math.abs(page.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
+        const legend = findChild(page, "yearsLegend")
+        const keys = legend.children.filter(c => c.visible && c.modelData !== undefined)
+        compare(keys.length, 5)
+        const lines = {}
+        for (const k of keys) {
+            lines[k.y] = (lines[k.y] || 0) + 1
+        }
+        const counts = Object.keys(lines).sort((a, b) => a - b).map(y => lines[y])
+        verify(counts.length === 1 || counts[counts.length - 1] > 1, "keys per line: " + counts)
+        popPage()
+    }
+
+    // A notebook's title longer than two lines ends in "…" in every style (Shinki cut it off).
+    function test_8s_long_title_elides() {
+        window.width = 320
+        window.height = 568
+        wait(100)
+        const uid = plannedCourse("Aikido Kyu-Lehrgang mit Prüfung und Dan-Prüfung, Sommerlehrgang am See mit Gastlehrern aus Japan")
+        const book = push("CoursePage", { uid: uid })
+        wait(300)
+        const title = findChild(book, "courseTitle")
+        compare(title.lineCount, 2, "two lines")
+        verify(title.truncated, "cut after two lines")
+        compare(title.elide, Text.ElideRight, "ends in an ellipsis")
+        popPage()
+        verify(Courses.remove(uid))
     }
 
     // The notebook's title and the exam hints break their lines instead of eliding, on the smallest phone.
@@ -6797,7 +7199,7 @@ TestCase {
         const before = findChildren(findChild(page, "year_" + year), "yearHeatmap")
         compare(before.length, 2, "halves at 420")
         window.width = 400
-        wait(300)
+        tryCompare(page, "width", 400, 3000)
         const after = findChildren(findChild(page, "year_" + year), "yearHeatmap")
         verify(after.length === 2 && after.every((h, i) => h === before[i]), "the same heatmaps at 400")
         window.width = 1280
@@ -6930,6 +7332,37 @@ TestCase {
         compare(page.wide, data.wide)
         window.height = data.low
         tryVerify(() => page.wide === !data.wide, 2000, "released: the low window counts")
+    }
+
+    // The glossary on a tablet sideways: typing in the search keeps the three parts when the keyboard
+    // shrinks the window.
+    function test_8r_typing_holds_glossary() {
+        window.width = 1280
+        window.height = 800
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        tryVerify(() => page.wide)
+        const field = findChild(page, "searchField")
+        field.forceActiveFocus()
+        tryVerify(() => field.activeFocus)
+        const high = page.height
+        window.height = 450
+        tryVerify(() => page.height < high, 5000, "the page got lower")
+        wait(200)
+        verify(page.wide, "the keyboard leaves the three parts alone")
+        verify(findChild(page, "glossaryDetail").visible)
+        field.text = "kiri"
+        tryVerify(() => page.query === "kiri", 2000)
+        verify(page.wide, "typing keeps them")
+        window.contentItem.forceActiveFocus()
+        tryVerify(() => !field.activeFocus)
+        window.height = 800
+        wait(200)
+        verify(page.wide)
+        window.height = 450
+        tryVerify(() => !page.wide, 2000, "released: the low window counts (holding " + page.hold.holding + ", typing " + page.hold.typing + ", high " + page.hold.high + ", held " + page.hold.heldHeight + " of " + page.height + ", focus " + window.activeFocusItem + ")")
+        popPage()
     }
 
     // Turned with the keyboard open: the tablet's real shape counts, not the low window, also once
@@ -7622,59 +8055,60 @@ TestCase {
         popPage()
     }
 
+    // The letter of the rail, as an item to tap.
+    function railLetter(rail, letter) {
+        return findChildren(rail, "railLetter").find(c => c.modelData === letter)
+    }
+
     function test_8l_glossary_letters_jump() {
         const page = push("SearchPage")
         const list = findChild(page, "glossaryList")
-        const bar = findChild(page, "letterBar")
-        tryVerify(() => bar.visible)
-        const letters = allChildren(bar).filter(c => c.objectName === "letterJump")
-        verify(letters.length > 10)
+        const rail = findChild(page, "letterRailPhone")
+        tryVerify(() => rail.visible)
+        verify(!findChild(page, "letterRail").visible, "the left rail is for a wide window")
         wait(500)
-        const far = letters[letters.length - 1]
-        far.clicked()
-        wait(100)
-        verify(list.contentY > list.height, "jumped to " + far.text + ": " + list.contentY)
+        const far = page.usedLetters[Math.floor(page.usedLetters.length * 0.6)]     // the last sections are too short to reach the top
+        mouseClick(railLetter(rail, far))
+        tryVerify(() => list.contentY > list.height, 1000, "jumped to " + far + ": " + list.contentY)
+        tryCompare(list, "currentSection", far)
 
-        // The head changes height after the jump (here the letters wrap anew in a narrower window;
-        // also the speech hint once the engine has answered): the list stays at the letter.
+        // The head changes height after the jump (the window narrows: texts wrap anew): the list
+        // stays at the letter.
+        window.width = 340
+        waitForRendering(list)
+        verify(list.contentY > list.height, "stays at " + far + " in the narrow window: " + list.contentY)
+        window.width = 420
+        waitForRendering(list)
+        verify(list.contentY > list.height, "stays at " + far + ": " + list.contentY)
+
+        // The head grows (the hints wrap in a narrower window) while the list stands where the wheel
+        // left it (it sets contentY, no flick): it stays there.
         const header = list.headerItem
         const before = header.height
-        window.width = 340
-        tryVerify(() => header.height > before, 1000, "the head grows: " + header.height)
-        waitForRendering(list)
-        const narrow = list.contentY
-        window.width = 420
-        tryVerify(() => header.height === before, 1000, "the head shrinks: " + header.height)
-        waitForRendering(list)
-        verify(narrow > list.height, "stays at " + far.text + " in the narrow window: " + narrow)
-        verify(list.contentY > list.height, "stays at " + far.text + ": " + list.contentY)
-
-        // Back at the top by hand, then down by a wheel (it sets contentY, no flick): the same.
         list.positionViewAtBeginning()
         list.contentY = list.originY + 3 * list.height
         const scrolled = list.contentY
-        window.width = 340
-        tryVerify(() => header.height > before, 1000, "the head grows again: " + header.height)
+        window.width = 320
+        tryVerify(() => header.height > before, 1000, "the head grows: " + header.height)
         waitForRendering(list)
         verify(list.contentY > list.height, "stays where the wheel left it (" + scrolled + "): " + list.contentY)
         window.width = 420
-        tryVerify(() => header.height === before, 1000, "the head shrinks again: " + header.height)
-        waitForRendering(list)
+        tryVerify(() => header.height === before, 1000, "the head shrinks: " + header.height)
 
-        // At the top, the list stays at its top while the head grows (the letters stay in view).
+        // At the top, the list stays at its top while the head grows.
         list.positionViewAtBeginning()
-        window.width = 340
+        window.width = 320
         tryVerify(() => header.height > before, 1000, "the head grows at the top: " + header.height)
         tryVerify(() => list.atYBeginning, 1000, "at the top: " + list.contentY + " from " + list.originY)
         window.width = 420
         tryVerify(() => list.atYBeginning, 1000, "at the top again: " + list.contentY + " from " + list.originY)
 
-        // Far down, then a search: its results from the top.
-        far.clicked()
+        // Far down, then a search: its results from the top, no rail.
+        mouseClick(railLetter(rail, far))
         verify(list.contentY > list.height, "jumped again: " + list.contentY)
         findChild(page, "searchField").text = "ko"
         tryCompare(page, "searching", true)
-        verify(!bar.visible, "words found have no letters")
+        verify(!rail.visible, "words found have no letters")
         tryVerify(() => list.atYBeginning, 1000, "results from the top: " + list.contentY + " from " + list.originY)
         popPage()
     }

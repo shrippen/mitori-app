@@ -1496,6 +1496,17 @@
     </message>
 </context>
 <context>
+    <name>LetterRail</name>
+    <message>
+        <source>Letters</source>
+        <translation>Buchstaben</translation>
+    </message>
+    <message>
+        <source>Words with %1</source>
+        <translation>Wörter mit %1</translation>
+    </message>
+</context>
+<context>
     <name>ListAndPage</name>
     <message>
         <source>Choose a course from the list.</source>
@@ -2132,13 +2143,6 @@
         <source>Kiriotoshi, 切り落とし or Hüftwurf</source>
         <translation>Kiriotoshi, 切り落とし oder Hüftwurf</translation>
     </message>
-    <message numerus="yes">
-        <source>%n Japanese term(s), with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</source>
-        <translation>
-            <numerusform>%n japanischer Begriff, mit Kanji und deutscher Übersetzung, wo Lexikon oder Programm sie haben. Die Suche findet auch deutsche Wörter, Techniken und deine Notizen.</numerusform>
-            <numerusform>%n japanische Begriffe, mit Kanji und deutscher Übersetzung, wo Lexikon oder Programm sie haben. Die Suche findet auch deutsche Wörter, Techniken und deine Notizen.</numerusform>
-        </translation>
-    </message>
     <message>
         <source>Nothing found for “%1”.</source>
         <translation>Nichts gefunden für „%1“.</translation>
@@ -2172,24 +2176,27 @@
         <translation>Mehr als %1 Lehrgangsnotizen gefunden. Ein weiteres Wort grenzt die Suche ein.</translation>
     </message>
     <message>
-        <source>Words with %1</source>
-        <translation>Wörter mit %1</translation>
-    </message>
-    <message>
-        <source>This version of Mitori has no speech output, so there is no pronunciation.</source>
-        <translation>Diese Version von Mitori hat keine Sprachausgabe, die Aussprache fehlt.</translation>
-    </message>
-    <message>
-        <source>No Japanese voice for speech output found. Where the system offers one (Android: settings, text-to-speech output), install it to hear the pronunciation.</source>
-        <translation>Keine japanische Stimme für die Sprachausgabe gefunden. Wo das System eine anbietet (Android: Einstellungen, Sprachausgabe), sie für die Aussprache installieren.</translation>
-    </message>
-    <message>
         <source>No translation in the lexicon</source>
         <translation>Übersetzung fehlt im Lexikon</translation>
     </message>
     <message>
         <source>Pronunciation</source>
         <translation>Aussprache</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n Japanese term(s), with kanji and translation.</source>
+        <translation>
+            <numerusform>%n japanischer Begriff, mit Kanji und Übersetzung.</numerusform>
+            <numerusform>%n japanische Begriffe, mit Kanji und Übersetzung.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No speech output in this version: no pronunciation.</source>
+        <translation>Keine Sprachausgabe in dieser Version: keine Aussprache.</translation>
+    </message>
+    <message>
+        <source>No Japanese voice found: no pronunciation (Android: settings, text-to-speech).</source>
+        <translation>Keine japanische Stimme gefunden: keine Aussprache (Android: Einstellungen, Sprachausgabe).</translation>
     </message>
     <message>
         <source>Pronounce %1</source>
@@ -2277,16 +2284,28 @@
         <translation>Videos</translation>
     </message>
     <message>
-        <source>Planned exam</source>
-        <translation>Prüfung geplant</translation>
-    </message>
-    <message>
         <source>Programme</source>
         <translation>Programm</translation>
     </message>
     <message>
         <source>%1 of %2 exam-ready</source>
         <translation>%1 von %2 prüfungsreif</translation>
+    </message>
+    <message>
+        <source>of %1 sure</source>
+        <translation>von %1 sicher</translation>
+    </message>
+    <message>
+        <source>Continue with</source>
+        <translation>Weiter mit</translation>
+    </message>
+    <message>
+        <source>Open ›</source>
+        <translation>Öffnen ›</translation>
+    </message>
+    <message>
+        <source>up to %1 · %2 of %3 sure · %4 exam-ready</source>
+        <translation>bis %1 · %2 von %3 sicher · %4 prüfungsreif</translation>
     </message>
     <message>
         <source>Practice today</source>
@@ -2304,12 +2323,39 @@
         <translation>alles geübt</translation>
     </message>
     <message>
+        <source>%1 unsure · %2 new</source>
+        <translation>%1 unsicher · %2 neu</translation>
+    </message>
+    <message>
+        <source>Start training</source>
+        <translation>Training starten</translation>
+    </message>
+    <message>
         <source>Exam mode</source>
         <translation>Prüfung</translation>
     </message>
     <message>
         <source>Mock exam %1</source>
         <translation>Probe %1</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>%1 % of the exam&apos;s techniques sure or better</source>
+        <translation>%1 % der Prüfungstechniken sicher oder besser</translation>
+    </message>
+    <message>
+        <source>No exam planned</source>
+        <translation>Keine Prüfung geplant</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) in a row</source>
+        <translation>
+            <numerusform>%n Tag in Folge</numerusform>
+            <numerusform>%n Tage in Folge</numerusform>
+        </translation>
     </message>
     <message>
         <source>Courses</source>
@@ -2329,6 +2375,29 @@
     <message>
         <source>today</source>
         <translation>heute</translation>
+    </message>
+    <message>
+        <source>Notes</source>
+        <translation>Notizen</translation>
+    </message>
+    <message>
+        <source>Technique notes and notebooks</source>
+        <translation>Notizen zu Techniken und Notizbücher</translation>
+    </message>
+    <message>
+        <source>Photo or voice note</source>
+        <translation>Foto oder Sprachnotiz</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s)</source>
+        <translation>
+            <numerusform>%n Notiz</numerusform>
+            <numerusform>%n Notizen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No notes yet</source>
+        <translation>Noch keine Notizen</translation>
     </message>
     <message>
         <source>Learning videos</source>
@@ -2369,6 +2438,13 @@
         <translation>
             <numerusform>%n Übungstag in 30 Tagen</numerusform>
             <numerusform>%n Übungstage in 30 Tagen</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s) in the notebook</source>
+        <translation>
+            <numerusform>%n Notiz im Notizbuch</numerusform>
+            <numerusform>%n Notizen im Notizbuch</numerusform>
         </translation>
     </message>
     <message>
@@ -2630,6 +2706,10 @@
         <translation>bis %1</translation>
     </message>
     <message>
+        <source>Grade</source>
+        <translation>Grad</translation>
+    </message>
+    <message>
         <source>No techniques with an attack up to %1.</source>
         <translation>Keine Techniken mit Angriff bis %1.</translation>
     </message>
@@ -2646,12 +2726,24 @@
         <translation>keine solche Kombination</translation>
     </message>
     <message>
+        <source>Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to show the technique.</source>
+        <translation>Zeilen: Technik, Spalten: Angriff. Ein leerer Platz kommt bis %1 nicht vor. Tippen zeigt die Technik.</translation>
+    </message>
+    <message>
         <source>Rows: technique, columns: attack. An empty place does not occur up to %1. Tap a place to open the technique.</source>
         <translation>Zeilen: Technik, Spalten: Angriff. Ein leerer Platz kommt bis %1 nicht vor. Tippen öffnet die Technik.</translation>
     </message>
     <message>
+        <source>A place per form: its number, after the dot its level (12·3). Tap a place to show the form.</source>
+        <translation>Ein Platz je Form: ihre Nummer, nach dem Punkt ihre Stufe (12·3). Tippen zeigt die Form.</translation>
+    </message>
+    <message>
         <source>A place per form: its number, after the dot its level (12·3). Tap a place to open the form.</source>
         <translation>Ein Platz je Form: ihre Nummer, nach dem Punkt ihre Stufe (12·3). Tippen öffnet die Form.</translation>
+    </message>
+    <message>
+        <source>Tap a place to see it here.</source>
+        <translation>Tippe auf einen Platz, um ihn hier zu sehen.</translation>
     </message>
     <message numerus="yes">
         <source>%n entries</source>
@@ -3214,6 +3306,29 @@
     <message>
         <source>Start</source>
         <translation>Los</translation>
+    </message>
+</context>
+<context>
+    <name>WordDetail</name>
+    <message>
+        <source>Tap a word to see it here.</source>
+        <translation>Tippe ein Wort an, um es hier zu sehen.</translation>
+    </message>
+    <message>
+        <source>No translation in the lexicon</source>
+        <translation>Übersetzung fehlt im Lexikon</translation>
+    </message>
+    <message>
+        <source>Pronunciation</source>
+        <translation>Aussprache</translation>
+    </message>
+    <message>
+        <source>In techniques</source>
+        <translation>In Techniken</translation>
+    </message>
+    <message>
+        <source>Only the first %1 techniques.</source>
+        <translation>Nur die ersten %1 Techniken.</translation>
     </message>
 </context>
 <context>

@@ -374,6 +374,16 @@ QVariantList Practice::allNotes() const
     return result;
 }
 
+int Practice::noteCount() const
+{
+    return m_open ? m_log->noteCount() : 0;
+}
+
+std::optional<PracticeLog::Note> Practice::newestNote() const
+{
+    return m_open ? m_log->newestNote() : std::nullopt;
+}
+
 QList<PracticeLog::Note> Practice::noteRecords() const
 {
     return m_open ? m_log->allNotes() : QList<PracticeLog::Note>();

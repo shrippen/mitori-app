@@ -157,10 +157,10 @@
 <context>
     <name>SearchPage</name>
     <message numerus="yes">
-        <source>%n Japanese term(s), with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</source>
+        <source>%n Japanese term(s), with kanji and translation.</source>
         <translation>
-            <numerusform>%n Japanese term, with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</numerusform>
-            <numerusform>%n Japanese terms, with kanji and English translation where the lexicon or the programme has them. The search also finds English words, techniques and your notes.</numerusform>
+            <numerusform>%n Japanese term, with kanji and translation.</numerusform>
+            <numerusform>%n Japanese terms, with kanji and translation.</numerusform>
         </translation>
     </message>
 </context>
@@ -185,6 +185,27 @@
         <translation>
             <numerusform>in %n day</numerusform>
             <numerusform>in %n days</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) in a row</source>
+        <translation>
+            <numerusform>%n day in a row</numerusform>
+            <numerusform>%n days in a row</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s) in the notebook</source>
+        <translation>
+            <numerusform>%n note in the notebook</numerusform>
+            <numerusform>%n notes in the notebook</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n note(s)</source>
+        <translation>
+            <numerusform>%n note</numerusform>
+            <numerusform>%n notes</numerusform>
         </translation>
     </message>
     <message numerus="yes">

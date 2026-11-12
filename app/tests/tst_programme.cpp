@@ -586,6 +586,58 @@ private slots:
         QVERIFY2(label.contains(QStringLiteral(" · Aikido ")), qPrintable(label));
     }
 
+    // A glossary word names a technique only as a whole word; hyphenated parts are words.
+    void techniquesNamedByWholeWord()
+    {
+        QVERIFY2(programme.techniquesNamed(QStringLiteral("Ago")).isEmpty(), "Ago is no part of a name");
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Ikk")).isEmpty());
+
+        const QVariantList kote = programme.techniquesNamed(QStringLiteral("Kote"));
+        QVERIFY(!kote.isEmpty());
+        for (const QVariant &r : kote) {
+            const QString title = r.toMap().value(QStringLiteral("title")).toString();
+            const QString attack = r.toMap().value(QStringLiteral("attack")).toString();
+            QVERIFY2(title.contains(QStringLiteral("Kote"), Qt::CaseInsensitive)
+                     || attack.contains(QStringLiteral("Kote"), Qt::CaseInsensitive), qPrintable(title));
+        }
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kote-gaeshi")).size() > 0);
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kote"), 3).size() <= 3);
+        // The attack counts: Katate-dori is a whole name, Kat a word of none.
+        QVERIFY(!programme.techniquesNamed(QStringLiteral("Katate-dori")).isEmpty());
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kat")).isEmpty());
+    }
+
+    // Hyphens and spaces do not matter, and no hit is cut off by a small default.
+    void techniquesNamedIgnoreHyphens()
+    {
+        const auto ids = [](const QVariantList &rows) {
+            QStringList out;
+            for (const QVariant &r : rows) {
+                out << r.toMap().value(QStringLiteral("id")).toString();
+            }
+            out.sort();
+            return out;
+        };
+        const QStringList pairs[] = {{QStringLiteral("Kesagake"), QStringLiteral("Kesa-gake")},
+                                     {QStringLiteral("Fukiage"), QStringLiteral("Fuki-age")},
+                                     {QStringLiteral("Kiriotoshi"), QStringLiteral("Kiri-otoshi")}};
+        for (const QStringList &pair : pairs) {
+            const QStringList joined = ids(programme.techniquesNamed(pair.at(0), 1000));
+            QVERIFY2(!joined.isEmpty(), qPrintable(pair.at(0)));
+            QCOMPARE(joined, ids(programme.techniquesNamed(pair.at(1), 1000)));
+        }
+        // Still whole words: a part of a word is none.
+        QVERIFY(programme.techniquesNamed(QStringLiteral("Kesagak")).isEmpty());
+
+        // Every discipline that has it (Aikido, Daitoryu, Shinki Toho).
+        QSet<QString> disciplines;
+        const QVariantList kiri = programme.techniquesNamed(QStringLiteral("Kiri-otoshi"), 1000);
+        for (const QVariant &r : kiri) {
+            disciplines << r.toMap().value(QStringLiteral("discipline")).toString();
+        }
+        QVERIFY2(kiri.size() >= 10 && disciplines.size() >= 2, qPrintable(QString::number(kiri.size())));
+    }
+
     // Search across disciplines: every word must match; case, accents and hyphens do not matter.
     void searchFindsTechniques()
     {

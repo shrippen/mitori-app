@@ -74,6 +74,13 @@ public:
     // ones in order (Schedule::due), each row with `level` and `days` added.
     Q_INVOKABLE QVariantList due(const QVariantList &candidates) const;
 
+    // The latest rating of every entry and the day each was rated first, as copies (C++ only: StartBoard
+    // hands them to a worker thread; the hashes share their data until this one writes).
+    QHash<QString, PracticeLog::Rating> ratings() const { return m_latest; }
+    QHash<QString, QDate> firstDays() const { return m_first; }
+    // Who was rated on each local day of a year (levels 1..4), a copy that shares its data.
+    QHash<QDate, QSet<QString>> dayEntries(int year) const { return m_open ? yearDays(year) : DayEntries(); }
+
     // Notes on a technique: {uid, text, created, changed} with local dates, oldest first.
     Q_INVOKABLE QVariantList notes(const QString &entry) const;
     // The entry's notes written today (the player's "Noted today"), oldest first.
@@ -84,6 +91,9 @@ public:
     Q_INVOKABLE QVariantList allNotes() const;
     // The same as records, newest first (C++ only: AllNotes builds its rows without maps).
     QList<PracticeLog::Note> noteRecords() const;
+    // The number of notes and the newest one, from two small queries (C++ only: StartBoard).
+    int noteCount() const;
+    std::optional<PracticeLog::Note> newestNote() const;
     // Notes containing every word of `query` (case and accents do not matter), newest first:
     // {uid, entry, text, created, changed}.
     Q_INVOKABLE QVariantList searchNotes(const QString &query, int limit = 50) const;
