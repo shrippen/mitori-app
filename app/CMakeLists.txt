@@ -77,6 +77,7 @@ qt_add_qml_module(mitori_app
         qml/PlayerView.qml
         qml/PlayerRatings.qml
         qml/PlayerHistory.qml
+        qml/PlayerMini.qml
         qml/PlayerTrainingList.qml
         qml/SettingsPage.qml
         qml/RatingRow.qml

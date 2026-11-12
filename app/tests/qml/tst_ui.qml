@@ -4225,6 +4225,67 @@ TestCase {
         popPage()
     }
 
+    // The panel's small player (owner, 12.11.2026): the chapter in a loop, mute, play/pause only;
+    // it stands while another page lies above the map.
+    function test_9k_map_mini_player() {
+        failOnWarning(/ReferenceError|TypeError/)
+        const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry" && r.video)
+        if (rows.length === 0 || !Videos.available(rows[0].video.video)) {
+            skip("no video for Aikido 5. Kyu (set MITORI_VIDEOS)")
+        }
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        window.width = 1280
+        window.height = 800
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => page.wide, 2000, "a wide window")
+        const mini = findChild(page, "mapMiniPlayer")
+        verify(!mini.visible, "no video before a tap")
+
+        page.paneEntry = rows[0]
+        tryVerify(() => mini.visible && mini.height > 0, 2000, "the video above the name")
+        const body = findChild(page, "paneSheet")
+        verify(body.y >= mini.y + mini.height, "the name below the video")
+        tryVerify(() => mini.playing, 10000, "it plays by itself")
+        const media = findChild(mini, "miniMedia")
+        compare(media.audioOutput, null, "mute: no sound at all")
+        tryVerify(() => media.position >= mini.from && media.position <= mini.end + 500, 5000, "in the chapter")
+
+        // The loop: past the chapter end it starts again.
+        media.position = mini.end - 200
+        tryVerify(() => media.position < mini.from + 2000, 5000, "back at the chapter start")
+        verify(mini.playing, "still playing")
+        shot("11-map-mini-player")
+
+        // Play and pause, nothing else.
+        const button = findChild(mini, "miniPlay")
+        mouseClick(button)
+        tryVerify(() => !mini.playing, 2000, "paused")
+        mouseClick(button)
+        tryVerify(() => mini.playing, 2000, "playing again")
+
+        // Another page above the map: it stands.
+        push("SettingsPage")
+        tryVerify(() => !mini.playing, 5000, "stands under another page")
+        popPage()
+        tryVerify(() => mini.playing, 10000, "plays again back on the map")
+
+        // Another technique of the same file: no new load, it starts at its own chapter.
+        const same = rows.find(r => r.id !== rows[0].id && r.video.video === rows[0].video.video
+                                    && Videos.place(r.id, r.video).von * 1000 > mini.to)
+        verify(same, "a later technique in the same video")
+        page.paneEntry = same
+        tryVerify(() => mini.from === Videos.place(same.id, same.video).von * 1000)
+        tryVerify(() => media.position >= mini.from && media.position <= mini.end + 500, 3000,
+                  "in the new chapter: " + media.position + " not in " + mini.from + "–" + mini.end)
+
+        // A technique without video: no player.
+        page.paneEntry = { id: "x/none", title: "None", discipline: "aikido" }
+        tryVerify(() => !mini.visible)
+        popPage()
+    }
+
     // The same page on a phone: a tap opens the sheet, no panel.
     function test_9k_map_phone() {
         failOnWarning(/ReferenceError|TypeError/)

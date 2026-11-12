@@ -1792,6 +1792,17 @@
     </message>
 </context>
 <context>
+    <name>PlayerMini</name>
+    <message>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Abspielen</translation>
+    </message>
+</context>
+<context>
     <name>PlayerPage</name>
     <message>
         <source>practised</source>
