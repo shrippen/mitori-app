@@ -750,6 +750,14 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
     add_test(NAME ui_shinki COMMAND tst_ui)
     set_tests_properties(ui_shinki PROPERTIES ENVIRONMENT
         "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Material;MITORI_TEST_STYLE=shinki;${NO_KEY_STORE}")
+    # Shinki's rows in Breeze's controls (org.kde.desktop insets a delegate's background), where
+    # that style is installed (the CI has it not).
+    find_path(MITORI_DESKTOP_STYLE ItemDelegate.qml PATHS "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_QML}/org/kde/desktop" NO_DEFAULT_PATH)
+    if(MITORI_DESKTOP_STYLE)
+        add_test(NAME ui_shinki_desktop COMMAND tst_ui Ui::test_2v_c_shinki_rows_whole_width)
+        set_tests_properties(ui_shinki_desktop PROPERTIES RESOURCE_LOCK ui_data ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;MITORI_TEST_STYLE=shinki;${NO_KEY_STORE}")
+    endif()
     # Style and language changed while the app runs, from Leinen and from Shinki. A file of its own:
     # no other test holds a page's compiled types in the engine's cache (tst_look.qml).
     add_test(NAME look COMMAND tst_ui -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/qml-look/tst_look.qml)

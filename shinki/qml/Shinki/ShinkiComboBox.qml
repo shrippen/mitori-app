@@ -61,6 +61,11 @@ QQC2.ComboBox {
         implicitHeight: ShinkiStyle.rowMinSpace
         highlighted: box.highlightedIndex === index
         text: box.textRole && modelData ? modelData[box.textRole] : modelData
+        // The ground fills the row (Breeze insets a delegate's background).
+        leftInset: 0
+        rightInset: 0
+        topInset: 0
+        bottomInset: 0
 
         background: Rectangle {
             color: row.highlighted ? ShinkiStyle.chip : ShinkiStyle.paper
