@@ -5596,6 +5596,31 @@ TestCase {
     }
 
     // A pane too narrow for columns (a small tablet window) keeps the one column.
+    // Long names in the tablet's list (Ô-dachi 14, "Jûyon-ban · Wakigamae no Uchiotoshi"): whole,
+    // on two lines, not cut with "…"; the play button stays beside them.
+    function test_2v_c_long_rows_whole() {
+        const page = tabletProgramme(standInVideos, "shinkitoho", "chuden")
+        window.width = 1024
+        window.height = 768
+        const list = findChild(page, "programmeList")
+        let row = null
+        tryVerify(() => {
+            row = list.contentItem.children.find(r => r.entry && r.entry.nr === 14) || null
+            return row !== null
+        }, 5000, "row 14 built")
+        list.positionViewAtIndex(row.index, ListView.Contain)
+        waitForRendering(list)
+        const title = findChild(row, "listRowText")
+        const second = findChild(row, "listRowSubtitle")
+        verify(title && second, "the row's texts")
+        verify(!title.truncated, "the name whole: " + title.text)
+        verify(!second.truncated, "the second line whole: " + second.text)
+        const play = findChild(row, "rowPlay")
+        verify(play.mapToItem(row, 0, 0).y < title.mapToItem(row, 0, 0).y + title.height, "the play button beside the name")
+        shot("2v-tablet-long-rows")
+        popPage()
+    }
+
     function test_2v_d_narrow_pane() {
         const page = tabletProgramme()
         window.width = 760

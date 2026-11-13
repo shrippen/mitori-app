@@ -193,7 +193,7 @@ Item {
     property bool calm: false
     Timer { id: calmTimer; interval: 500; onTriggered: staff.calm = false }
 
-    readonly property real sp: Math.max(4, staffSpace)
+    readonly property real sp: Math.max(4, layoutSpacing)
     readonly property int currentIndex: lastAtOrBefore(position)
     readonly property var barList: normalizeBars(bars, notes, rests, keyFifths)
     /** Every chord symbol, from `chords` and the bars: [{time, text}] sorted by time. */
@@ -203,7 +203,7 @@ Item {
     // Wide enough for the widest key a line can start with (with the naturals of a change).
     readonly property real headerWidth: sp * (4.2 + maxHeaderKey(barList) * 1.1 + 3.0)
     readonly property int perSystem: barsPerSystem > 0 ? barsPerSystem
-        : Math.max(1, Math.floor((layoutSize.width - headerWidth) / Math.max(1, minBarWidth)))
+        : Math.max(1, Math.floor((layoutSize.width - headerWidth) / Math.max(1, layoutMinBarWidth)))
     readonly property int firstBar: Math.max(0, Math.floor(currentBar / perSystem) * perSystem)
     readonly property real barWidth: (layoutSize.width - headerWidth) / perSystem
     /** Any bar with a section: then a row for the rehearsal marks on top (1.50). */
@@ -220,15 +220,23 @@ Item {
     implicitHeight: Math.ceil(systemHeight * Math.max(1, systems))
 
     /**
-     * Wait after the last size change before laying out again (1.82), in ms: while a window
-     * is dragged the drawn lines stay, then they move to their new place once. 0 (default):
-     * at once.
+     * Wait after the last change of size, spacing or bar width before laying out again
+     * (1.82), in ms: while a window is dragged the drawn lines stay, then they move to their
+     * new place once. 0 (default): at once.
      */
     property int settleMs: 0
     /** The size the layout uses: the item's, taken over at once or `settleMs` after it changed. */
     property size layoutSize: Qt.size(0, 0)
+    /** The spacing the layout uses: `staffSpace`, taken over with the size (a new spacing that
+     *  comes with a resize, e.g. a presentation going full screen, lays out once). */
+    property real layoutSpacing: staffSpace
+    /** The bar width the layout uses: `minBarWidth`, taken over with the size too (it may
+     *  follow the spacing, e.g. `staffSpace * 18`). */
+    property real layoutMinBarWidth: minBarWidth
     function takeSize() {
         layoutSize = Qt.size(width, height)
+        layoutSpacing = staffSpace
+        layoutMinBarWidth = minBarWidth
     }
     function sizeChanged() {
         if (settleMs <= 0 || layoutSize.width <= 0) {
@@ -239,6 +247,8 @@ Item {
     }
     onWidthChanged: sizeChanged()
     onHeightChanged: sizeChanged()
+    onStaffSpaceChanged: sizeChanged()
+    onMinBarWidthChanged: sizeChanged()
     // The first lines at once: a staff shows its notes from the first frame.
     Component.onCompleted: {
         takeSize()
@@ -246,6 +256,10 @@ Item {
         lineView.forceLayout()
     }
     Timer { id: settle; interval: staff.settleMs; onTriggered: staff.takeSize() }
+    /** Shown long enough that its room has settled: before, a change of the room (a page still
+     *  laying out) lands at once instead of growing in (Kontra 12.11.). */
+    property bool grown: false
+    Timer { running: staff.layoutSize.width > 0; interval: KanteStyle.durationSlow; onTriggered: staff.grown = true }
 
     // Line layouts by line index (1.82), as KanteTabStaff: a line keeps its layout while it
     // stays in view, so a page turn lays out only the line that comes in; any input below
@@ -884,15 +898,15 @@ Item {
         currentIndex: -1
         model: lineModel
         add: Transition {
-            enabled: KanteStyle.animate
+            enabled: KanteStyle.animate && staff.grown
             NumberAnimation { property: "opacity"; from: 0; to: 1; duration: KanteStyle.duration }
         }
         remove: Transition {
-            enabled: KanteStyle.animate
+            enabled: KanteStyle.animate && staff.grown
             NumberAnimation { property: "opacity"; to: 0; duration: KanteStyle.durationFast }
         }
         displaced: Transition {
-            enabled: KanteStyle.animate
+            enabled: KanteStyle.animate && staff.grown
             NumberAnimation { property: "y"; duration: KanteStyle.duration; easing.type: Easing.OutCubic }
         }
         delegate: Item {
@@ -910,7 +924,7 @@ Item {
             property real zoom: 1
             Component.onCompleted: shownSp = staff.sp
             onLayChanged: {
-                if (KanteStyle.animate && shownSp > 0 && Math.abs(shownSp - staff.sp) > 0.01) {
+                if (KanteStyle.animate && staff.grown && shownSp > 0 && Math.abs(shownSp - staff.sp) > 0.01) {
                     zoomAnim.from = shownSp / staff.sp
                     zoomAnim.restart()
                 }
@@ -918,10 +932,11 @@ Item {
             }
             NumberAnimation { id: zoomAnim; target: line; property: "zoom"; to: 1; duration: KanteStyle.duration; easing.type: Easing.OutCubic }
             Behavior on height {
-                enabled: KanteStyle.animate && line.shownSp > 0
+                enabled: KanteStyle.animate && staff.grown && line.shownSp > 0
                 NumberAnimation { duration: KanteStyle.duration; easing.type: Easing.OutCubic }
             }
-            transform: Scale { xScale: line.zoom; yScale: line.zoom }
+            // Up or down only: the width stays, a sideways slide read as a jerk (Kontra 12.11.).
+            transform: Scale { yScale: line.zoom }
 
             // Rehearsal marks (1.50); the probe measures the row.
             Repeater {

@@ -82,6 +82,7 @@ QQC2.ItemDelegate {
             spacing: 0
 
             QQC2.Label {
+                objectName: "listRowText"
                 Layout.fillWidth: true
                 text: row.text
                 color: ShinkiStyle.ink
@@ -91,6 +92,7 @@ QQC2.ItemDelegate {
                 wrapMode: Text.Wrap
             }
             QQC2.Label {
+                objectName: "listRowSubtitle"
                 Layout.fillWidth: true
                 visible: row.subtitle !== ""
                 text: row.subtitle
