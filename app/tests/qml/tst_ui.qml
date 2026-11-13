@@ -8828,6 +8828,7 @@ TestCase {
         return [{ tag: "Back key", back: () => window.pageStack.goBack() }, { tag: "pop", back: () => popPage() }]
     }
     function test_8s_begun_entry_on_leaving(data) {
+        failOnWarning(/CoursePage.qml.*Binding loop/)
         const uid = testCourse("Rechts " + data.tag)
         const host = listHost("CoursesPage.qml", 1280, 800)
         const pane = findChild(host, "pagePane")

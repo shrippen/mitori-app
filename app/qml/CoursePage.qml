@@ -592,10 +592,15 @@ Kirigami.ScrollablePage {
         standardButtons: QQC2.Dialog.Ok | QQC2.Dialog.Cancel
         onAccepted: Courses.remove(page.uid)
 
-        LookLabel {
+        // Built on opening: made with the page, the wrapping text looped the dialog's
+        // implicitHeight (a short text did not; Kante's dialog alone does not).
+        Loader {
+            active: removeDialog.visible
             width: parent.width
-            text: qsTr("The notebook and its %n entry(s) go from this device.", "", page.entries.length)
-            wrapMode: Text.Wrap
+            sourceComponent: LookLabel {
+                text: qsTr("The notebook and its %n entry(s) go from this device.", "", page.entries.length)
+                wrapMode: Text.Wrap
+            }
         }
     }
 }
