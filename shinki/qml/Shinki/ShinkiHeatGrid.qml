@@ -55,7 +55,7 @@ import QtQuick.Window
  * width counts).
  *
  * A grid that switches between data sets (Mitori's technique map: one group, one grade at a
- * time) keeps its cells in place with reserves (as KanteHeatGrid 1.65): `reserveRowLabels` and
+ * time) keeps its cells in place with reserves (as KanteHeatGrid 1.81): `reserveRowLabels` and
  * `reserveColumnLabels` are labels that may come, the label room takes the longest of them and
  * of its own; `reserveColumns` keeps the implicit width for that many columns. The cells start
  * where they started, left aligned in the room.
