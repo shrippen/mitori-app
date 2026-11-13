@@ -2671,7 +2671,7 @@ TestCase {
     // Search: techniques across disciplines and own notes; a result opens the sheet.
     function test_9_search() {
         // A reused row between notes, words and techniques reads its kind and data together.
-        failOnWarning(/SearchPage.qml.*TypeError/)
+        failOnWarning(/SearchPage.qml.*(TypeError|Unable to assign)/)
         Practice.addNote(Programme.entries("aikido", "k5").find(r => r.kind === "entry").id, "Kreis größer machen")
         const page = push("SearchPage")
         const field = findChild(page, "searchField")
@@ -2726,7 +2726,7 @@ TestCase {
     // Search: a word of a Shinki Toho comment finds the technique and opens the comment; a word of a
     // course note finds the entry and opens its notebook.
     function test_9_search_comments_courses() {
-        failOnWarning(/SearchPage.qml.*TypeError/)
+        failOnWarning(/SearchPage.qml.*(TypeError|Unable to assign)/)
         const course = Courses.create("Winterlehrgang", "2026-01-10", "2026-01-11", "", "")
         verify(Courses.addEntry(course, "Erste Zeile\nSchwebende Hüftdrehung geübt"))
         const page = push("SearchPage")
