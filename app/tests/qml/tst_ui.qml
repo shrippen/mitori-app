@@ -251,6 +251,15 @@ TestCase {
         tryVerify(() => dialog.contentHeight > 0, 1000, "content height " + dialog.contentHeight)  // Kante: once built
     }
 
+    // Shinki's setting row names its reset link through the catalogue, not in German in the code.
+    function test_1d_shinki_reset_text() {
+        if (!Look.shinki) {
+            skip("Shinki only")
+        }
+        const row = createTemporaryQmlObject("import Mitori; LookSettingRow { modified: true }", window.contentItem)
+        compare(row.resetText, qsTranslate("ShinkiSettingRow", "Reset"))
+    }
+
     // A date field says when its text is no date (pages lock their button on it), and its month
     // opens inside the window, also at the window's bottom.
     function test_1e_date_field() {

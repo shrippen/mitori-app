@@ -2270,6 +2270,13 @@
     </message>
 </context>
 <context>
+    <name>ShinkiSettingRow</name>
+    <message>
+        <source>Reset</source>
+        <translation>Zurücksetzen</translation>
+    </message>
+</context>
+<context>
     <name>StartPage</name>
     <message>
         <source>Search</source>
