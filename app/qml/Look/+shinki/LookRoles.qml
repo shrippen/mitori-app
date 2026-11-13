@@ -40,6 +40,8 @@ QtObject {
     readonly property font narrowFont: Qt.font({ family: ShinkiStyle.narrowFamily, pixelSize: ShinkiStyle.columnSize, bold: true })
     // The letter spacing of a column, in em ("Sperrung 0,1 em").
     readonly property real columnTracking: ShinkiStyle.columnTracking
+    // A change of state (a fade); 0 without motion (bible, "Bewegung").
+    readonly property int stateDuration: ShinkiStyle.animate ? ShinkiStyle.stateDuration : 0
 
     function unit(px) {
         return ShinkiStyle.unit(px)

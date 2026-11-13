@@ -40,6 +40,8 @@ QtObject {
     readonly property font narrowFont: defaultFont
     // The letter spacing of a column, in em (the kicker's wide spacing).
     readonly property real columnTracking: 0
+    // A change of state (a fade); 0 without motion.
+    readonly property int stateDuration: KanteStyle.durationFast
 
     function unit(px) {
         return KanteStyle.unit(px)
