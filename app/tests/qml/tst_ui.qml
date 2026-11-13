@@ -5627,6 +5627,36 @@ TestCase {
         popPage()
     }
 
+    // A phone held sideways (800 × 360): the discipline and the grades scroll away with the rows,
+    // as on a tablet, so the list gets the height; upright they stay above it.
+    function test_2v_c_phone_sideways_chooser_scrolls() {
+        failOnWarning(/ProgrammePage.qml.*Binding loop/)
+        useFolder(standInVideos)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        window.width = 800
+        window.height = 360
+        const page = push("ProgrammePage")
+        slidIn()
+        verify(!page.wide, "a phone, not a tablet")
+        const list = findChild(page, "programmeList")
+        tryVerify(() => page.inside(findChild(page, "gradeChips"), list), 3000, "the grades scroll with the rows")
+        tryVerify(() => list.height >= page.height - 1, 3000, "the list has the page's height: " + list.height + " of " + page.height)
+        // Scrolled down, the grades are out of view.
+        const chips = findChild(page, "gradeChips")
+        list.positionViewAtEnd()
+        tryVerify(() => chips.mapToItem(list, 0, chips.height).y <= 0, 3000, "the grades scrolled away")
+        popPage()
+
+        window.width = 420
+        window.height = 800
+        const upright = push("ProgrammePage")
+        slidIn()
+        tryVerify(() => !upright.inside(findChild(upright, "gradeChips"), findChild(upright, "programmeList")), 3000,
+                  "upright the grades stay above the rows")
+        popPage()
+    }
+
     // A pane too narrow for columns (a small tablet window) keeps the one column.
     function test_2v_d_narrow_pane() {
         const page = tabletProgramme()
