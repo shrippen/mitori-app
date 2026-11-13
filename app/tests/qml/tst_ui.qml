@@ -34,9 +34,11 @@ TestCase {
     }
 
     // Every case: a signal handler that reads a parameter it does not declare (deprecated in Qt 6;
-    // Qt warns once per process, so only a check in every case catches it wherever it comes).
+    // Qt warns once per process, so only a check in every case catches it wherever it comes), and
+    // a call with more arguments than the function takes (Qt drops them with a warning).
     function init() {
         failOnWarning(/Injection of parameters into signal handlers is deprecated/)
+        failOnWarning(/Too many arguments/)
     }
 
     function initTestCase() {
@@ -8299,7 +8301,7 @@ TestCase {
             }
         }
         look("start", window.pageStack.currentItem)
-        const round = Exam.draw("aikido", "k5", 3, 0)
+        const round = Exam.draw("aikido", "k5")
         for (const [file, props] of [["ProgrammePage", {}], ["TodayPage", {}], ["StatsPage", {}], ["YearsPage", {}], ["AllNotesPage", {}],
                                      ["TechniqueMapPage", {}], ["SearchPage", {}], ["CoursesPage", {}], ["NotebooksPage", {}], ["GradesPage", {}],
                                      ["SettingsPage", {}], ["BackupPage", {}], ["VideosPage", {}], ["ScanPage", {}], ["AppearancePage", {}], ["ExamPage", {}],
@@ -8607,14 +8609,14 @@ TestCase {
     }
 
     function test_8u_exam_cancel_at_first_point() {
-        const points = Exam.draw("aikido", "k5", 3, 0)
+        const points = Exam.draw("aikido", "k5")
         const page = push("ExamRoundPage", { points: points, discipline: "aikido", grade: "k5" })
         page.cancel()
         tryVerify(() => window.pageStack.currentItem !== page, 2000, "at point 1 there is nothing to lose")
     }
 
     function test_8u_exam_cancel_asks_after_first_point() {
-        const points = Exam.draw("aikido", "k5", 3, 0)
+        const points = Exam.draw("aikido", "k5")
         const page = push("ExamRoundPage", { points: points, discipline: "aikido", grade: "k5" })
         page.next()
         page.cancel()
@@ -8633,7 +8635,7 @@ TestCase {
     }
 
     function test_8v_exam_end_says_what_is_open() {
-        const points = Exam.draw("aikido", "k5", 3, 0)
+        const points = Exam.draw("aikido", "k5")
         const page = push("ExamEndPage", { points: points, discipline: "aikido", grade: "k5" })
         const open = findChild(page, "openPoints")
         verify(open.visible)
