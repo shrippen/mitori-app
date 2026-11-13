@@ -138,6 +138,16 @@ TestCase {
         return window.pageStack.currentItem
     }
 
+    // ctest ui_desktop_dark: Breeze Dark through the KDE platform theme (tests/data/kde-dark). The
+    // dialog cases that follow it there check their buttons and contrast on a dark window.
+    function test_0c_dark_scheme() {
+        if (!uiDark) {
+            skip("the dark runs only")
+        }
+        const ground = window.palette.window
+        verify(ground.r < 0.3 && ground.g < 0.3 && ground.b < 0.3, "a dark window colour: " + ground)
+    }
+
     // The first-start wizard: welcome, style, tour; Start marks it done and goes back to the start menu.
     function test_0_welcome() {
         const page = push("WelcomePage")

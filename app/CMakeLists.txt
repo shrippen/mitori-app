@@ -757,6 +757,14 @@ if(MITORI_BUILD_TESTS AND NOT ANDROID)
         add_test(NAME ui_shinki_desktop COMMAND tst_ui Ui::test_2v_c_shinki_rows_whole_width)
         set_tests_properties(ui_shinki_desktop PROPERTIES RESOURCE_LOCK ui_data ENVIRONMENT
             "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;MITORI_TEST_STYLE=shinki;${NO_KEY_STORE}")
+        # The dialogs on a dark Breeze window (button order, contrast): the KDE platform theme reads
+        # tests/data/kde-dark/kdeglobals (BreezeDark.colors) from XDG_CONFIG_HOME at the start.
+        set(DARK_DIALOG_CASES Ui::test_0c_dark_scheme Ui::test_1d_dialog_fit Ui::test_9g_exam_discard)
+        set(DARK_ENV "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;QT_QPA_PLATFORMTHEME=kde;XDG_CONFIG_HOME=${CMAKE_CURRENT_SOURCE_DIR}/tests/data/kde-dark;MITORI_TEST_DARK=1;${NO_KEY_STORE}")
+        add_test(NAME ui_desktop_dark COMMAND tst_ui ${DARK_DIALOG_CASES})
+        set_tests_properties(ui_desktop_dark PROPERTIES RESOURCE_LOCK ui_data ENVIRONMENT "${DARK_ENV}")
+        add_test(NAME ui_shinki_desktop_dark COMMAND tst_ui ${DARK_DIALOG_CASES})
+        set_tests_properties(ui_shinki_desktop_dark PROPERTIES RESOURCE_LOCK ui_data ENVIRONMENT "${DARK_ENV};MITORI_TEST_STYLE=shinki")
     endif()
     # Style and language changed while the app runs, from Leinen and from Shinki. A file of its own:
     # no other test holds a page's compiled types in the engine's cache (tst_look.qml).
