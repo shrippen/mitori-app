@@ -5636,9 +5636,10 @@ TestCase {
         const list = findChild(page, "programmeList")
         tryVerify(() => page.inside(findChild(page, "gradeChips"), list), 3000, "the grades scroll with the rows")
         tryVerify(() => list.height >= page.height - 1, 3000, "the list has the page's height: " + list.height + " of " + page.height)
-        list.contentY = list.contentHeight
-        wait(100)
-        list.positionViewAtBeginning()
+        // Scrolled down, the grades are out of view.
+        const chips = findChild(page, "gradeChips")
+        list.positionViewAtEnd()
+        tryVerify(() => chips.mapToItem(list, 0, chips.height).y <= 0, 3000, "the grades scrolled away")
         popPage()
 
         window.width = 420

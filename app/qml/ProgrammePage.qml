@@ -106,8 +106,8 @@ Kirigami.Page {
             again = !again
         }
     }
-    // On a tablet the chips scroll with the rows: while the head settles after opening or a chip,
-    // the list stays at its top, until a row or a finger moves it.
+    // Where the chips scroll with the rows (chooserScrolls): while the head settles after opening
+    // or a chip, the list stays at its top, until a row or a finger moves it.
     property bool keepTop: true
     Timer {
         id: keepTopOff
@@ -748,7 +748,7 @@ Kirigami.Page {
             }
         }
     }
-    // The last item that takes the focus in the list's head (on a tablet its chips), or null.
+    // The last item that takes the focus in the list's head (its chips where they scroll), or null.
     function lastInHead() {
         const head = list.headerItem
         let last = null
