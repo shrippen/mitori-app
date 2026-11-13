@@ -167,7 +167,7 @@ Kirigami.ScrollablePage {
         // The course on a card.
         QQC2.Control {
             Layout.fillWidth: true
-            padding: Kirigami.Units.largeSpacing
+            padding: Look.cardPadding
             background: LookCard {}
 
             contentItem: ColumnLayout {
@@ -289,7 +289,7 @@ Kirigami.ScrollablePage {
             QQC2.Control {
                 Layout.fillWidth: true
                 visible: page.choosing
-                padding: Kirigami.Units.largeSpacing
+                padding: Look.cardPadding
                 background: LookCard {}
 
                 contentItem: ColumnLayout {

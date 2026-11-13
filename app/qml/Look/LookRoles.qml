@@ -1,4 +1,5 @@
 import QtQuick
+import org.kde.kirigami as Kirigami
 import Kante
 
 // The roles of Look.qml from Kante: Breeze, Material, Kante and Leinen. Under Shinki the file
@@ -28,6 +29,8 @@ QtObject {
     // The keyboard focus frame.
     readonly property color focusColor: KanteStyle.focusColor
     readonly property int focusWidth: KanteStyle.borderWidth
+    // The inner padding of a card.
+    readonly property int cardPadding: Kirigami.Units.largeSpacing
 
     readonly property font defaultFont: KanteStyle.defaultFont
     readonly property font smallFont: KanteStyle.smallFont

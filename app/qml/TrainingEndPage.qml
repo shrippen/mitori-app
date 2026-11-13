@@ -49,7 +49,7 @@ Kirigami.ScrollablePage {
             objectName: "endCard"
             Layout.fillWidth: true
             Layout.maximumWidth: Kirigami.Units.gridUnit * 30     // a tablet: a width that reads
-            padding: Kirigami.Units.largeSpacing
+            padding: Look.cardPadding
             background: LookCard {}
 
             contentItem: ColumnLayout {

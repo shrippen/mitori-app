@@ -331,7 +331,7 @@ Kirigami.Page {
                         Layout.maximumWidth: Kirigami.Units.gridUnit * 30
                         Layout.margins: Kirigami.Units.smallSpacing
                         visible: page.noForms
-                        padding: Kirigami.Units.largeSpacing
+                        padding: Look.cardPadding
                         background: LookCard {}
 
                         contentItem: ColumnLayout {

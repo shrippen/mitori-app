@@ -28,7 +28,7 @@ Kirigami.ScrollablePage {
 
                 objectName: "conflict"
                 Layout.fillWidth: true
-                padding: Kirigami.Units.largeSpacing
+                padding: Look.cardPadding
                 background: LookCard {}
 
                 contentItem: ColumnLayout {

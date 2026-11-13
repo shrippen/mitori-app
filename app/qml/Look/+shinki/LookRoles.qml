@@ -28,6 +28,8 @@ QtObject {
     // The keyboard focus frame: 2 px ink, apart from red (chosen).
     readonly property color focusColor: ShinkiStyle.ink
     readonly property int focusWidth: ShinkiStyle.focusWidth
+    // The inner padding of a card (bible: 12 to 14 px).
+    readonly property int cardPadding: ShinkiStyle.cardSpace
 
     readonly property font defaultFont: Qt.font({ family: ShinkiStyle.uiFamily, pixelSize: ShinkiStyle.uiSize })
     readonly property font smallFont: Qt.font({ family: ShinkiStyle.uiFamily, pixelSize: ShinkiStyle.smallSize })

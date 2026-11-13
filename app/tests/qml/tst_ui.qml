@@ -2354,6 +2354,8 @@ TestCase {
         compare(end.Kirigami.ColumnView.index, pages.today.Kirigami.ColumnView.index + 1)
         verify(!hasPlayer(), "the player is gone")
         compare(findChild(end, "practisedCount").value, "2")
+        // A card's inner padding: Shinki's 12 px (bible, Karte), else Kirigami's large spacing.
+        compare(findChild(end, "endCard").padding, Look.shinki ? Look.unit(12) : Kirigami.Units.largeSpacing)
         tryVerify(() => Math.abs(end.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
         wait(300)
         compare(JSON.stringify(overflowing(end, data.width)), "[]")
