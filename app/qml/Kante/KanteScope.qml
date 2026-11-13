@@ -324,7 +324,7 @@ Item {
         }
         const t = item.Kirigami.Theme
         // Without a window there is no probe to judge by: the item waits for one.
-        if (!t.inherit || !scope.Window.contentItem || ownColours(t)) {
+        if (!t.inherit || !windowRoot || ownColours(t)) {
             return
         }
         for (const prop in roles) {
@@ -344,7 +344,10 @@ Item {
         }
     }
     // A popup's content gets its window on opening: then its disabled items are looked at.
-    readonly property Item windowRoot: scope.Window.contentItem
+    // Looked up through the target (1.82): a scope held as a property (a skin's) has no window of its
+    // own; the scope's is the fallback for a target without one.
+    readonly property Item windowRoot: target && target.Window.contentItem ? target.Window.contentItem
+                                                                           : scope.Window.contentItem
     onWindowRootChanged: resweepLater.start()
     Timer {
         id: resweepLater
@@ -371,11 +374,11 @@ Item {
     // Colours the app set on the theme (review of #88: a red text was lost after Kante): a
     // colour that is neither the platform's for a disabled item nor Kante's.
     function ownColours(t) {
-        if (!probe || probe.parent !== scope.Window.contentItem) {
+        if (!probe || probe.parent !== windowRoot) {
             if (probe) {
                 probe.destroy()
             }
-            probe = probeComponent.createObject(scope.Window.contentItem)
+            probe = probeComponent.createObject(windowRoot)
         }
         if (!probe) {
             return false

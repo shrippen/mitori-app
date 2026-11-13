@@ -1415,6 +1415,13 @@
     </message>
 </context>
 <context>
+    <name>KanteSettingRow</name>
+    <message>
+        <source>Reset</source>
+        <translation>Zurücksetzen</translation>
+    </message>
+</context>
+<context>
     <name>KanteTagPicker</name>
     <message>
         <source>Remove %1</source>
