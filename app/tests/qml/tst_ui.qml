@@ -4234,6 +4234,47 @@ TestCase {
         popPage()
     }
 
+    // The map stands still while its grids change (owner, 13.11.2026: it jumped on every change of
+    // group, grade or discipline): within a discipline the filters keep their height and the first
+    // place its spot. A wide window keeps the matrix's width too.
+    function test_9k_map_steady_data() {
+        return [{ tag: "wide", width: 1280, height: 800 }, { tag: "phone", width: 420, height: 900 }]
+    }
+    function test_9k_map_steady(data) {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k1")
+        window.width = data.width
+        window.height = data.height
+        const page = push("TechniqueMapPage")
+        slidIn()
+        const heat = findChild(page, "techniqueMatrix")
+        const filters = findChild(page, "mapFilters")
+        const groupRow = findChild(page, "groupRow")
+        const spot = () => {
+            waitForRendering(page)
+            const at = heat.cellAt(0, 0).mapToItem(page, 0, 0)
+            const filterHeight = groupRow.mapToItem(page, 0, groupRow.height).y - filters.mapToItem(page, 0, 0).y
+            return { x: Math.round(at.x), y: Math.round(at.y), filters: filterHeight, width: Math.round(heat.width) }
+        }
+        const first = spot()
+        const steps = page.grids.slice(1).map(g => () => { page.group = g.title })
+            .concat(page.grades.map(g => () => { page.grade = g.id }))
+        for (const step of steps) {
+            step()
+            const now = spot()
+            const what = page.grade + " " + page.shown.title
+            compare(now.filters, first.filters, "the filters' height at " + what)
+            compare(now.x, first.x, "the first place's x at " + what)
+            compare(now.y, first.y, "the first place's y at " + what)
+            // The legend may be a pixel wider than the cells (Shinki), and a grid of one level shows a
+            // shorter one: half a pixel each side, centred.
+            verify(Math.abs(now.width - first.width) <= 1, "the matrix's width at " + what + ": " + now.width + " / " + first.width)
+        }
+
+        popPage()
+    }
+
     // The panel's small player (owner, 12.11.2026): the chapter in a loop, mute, play/pause only;
     // it stands while another page lies above the map.
     function test_9k_map_mini_player() {
@@ -4306,9 +4347,11 @@ TestCase {
         slidIn()
         tryVerify(() => !page.wide, 2000, "a phone")
         verify(!findChild(page, "mapPanel").visible)
-        // The filters: at most three lines (discipline; grade and groups).
+        // The filters: at most three lines (discipline; grade; groups, sideways when they do not fit).
         const filters = findChild(page, "mapFilters")
-        tryVerify(() => filters.height > 0 && filters.height <= 3 * findChild(page, "gradeBox").height + 4 * Kirigami.Units.smallSpacing, 2000, "filters " + filters.height)
+        const groupRow = findChild(page, "groupRow")
+        const filterHeight = () => groupRow.mapToItem(page, 0, groupRow.height).y - filters.mapToItem(page, 0, 0).y
+        tryVerify(() => filters.height > 0 && filterHeight() <= 3 * findChild(page, "gradeBox").height + 4 * Kirigami.Units.largeSpacing, 2000, "filters " + filterHeight())
         const heat = findChild(page, "techniqueMatrix")
         let target = null
         for (let r = 0; r < heat.rowCount && !target; r++) {

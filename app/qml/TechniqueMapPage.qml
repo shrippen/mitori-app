@@ -26,6 +26,10 @@ Kirigami.ScrollablePage {
     property string grade: PracticeGrade.grade(discipline)
     readonly property string gradeName: (grades.find(g => g.id === grade) || {}).name || ""
     readonly property var grids: Programme.techniqueMap(discipline, grade)
+    // Every grid of the discipline (up to its last grade): the matrix keeps room for all of them,
+    // so a change of group or grade does not move its places (owner, 13.11.2026).
+    readonly property var allGrids: grades.length > 0 ? Programme.techniqueMap(discipline, grades[grades.length - 1].id) : []
+    readonly property var allMatrices: allGrids.filter(g => g.kind === "matrix")
     // The group shown, by title; the first one when the chosen one has nothing up to this grade.
     property string group: ""
     readonly property var shown: grids.find(g => g.title === group) || grids[0] || null
@@ -43,8 +47,8 @@ Kirigami.ScrollablePage {
     ColumnLayout {
         spacing: Kirigami.Units.largeSpacing
 
-        // The filters stand together and wrap: discipline, "up to" grade, group (groups apart: one
-        // grid at a time).
+        // The filters stand together and wrap: discipline, "up to" grade; the groups below (groups
+        // apart: one grid at a time).
         Flow {
             id: filters
 
@@ -71,18 +75,48 @@ Kirigami.ScrollablePage {
                 Accessible.name: qsTr("Grade")
                 onActivated: index => page.grade = page.grades[index].id
             }
+        }
 
-            Repeater {
-                model: page.matrix ? page.grids : []
+        // The groups on a line of their own, sideways when they do not fit: the filters keep their
+        // height whatever the number of groups.
+        Flickable {
+            id: groupRow
 
-                LookChip {
-                    required property var modelData
+            objectName: "groupRow"
+            Layout.fillWidth: true
+            Layout.preferredHeight: groups.implicitHeight
+            visible: page.matrix
+            contentWidth: groups.implicitWidth
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.HorizontalFlick
+            QQC2.ScrollIndicator.horizontal: QQC2.ScrollIndicator {}
 
-                    objectName: "groupChip"
-                    text: modelData.title
-                    checkable: true
-                    checked: !!page.shown && modelData.title === page.shown.title
-                    onClicked: page.group = modelData.title
+            Row {
+                id: groups
+
+                spacing: Kirigami.Units.smallSpacing
+
+                Repeater {
+                    model: page.matrix ? page.grids : []
+
+                    LookChip {
+                        required property var modelData
+
+                        objectName: "groupChip"
+                        text: modelData.title
+                        checkable: true
+                        checked: !!page.shown && modelData.title === page.shown.title
+                        onClicked: page.group = modelData.title
+                        // Tab to a chip out of view: it comes into view.
+                        onActiveFocusChanged: {
+                            if (!activeFocus) {
+                                return
+                            }
+                            const right = x + width - groupRow.width
+                            groupRow.contentX = Math.max(right, Math.min(x, groupRow.contentX))
+                        }
+                    }
                 }
             }
         }
@@ -102,6 +136,21 @@ Kirigami.ScrollablePage {
             // The map, centred in its area on a wide window.
             ColumnLayout {
                 id: area
+
+                // Another group, grade or discipline: the map fades in, it does not snap.
+                Connections {
+                    target: page
+                    function onShownChanged() { arrive.restart() }
+                }
+                NumberAnimation {
+                    id: arrive
+
+                    target: area
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: Look.stateDuration
+                }
 
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignTop
@@ -139,6 +188,10 @@ Kirigami.ScrollablePage {
                     rowLabels: rows.map(r => r.title)
                     columnLabels: columns.map(c => page.attackName(c))
                     columnTips: columns.map(c => c.jp ? page.attackName(c) + "  " + c.jp : "")
+                    // Room for every group's labels and columns: the cells stay where they are.
+                    reserveRowLabels: page.allMatrices.reduce((all, g) => all.concat(g.rows.map(r => r.title)), [])
+                    reserveColumnLabels: page.allMatrices.reduce((all, g) => all.concat(g.columns.map(c => page.attackName(c))), [])
+                    reserveColumns: Math.max(0, ...page.allMatrices.map(g => g.columns.length))
                     // Rows and columns of the same grid (not heat.columns, which may follow a moment later).
                     cells: {
                         const g = page.matrix && Practice.revision >= 0 ? page.shown : { rows: [], columns: [] }

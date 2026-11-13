@@ -46,6 +46,7 @@ QtObject {
     readonly property font sheetTitleFont: roles.sheetTitleFont
     readonly property font narrowFont: roles.narrowFont
     readonly property real columnTracking: roles.columnTracking
+    readonly property int stateDuration: roles.stateDuration
 
     function unit(px) {
         return roles.unit(px)
