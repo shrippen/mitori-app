@@ -317,8 +317,9 @@ Kirigami.Page {
                     // The list is one Tab stop; Up and Down move in it.
                     activeFocusOnTab: false
                     focusOnClick: false
-                    // Kind and data together from the row itself, in every binding: `kind` and `found`
-                    // are two bindings, and a reused row may have the new kind with the old data.
+                    // Kind and data together from the row itself, in every binding that reads data:
+                    // `kind` and `found` are two bindings, and a reused row may have the new kind with
+                    // the old data.
                     selected: (rowLoader.ListView.isCurrentItem && list.activeFocus)
                               || (page.wide && rowLoader.modelData.kind === "word" && !!page.detailWord
                                   && rowLoader.modelData.data.word === page.detailWord.word)
