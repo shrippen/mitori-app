@@ -1415,6 +1415,13 @@
     </message>
 </context>
 <context>
+    <name>KanteSettingRow</name>
+    <message>
+        <source>Reset</source>
+        <translation>Zurücksetzen</translation>
+    </message>
+</context>
+<context>
     <name>KanteTagPicker</name>
     <message>
         <source>Remove %1</source>
@@ -2267,6 +2274,13 @@
     <message>
         <source>Style, language, about Mitori</source>
         <translation>Stil, Sprache, über Mitori</translation>
+    </message>
+</context>
+<context>
+    <name>ShinkiSettingRow</name>
+    <message>
+        <source>Reset</source>
+        <translation>Zurücksetzen</translation>
     </message>
 </context>
 <context>

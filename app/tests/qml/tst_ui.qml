@@ -138,6 +138,16 @@ TestCase {
         return window.pageStack.currentItem
     }
 
+    // ctest ui_desktop_dark: Breeze Dark through the KDE platform theme (tests/data/kde-dark). The
+    // dialog cases that follow it there check their buttons and contrast on a dark window.
+    function test_0c_dark_scheme() {
+        if (!uiDark) {
+            skip("the dark runs only")
+        }
+        const ground = window.palette.window
+        verify(ground.r < 0.3 && ground.g < 0.3 && ground.b < 0.3, "a dark window colour: " + ground)
+    }
+
     // The first-start wizard: welcome, style, tour; Start marks it done and goes back to the start menu.
     function test_0_welcome() {
         const page = push("WelcomePage")
@@ -251,6 +261,43 @@ TestCase {
         tryVerify(() => dialog.contentHeight > 0, 1000, "content height " + dialog.contentHeight)  // Kante: once built
     }
 
+    // Shinki's setting row names its reset link through the catalogue, not in German in the code.
+    function test_1d_shinki_reset_text() {
+        if (!Look.shinki) {
+            skip("Shinki only")
+        }
+        const row = createTemporaryQmlObject("import Mitori; LookSettingRow { modified: true }", window.contentItem)
+        compare(row.resetText, qsTranslate("ShinkiSettingRow", "Reset"))
+    }
+
+    // Shinki's chart read-out is as its toast (bible: ink at 92 %, white text), not paper with ink.
+    function test_1d_shinki_chart_readout() {
+        if (!Look.shinki) {
+            skip("Shinki only")
+        }
+        const chart = createTemporaryQmlObject(
+            "import Mitori; LookBarChart { width: 300; height: 200; values: [[1, 2], [3, 4]]; labels: ['A', 'B']; "
+            + "partNames: ['x', 'y']; hoverIndex: 0 }", window.contentItem)
+        const box = findChild(chart, "chartReadout")
+        verify(box && box.visible, "the read-out shows")
+        verify(box.color.r < 0.3 && box.color.g < 0.3 && box.color.b < 0.3, "dark ground: " + box.color)
+        fuzzyCompare(box.color.a, 0.92, 0.01, "the bible's 92 %")
+        const texts = []
+        const walk = item => {
+            for (const child of item.children) {
+                if (child.visible && child.text !== undefined && child.text !== "") {
+                    texts.push(child)
+                }
+                walk(child)
+            }
+        }
+        walk(box)
+        verify(texts.length >= 3, "texts: " + texts.length)
+        for (const t of texts) {
+            verify(t.color.r > 0.7 && t.color.g > 0.7 && t.color.b > 0.7, "light text '" + t.text + "': " + t.color)
+        }
+    }
+
     // A date field says when its text is no date (pages lock their button on it), and its month
     // opens inside the window, also at the window's bottom.
     function test_1e_date_field() {
@@ -360,6 +407,31 @@ TestCase {
         compare(page.grade, "shoden")
         verify(page.rows.some(r => r.kind === "info"))
         shot("3-programme-shinkitoho")
+        popPage()
+    }
+
+    // Shinki's grade chip (bible `.gchip`): the name bold, below it the stand in table figures at
+    // chipStandSize. The other looks keep the stand in the text.
+    function test_2a_chip_stand() {
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        const chips = findChild(page, "gradeChips")
+        verify(chips.count > 0)
+        for (let i = 0; i < chips.count; i++) {
+            const chip = chips.itemAt(i)
+            const stand = findChild(chip, "chipStand")
+            if (!Look.shinki) {
+                verify(!stand, "no stand label outside Shinki")
+                continue
+            }
+            verify(stand, "stand label in chip " + i)
+            verify(/^\d+\/\d+$|^–$/.test(stand.text), "stand text: " + stand.text)
+            compare(stand.font.pixelSize, Look.unit(11))
+            verify(stand.font.features["tnum"] === 1, "table figures")
+            verify(stand.y >= chip.height / 2 - stand.height, "the stand sits below the name")
+            verify(chip.text.indexOf("/") < 0, "the name alone in the text: " + chip.text)
+        }
         popPage()
     }
 
@@ -2292,6 +2364,8 @@ TestCase {
         compare(end.Kirigami.ColumnView.index, pages.today.Kirigami.ColumnView.index + 1)
         verify(!hasPlayer(), "the player is gone")
         compare(findChild(end, "practisedCount").value, "2")
+        // A card's inner padding: Shinki's 12 px (bible, Karte), else Kirigami's large spacing.
+        compare(findChild(end, "endCard").padding, Look.shinki ? Look.unit(12) : Kirigami.Units.largeSpacing)
         tryVerify(() => Math.abs(end.mapToItem(window.contentItem, 0, 0).x) < 1, 3000)
         wait(300)
         compare(JSON.stringify(overflowing(end, data.width)), "[]")
@@ -7092,7 +7166,12 @@ TestCase {
         const index = page.grades.findIndex(g => g.id === "kaiden")
         const data = page.grades[index]
         const chip = chips.itemAt(index)
-        compare(chip.text, data.name + " –")
+        if (Look.shinki) {
+            compare(chip.text, data.name)
+            compare(findChild(chip, "chipStand").text, "–")
+        } else {
+            compare(chip.text, data.name + " –")
+        }
         compare(chip.Accessible.name, qsTranslate("ProgrammePage", "%1, no forms yet").arg(data.name))
 
         clickUntil(chip, () => page.grade === "kaiden")
@@ -7172,7 +7251,13 @@ TestCase {
         const chips = findChild(page, "gradeChips")
         const k5 = chips.itemAt(page.grades.findIndex(g => g.id === "k5"))
         const ids = Programme.entries("aikido", "k5").filter(r => r.kind === "entry").map(r => r.id)
-        compare(k5.text, page.grades.find(g => g.id === "k5").name + " " + Practice.counts(ids)[4] + "/" + ids.length)
+        const stand = Practice.counts(ids)[4] + "/" + ids.length
+        if (Look.shinki) {
+            compare(k5.text, page.grades.find(g => g.id === "k5").name)
+            compare(findChild(k5, "chipStand").text, stand)
+        } else {
+            compare(k5.text, page.grades.find(g => g.id === "k5").name + " " + stand)
+        }
         const programmeList = findChild(page, "programmeList")
         tryVerify(() => programmeList.height < 1000)
         wait(800)

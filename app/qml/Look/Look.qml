@@ -40,6 +40,7 @@ QtObject {
     readonly property int borderWidth: roles.borderWidth
     readonly property color focusColor: roles.focusColor
     readonly property int focusWidth: roles.focusWidth
+    readonly property int cardPadding: roles.cardPadding
     readonly property font defaultFont: roles.defaultFont
     readonly property font smallFont: roles.smallFont
     readonly property font readingFont: roles.readingFont

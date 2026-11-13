@@ -259,6 +259,7 @@ public slots:
         engine->rootContext()->setContextProperty(QStringLiteral("uiDataDir"), QStringLiteral(UI_DATA_DIR));
         engine->rootContext()->setContextProperty(QStringLiteral("uiShotsDir"), shots);
         engine->rootContext()->setContextProperty(QStringLiteral("uiShinki"), shinki);
+        engine->rootContext()->setContextProperty(QStringLiteral("uiDark"), qEnvironmentVariableIsSet("MITORI_TEST_DARK"));
         engine->rootContext()->setContextProperty(QStringLiteral("uiCatalog"), this);
         // The second run (ctest ui_shinki): the pages through Look as Shinki. The running style
         // belongs to it too: the window's head and the global tool bar follow it (as after a

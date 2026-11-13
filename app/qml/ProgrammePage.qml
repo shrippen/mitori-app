@@ -207,7 +207,9 @@ Kirigami.Page {
                         readonly property var ids: Programme.entries(page.discipline, modelData.id)
                             .filter(r => r.kind === "entry").map(r => r.id)
                         readonly property int ready: Practice.revision >= 0 ? Practice.counts(ids)[4] : 0
-                        text: ids.length ? modelData.name + " " + ready + "/" + ids.length : modelData.name + " –"
+                        readonly property string standText: ids.length ? ready + "/" + ids.length : "–"
+                        text: Look.shinki ? modelData.name : modelData.name + " " + standText
+                        stand: Look.shinki ? standText : ""
                         Accessible.name: ids.length ? qsTr("%1, %2 of %3 exam-ready").arg(modelData.name).arg(ready).arg(ids.length)
                                                     : qsTr("%1, no forms yet").arg(modelData.name)
                         checkable: true
@@ -329,7 +331,7 @@ Kirigami.Page {
                         Layout.maximumWidth: Kirigami.Units.gridUnit * 30
                         Layout.margins: Kirigami.Units.smallSpacing
                         visible: page.noForms
-                        padding: Kirigami.Units.largeSpacing
+                        padding: Look.cardPadding
                         background: LookCard {}
 
                         contentItem: ColumnLayout {
