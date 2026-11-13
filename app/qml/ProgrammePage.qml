@@ -61,6 +61,10 @@ Kirigami.Page {
     }
     // A tablet sideways keeps the list and the small player side by side.
     readonly property bool wide: Tablet.wide(width, height) || (width > height && noteHold)
+    // Discipline and grades scroll away with the rows on a tablet and on a phone held sideways,
+    // where they would leave the list little height. The window's height, not the page's: the
+    // header they leave changes the page's height (a binding loop).
+    readonly property bool chooserScrolls: wide || width > Window.height
     // The on-screen keyboard may shrink the page while a note is typed in the small player: from
     // the field's focus on the player stays until the page is high again or the player goes. A tap
     // on "Add" or a row takes the focus while the keyboard is still open.
@@ -216,10 +220,19 @@ Kirigami.Page {
         }
     }
 
-    header: Loader {
-        active: !page.wide
-        visible: active         // an emptied Loader keeps its implicit height
-        sourceComponent: chooser
+    // Only its height counts: the page's implicitWidth follows its header, and which header shows
+    // depends on the width (a binding loop).
+    header: Item {
+        implicitHeight: headChooser.active ? headChooser.implicitHeight : 0
+        visible: headChooser.active
+
+        Loader {
+            id: headChooser
+
+            width: parent.width
+            active: !page.chooserScrolls
+            sourceComponent: chooser
+        }
     }
 
     padding: 0
@@ -256,7 +269,7 @@ Kirigami.Page {
                     topBefore = originY
 
                     // Opened, or a chip tapped: the head settles in several steps, the chips stay.
-                    if (page.keepTop && page.wide) {
+                    if (page.keepTop && page.chooserScrolls) {
                         keepTopOff.restart()
                         Qt.callLater(() => {
                             if (list && page.keepTop) {
@@ -280,7 +293,7 @@ Kirigami.Page {
 
                     Loader {
                         Layout.fillWidth: true
-                        active: page.wide
+                        active: page.chooserScrolls
                         visible: active
                         sourceComponent: chooser
                     }
