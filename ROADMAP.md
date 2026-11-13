@@ -141,20 +141,10 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
 - `start.sh` beendete sich beim ersten Lauf am 03.11. nach <10 s mit Exit 0 ohne Meldung (zweiter Lauf normal);
   beobachten.
 
-### Look / Shinki
-- Stand im Grad-Chip: Token `chipStandSize` nutzt noch kein Baustein (#52).
-- ExamBoard Grundgröße 10 unter Shinki (Größe aus ShinkiStyle); ShinkiSettingRow/KanteSettingRow resetText
-  deutsch fest (#55).
-- Karten-Innenabstand als Look-Rolle (Shinki cardSpace 12) statt largeSpacing (#57).
-- Diagramm-Auslese hell (paper 92 %) gegen Bibel (Tooltip ink 92 %): angleichen (#60).
-- ctest-Lauf ui_shinki zusätzlich unter org.kde.desktop + BreezeDark (Kontrast im Dialog, #56).
-
 ### Kante
-- KanteChip `checked = !checked` (KanteChip.qml:72) bricht bei ankreuzbaren Chips ohne `choice` die Bindung
-  (Grad-Chips seit 1.69 `choice`, behoben) → Kante-PR mit Test.
-- KanteHeading horizontalAlignment im Overlay (#117); Screenshots im Kante-Changelog fehlen seit 1.65.
-- KanteScope im KanteDialog erreicht ein eigenes contentItem nicht; Binding loop implicitWidth in tst_kante143
-  (Fusion, Dialog ohne Inhalt); KanteDialogSkin/SheetSkin Scope als Eigenschaft ohne Fenster (#119).
+- Screenshots im Kante-Changelog fehlen (1.65–1.71, 1.77): nachreichen nur mit dem Owner (veröffentlichte Notizen).
+- Binding loop implicitWidth in tst_kante143 (Fusion): kommt aus Qts Fusion-Dialog, wenn ein `Binding` den Header
+  zurückgibt (auch ohne Kante); kein Fix in Kante.
 
 ### Aufräumen
 - daten.py `korrekturen()`: Tabelle mit ID-Kopf ohne Spalte „Status“ eigens melden (#65).
