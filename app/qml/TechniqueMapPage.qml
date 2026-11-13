@@ -130,6 +130,8 @@ Kirigami.ScrollablePage {
         }
 
         RowLayout {
+            id: mapRow
+
             Layout.fillWidth: true
             spacing: Kirigami.Units.largeSpacing
 
@@ -253,62 +255,108 @@ Kirigami.ScrollablePage {
             }
 
             // Beside the map: the place tapped (wide window); a phone opens the sheet instead.
-            Rectangle {
-                id: panel
+            // It stays in view while a long map scrolls (sticky, owner 13.11.2026): at the top of the
+            // view, never past the map's end; taller than the view, its text scrolls inside, under
+            // the video.
+            Item {
+                id: panelSlot
 
-                objectName: "mapPanel"
+                // How far the view's top is below the slot's top (the slot runs the map's height).
+                readonly property real viewTop: {
+                    void mapRow.y
+                    void panelSlot.y
+                    return page.flickable.contentY - panelSlot.mapToItem(page.flickable.contentItem, 0, 0).y
+                }
+                readonly property real gap: Kirigami.Units.largeSpacing
+
                 Layout.preferredWidth: Look.unit(360)
-                Layout.alignment: Qt.AlignTop
-                implicitHeight: (paneBody.visible ? paneBody.y + paneBody.implicitHeight : panelHint.y + panelHint.implicitHeight) + Look.unit(16)
+                Layout.preferredHeight: panel.height
+                Layout.fillHeight: true
                 visible: page.wide
-                color: Look.backgroundColor
-                border.width: Look.borderWidth
-                border.color: Look.ruleColor
 
-                LookLabel {
-                    id: panelHint
+                Rectangle {
+                    id: panel
 
-                    objectName: "mapPanelHint"
-                    x: Look.unit(16)
-                    y: Look.unit(16)
-                    width: panel.width - 2 * x
-                    visible: !page.paneEntry
-                    text: qsTr("Tap a place to see it here.")
-                    color: Look.mutedTextColor
-                    wrapMode: Text.Wrap
-                }
+                    // The panel's whole content; the view's height (less the gaps) at most.
+                    readonly property real naturalHeight: (paneScroll.visible ? paneScroll.y + paneBody.implicitHeight : panelHint.y + panelHint.implicitHeight) + Look.unit(16)
 
-                // The technique's chapter, small, when its video is on the device.
-                PlayerMini {
-                    id: paneVideo
+                    objectName: "mapPanel"
+                    width: panelSlot.width
+                    height: Math.min(naturalHeight, page.flickable.height - 2 * panelSlot.gap)
+                    y: Math.max(0, Math.min(panelSlot.viewTop + panelSlot.gap, panelSlot.height - height))
+                    visible: page.wide
+                    color: Look.backgroundColor
+                    border.width: Look.borderWidth
+                    border.color: Look.ruleColor
 
-                    objectName: "mapMiniPlayer"
-                    x: Look.unit(16)
-                    y: Look.unit(16)
-                    width: panel.width - 2 * x
-                    entry: page.paneEntry && page.playable(page.paneEntry) ? page.paneEntry : ({})
-                    active: page.isCurrentPage && panel.visible
-                }
+                    LookLabel {
+                        id: panelHint
 
-                TechniqueBody {
-                    id: paneBody
+                        objectName: "mapPanelHint"
+                        x: Look.unit(16)
+                        y: Look.unit(16)
+                        width: panel.width - 2 * x
+                        visible: !page.paneEntry
+                        text: qsTr("Tap a place to see it here.")
+                        color: Look.mutedTextColor
+                        wrapMode: Text.Wrap
+                    }
 
-                    objectName: "paneSheet"
-                    x: Look.unit(16)
-                    y: paneVideo.visible ? paneVideo.y + paneVideo.height + Look.unit(12) : Look.unit(16)
-                    width: panel.width - 2 * x
-                    visible: !!page.paneEntry
-                    inPane: true
-                    entry: page.paneEntry || ({})
-                    playable: page.paneEntry ? page.playable(page.paneEntry) : false
-                    onScrollKey: event => paneBody.scrollIn(page.flickable, event)
-                    onPlayRequested: entry => page.play(entry)
-                    // Not on the map: the sheet shows it, the panel and the ring keep their place.
-                    onProgrammeRequested: entry => page.open(entry)
-                    onLessonRequested: entry => page.open(entry)
-                    onCommentRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: entry })
-                    onNotesRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
-                    onVideosRequested: page.Kirigami.PageStack.push(Qt.resolvedUrl("VideosPage.qml"))
+                    // The technique's chapter, small, when its video is on the device.
+                    PlayerMini {
+                        id: paneVideo
+
+                        objectName: "mapMiniPlayer"
+                        x: Look.unit(16)
+                        y: Look.unit(16)
+                        width: panel.width - 2 * x
+                        entry: page.paneEntry && page.playable(page.paneEntry) ? page.paneEntry : ({})
+                        active: page.isCurrentPage && panel.visible
+                    }
+
+                    // The technique under the video; it scrolls when the panel is shorter than it.
+                    LookScrollView {
+                        id: paneScroll
+
+                        objectName: "paneScroll"
+                        y: paneVideo.visible ? paneVideo.y + paneVideo.height + Look.unit(12) : Look.unit(16)
+                        width: panel.width
+                        height: panel.height - y - Look.unit(16)
+                        visible: !!page.paneEntry
+                        contentWidth: availableWidth
+                        clip: true
+                        wheelEnabled: paneFlick.interactive
+
+                        Flickable {
+                            id: paneFlick
+
+                            readonly property LookFocusFollow focusFollow: LookFocusFollow { flickable: paneFlick }
+
+                            contentHeight: paneBody.implicitHeight
+                            boundsBehavior: Flickable.StopAtBounds
+                            // A text that fits leaves the wheel to the map.
+                            interactive: contentHeight > height
+
+                            TechniqueBody {
+                                id: paneBody
+
+                                objectName: "paneSheet"
+                                x: Look.unit(16)
+                                width: paneFlick.width - 2 * x
+                                inPane: true
+                                entry: page.paneEntry || ({})
+                                playable: page.paneEntry ? page.playable(page.paneEntry) : false
+                                onScrollKey: event => paneBody.scrollIn(paneFlick, event)
+                                onPlayRequested: entry => page.play(entry)
+                                // Not on the map: the sheet shows it, the panel and the ring keep their place.
+                                onProgrammeRequested: entry => page.open(entry)
+                                onLessonRequested: entry => page.open(entry)
+                                onCommentRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("CommentPage.qml"), { entry: entry })
+                                onNotesRequested: entry => page.Kirigami.PageStack.push(Qt.resolvedUrl("NotesPage.qml"), { entry: entry })
+                                onVideosRequested: page.Kirigami.PageStack.push(Qt.resolvedUrl("VideosPage.qml"))
+                            }
+                        }
+                    }
                 }
             }
         }
