@@ -5629,6 +5629,44 @@ TestCase {
         popPage()
     }
 
+    // Breeze on the desktop insets an item delegate's background (owner, 13.11.2026: the highlight
+    // in the map's grade list stops short of its edges). Shinki's rows fill their width in every
+    // style; ctest ui_shinki_desktop runs this case in org.kde.desktop.
+    function test_2v_c_shinki_rows_whole_width() {
+        if (!uiShinki) {
+            skip("Shinki's rows")
+        }
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k1")
+        window.width = 1280
+        window.height = 800
+        const map = push("TechniqueMapPage")
+        slidIn()
+        const box = findChild(map, "gradeBox")
+        box.popup.open()
+        tryVerify(() => box.popup.opened)
+        const choice = box.popup.contentItem.itemAtIndex(1)
+        verify(choice, "a row of the grade list")
+        compare(choice.background.x, 0, "the grade row's ground from the left edge")
+        compare(choice.background.width, choice.width, "the grade row's ground to the right edge")
+        box.popup.close()
+        popPage()
+
+        const page = tabletProgramme(standInVideos, "shinkitoho", "chuden")
+        let row = null
+        tryVerify(() => {
+            const title = findChild(page, "listRowText")
+            row = title
+            while (row && row.highlighted === undefined) {
+                row = row.parent
+            }
+            return row !== null
+        }, 5000, "a list row")
+        compare(row.background.x, 0, "the list row's ground from the left edge")
+        compare(row.background.width, row.width, "the list row's ground to the right edge")
+        popPage()
+    }
+
     // A phone held sideways (800 × 360): the discipline and the grades scroll away with the rows,
     // as on a tablet, so the list gets the height; upright they stay above it.
     function test_2v_c_phone_sideways_chooser_scrolls() {

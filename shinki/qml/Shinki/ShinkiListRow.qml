@@ -27,6 +27,11 @@ QQC2.ItemDelegate {
     leftPadding: ShinkiStyle.pageSpace
     implicitHeight: Math.max(ShinkiStyle.rowMinSpace, implicitContentHeight + topPadding + bottomPadding)
     highlighted: selected
+    // The ground fills the row (Breeze insets a delegate's background).
+    leftInset: 0
+    rightInset: 0
+    topInset: 0
+    bottomInset: 0
 
     Accessible.role: Accessible.ListItem
     Accessible.name: text
