@@ -260,6 +260,34 @@ TestCase {
         compare(row.resetText, qsTranslate("ShinkiSettingRow", "Reset"))
     }
 
+    // Shinki's chart read-out is as its toast (bible: ink at 92 %, white text), not paper with ink.
+    function test_1d_shinki_chart_readout() {
+        if (!Look.shinki) {
+            skip("Shinki only")
+        }
+        const chart = createTemporaryQmlObject(
+            "import Mitori; LookBarChart { width: 300; height: 200; values: [[1, 2], [3, 4]]; labels: ['A', 'B']; "
+            + "partNames: ['x', 'y']; hoverIndex: 0 }", window.contentItem)
+        const box = findChild(chart, "chartReadout")
+        verify(box && box.visible, "the read-out shows")
+        verify(box.color.r < 0.3 && box.color.g < 0.3 && box.color.b < 0.3, "dark ground: " + box.color)
+        fuzzyCompare(box.color.a, 0.92, 0.01, "the bible's 92 %")
+        const texts = []
+        const walk = item => {
+            for (const child of item.children) {
+                if (child.visible && child.text !== undefined && child.text !== "") {
+                    texts.push(child)
+                }
+                walk(child)
+            }
+        }
+        walk(box)
+        verify(texts.length >= 3, "texts: " + texts.length)
+        for (const t of texts) {
+            verify(t.color.r > 0.7 && t.color.g > 0.7 && t.color.b > 0.7, "light text '" + t.text + "': " + t.color)
+        }
+    }
+
     // A date field says when its text is no date (pages lock their button on it), and its month
     // opens inside the window, also at the window's bottom.
     function test_1e_date_field() {

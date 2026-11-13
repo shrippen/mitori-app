@@ -5,8 +5,8 @@ import QtQuick.Shapes
  * Bar chart (bible section 5, Diagramme): a port of KanteBarChart (Kante 1.69) with the same
  * interface, drawn in Shinki: one series in muted ink (apart from the level colours a legend
  * nearby may show), the parts of a stack in the level colours, the highlight in red, the grid
- * in `line`, axes and labels 11 px inkMuted in table figures, the read-out on paper
- * with a 1 px frame. Kante's own text follows.
+ * in `line`, axes and labels 11 px inkMuted in table figures, the read-out as the toast has it
+ * (ink at 92 %, white text, square). Kante's own text follows.
  * Bar chart in the data palette. `values` is a list of numbers (one series, colour
  * `series`) or of lists (stacked, one colour per part); `labels` sit under the bars.
  * `goal` draws a dashed yellow goal line (negative: none), `highlight` marks one bar
@@ -522,6 +522,7 @@ Item {
     // Read-out box: label, the parts (stacked: bottom part last, as drawn) and the total.
     Rectangle {
         id: box
+        objectName: "chartReadout"
         readonly property real cx: chart.padLeft + (chart.hoverIndex + 0.5) * chart.columnWidth
         readonly property var parts: chart.partsOf(chart.hoverIndex)
         readonly property bool stacked: chart.hoverIndex >= 0 && Array.isArray(chart.values[chart.hoverIndex])
@@ -533,9 +534,7 @@ Item {
         z: 2
         width: lines.implicitWidth + ShinkiStyle.unit(16)
         height: lines.implicitHeight + ShinkiStyle.unit(10)
-        color: Qt.alpha(ShinkiStyle.paper, ShinkiStyle.tooltipOpacity)
-        border.width: 1
-        border.color: ShinkiStyle.line
+        color: Qt.alpha(ShinkiStyle.ink, ShinkiStyle.tooltipOpacity)
         Column {
             id: lines
             x: ShinkiStyle.unit(8)
@@ -543,8 +542,8 @@ Item {
             Text {
                 visible: chart.hoverIndex >= 0 && chart.hoverIndex < chart.labels.length
                 text: visible ? chart.labels[chart.hoverIndex] : ""
-                color: ShinkiStyle.inkMuted
-                font: chart.figureFont(ShinkiStyle.columnSize, false)
+                color: ShinkiStyle.textOnRed
+                font: chart.figureFont(ShinkiStyle.smallSize, false)
             }
             Repeater {
                 model: box.visible ? box.parts.length : 0
@@ -566,7 +565,7 @@ Item {
                     }
                     Text {
                         text: (parent.name !== "" ? parent.name + "  " : "") + chart.format(box.parts[parent.part])
-                        color: !box.stacked || chart.hoverPart === parent.part ? ShinkiStyle.ink : ShinkiStyle.inkMuted
+                        color: ShinkiStyle.textOnRed
                         font: chart.figureFont(ShinkiStyle.smallSize, !box.stacked || chart.hoverPart === parent.part)
                     }
                 }
@@ -575,7 +574,7 @@ Item {
                 // Only with two or more non-empty parts: one part would repeat its own value.
                 visible: box.stacked && box.parts.filter(function (v) { return v !== 0 }).length > 1
                 text: "Σ " + chart.format(chart.totalOf(chart.hoverIndex))
-                color: ShinkiStyle.ink
+                color: ShinkiStyle.textOnRed
                 font: chart.figureFont(ShinkiStyle.smallSize, true)
             }
         }
