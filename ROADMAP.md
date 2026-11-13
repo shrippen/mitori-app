@@ -138,7 +138,6 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
 - Android: „Bildschirm an“ (FLAG_KEEP_SCREEN_ON) nur gebaut, nicht am Telefon geprüft.
 
 ### Fehler (Test zuerst)
-- CoursePage-Fußleiste gelb in 16b/16c (beide Stile, #57).
 - `start.sh` beendete sich beim ersten Lauf am 03.11. nach <10 s mit Exit 0 ohne Meldung (zweiter Lauf normal);
   beobachten.
 
@@ -190,7 +189,7 @@ Reihenfolge der Kacheln. Offen, nach Gewicht:
 - **Programm**: Shinki-Toho-Infokarte (Bedeutung, Inhalt, Mindestabstand); Beschreibung von Suburi und
   Kiriotoshi; Lupe im Kopf. Lange Ô-dachi-Zeilen der Tablet-Liste: erledigt (Zeilen brechen um, #150).
 - **Kommentar**: Fußnoten und Listen setzen; Gruppe und Kanji im Text (Überschriften und ganzer Titel: erledigt).
-- **Heute üben**: Kalender 12 Wochen mit Legende; Hinweis „tippen öffnet das Blatt“.
+- **Heute üben**: Hinweis „tippen öffnet das Blatt“ (Kalender 12 Wochen mit Legende: erledigt).
 - **Videos**: Code-Seite mit Erklärung
   (Schreibweise egal, was passiert, der Code bleibt auf dem Gerät).
 - **Sicherung**: Hinweis auf Android Auto Backup (ohne Medien); Konflikte als Hinweiszeile.
