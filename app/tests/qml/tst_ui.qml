@@ -4319,6 +4319,12 @@ TestCase {
         flick.contentY = 0
         waitForRendering(page)
         compare(Math.round(panel.mapToItem(heat.parent.parent, 0, 0).y), 0, "at the map's top")
+
+        // The wheel over the panel's text moves the map while that text fits (review of #160).
+        const text = findChild(page, "paneScroll")
+        verify(findChild(page, "paneSheet").height <= text.height, "the text fits")
+        mouseWheel(text, text.width / 2, text.height - 20, 0, -360)
+        tryVerify(() => flick.contentY > 0, 2000, "the wheel over the panel moves the map")
         popPage()
     }
 

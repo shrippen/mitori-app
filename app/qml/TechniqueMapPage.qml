@@ -325,6 +325,7 @@ Kirigami.ScrollablePage {
                         visible: !!page.paneEntry
                         contentWidth: availableWidth
                         clip: true
+                        wheelEnabled: paneFlick.interactive
 
                         Flickable {
                             id: paneFlick
@@ -333,6 +334,8 @@ Kirigami.ScrollablePage {
 
                             contentHeight: paneBody.implicitHeight
                             boundsBehavior: Flickable.StopAtBounds
+                            // A text that fits leaves the wheel to the map.
+                            interactive: contentHeight > height
 
                             TechniqueBody {
                                 id: paneBody
