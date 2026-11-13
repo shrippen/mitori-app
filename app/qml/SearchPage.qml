@@ -342,7 +342,7 @@ Kirigami.Page {
 
                             objectName: "rowKanji"
                             anchors.verticalCenter: parent.verticalCenter
-                            text: row.kind === "word" ? row.found.jp : ""
+                            text: row.kind === "word" ? row.found.jp || "" : ""     // a word without kanji
                             font: Look.japaneseFont(Look.titleFont(Look.defaultFont.pointSize * 1.25))
                             color: Look.mutedTextColor
                         }
