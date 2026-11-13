@@ -317,11 +317,14 @@ Kirigami.Page {
                     // The list is one Tab stop; Up and Down move in it.
                     activeFocusOnTab: false
                     focusOnClick: false
+                    // Kind and data together from the row itself, in every binding: `kind` and `found`
+                    // are two bindings, and a reused row may have the new kind with the old data.
                     selected: (rowLoader.ListView.isCurrentItem && list.activeFocus)
-                              || (page.wide && kind === "word" && !!page.detailWord && found.word === page.detailWord.word)
-                    leadingText: kind === "technique" && found.nr ? String(found.nr) : ""
-                    meta: kind === "comment" ? found.gradeName : ""
-                    // From the row itself, kind and data together: a reused row gets both at once.
+                              || (page.wide && rowLoader.modelData.kind === "word" && !!page.detailWord
+                                  && rowLoader.modelData.data.word === page.detailWord.word)
+                    leadingText: rowLoader.modelData.kind === "technique" && rowLoader.modelData.data.nr
+                                 ? String(rowLoader.modelData.data.nr) : ""
+                    meta: rowLoader.modelData.kind === "comment" ? rowLoader.modelData.data.gradeName : ""
                     text: page.rowText(rowLoader.modelData)
                     subtitle: page.rowSubtitle(rowLoader.modelData)
                     // A tap, or Return and Space on the current row (the list's keys), says the word
@@ -342,7 +345,7 @@ Kirigami.Page {
 
                             objectName: "rowKanji"
                             anchors.verticalCenter: parent.verticalCenter
-                            text: row.kind === "word" ? row.found.jp || "" : ""     // a word without kanji
+                            text: rowLoader.modelData.kind === "word" ? rowLoader.modelData.data.jp : ""
                             font: Look.japaneseFont(Look.titleFont(Look.defaultFont.pointSize * 1.25))
                             color: Look.mutedTextColor
                         }
@@ -359,7 +362,7 @@ Kirigami.Page {
                                 display: QQC2.AbstractButton.IconOnly
                                 icon.name: "media-playback-start"
                                 text: qsTr("Pronunciation")
-                                Accessible.name: qsTr("Pronounce %1").arg(row.found.word)
+                                Accessible.name: qsTr("Pronounce %1").arg(rowLoader.modelData.data.word || "")
                                 onClicked: Glossary.say(row.found.speech)
                             }
                         }
