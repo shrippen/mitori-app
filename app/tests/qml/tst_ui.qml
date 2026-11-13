@@ -2128,6 +2128,7 @@ TestCase {
     // "session"). It was a dead end on a tablet: the picture and no way to rate or go on.
     function test_7b_training_sideways() {
         const rows = Programme.entries("aikido", "k5").filter(r => r.kind === "entry").slice(0, 3)
+        failOnWarning(/PlayerPage.qml.*Binding loop/)
         const width = window.width, height = window.height
         window.width = 1280
         window.height = 800

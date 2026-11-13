@@ -166,7 +166,9 @@ Kirigami.Page {
 
     // Sideways the training has its list beside the small player (clickdummy "session"): the
     // picture alone would leave no way to rate or go on.
-    readonly property bool split: view.training && !big && width > height
+    // Measured against the window's height, not the page's: the split decides whether the page
+    // shows its head, which changes the page's height and would flip the split (binding loop).
+    readonly property bool split: view.training && !big && width > Window.height
     // The list opens at the current technique, not at the top.
     onSplitChanged: Qt.callLater(trainingList.positionViewAtIndex, view.index, ListView.Contain)
 
