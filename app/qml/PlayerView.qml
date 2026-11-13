@@ -335,7 +335,7 @@ Item {
             volume: Levels.playerVolume
         }
         // The screen stays on while it plays (the switch "Screen on"), not while it stands.
-        onPlayingChanged: Levels.setPlayback(playing ? Levels.Playback.Playing : Levels.Playback.Stopped)
+        onPlayingChanged: Levels.setPlayback(player.playing ? Levels.Playback.Playing : Levels.Playback.Stopped)
         onSourceChanged: page.startPending = true
         onMediaStatusChanged: {
             if (player.mediaStatus === MediaPlayer.LoadedMedia && page.startPending) {
