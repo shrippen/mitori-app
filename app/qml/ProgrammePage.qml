@@ -171,7 +171,8 @@ Kirigami.Page {
         }
     ]
 
-    // Discipline and grades: above the list on a phone, with its rows on a tablet (the clickdummy).
+    // Discipline and grades: above the list on a phone held upright, with its rows on a tablet and
+    // sideways (chooserScrolls; the clickdummy).
     Component {
         id: chooser
 
