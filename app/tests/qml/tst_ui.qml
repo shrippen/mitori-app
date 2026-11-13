@@ -7156,7 +7156,12 @@ TestCase {
         const index = page.grades.findIndex(g => g.id === "kaiden")
         const data = page.grades[index]
         const chip = chips.itemAt(index)
-        compare(chip.text, data.name + " –")
+        if (Look.shinki) {
+            compare(chip.text, data.name)
+            compare(findChild(chip, "chipStand").text, "–")
+        } else {
+            compare(chip.text, data.name + " –")
+        }
         compare(chip.Accessible.name, qsTranslate("ProgrammePage", "%1, no forms yet").arg(data.name))
 
         clickUntil(chip, () => page.grade === "kaiden")
@@ -7236,7 +7241,13 @@ TestCase {
         const chips = findChild(page, "gradeChips")
         const k5 = chips.itemAt(page.grades.findIndex(g => g.id === "k5"))
         const ids = Programme.entries("aikido", "k5").filter(r => r.kind === "entry").map(r => r.id)
-        compare(k5.text, page.grades.find(g => g.id === "k5").name + " " + Practice.counts(ids)[4] + "/" + ids.length)
+        const stand = Practice.counts(ids)[4] + "/" + ids.length
+        if (Look.shinki) {
+            compare(k5.text, page.grades.find(g => g.id === "k5").name)
+            compare(findChild(k5, "chipStand").text, stand)
+        } else {
+            compare(k5.text, page.grades.find(g => g.id === "k5").name + " " + stand)
+        }
         const programmeList = findChild(page, "programmeList")
         tryVerify(() => programmeList.height < 1000)
         wait(800)
