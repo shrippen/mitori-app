@@ -4275,6 +4275,53 @@ TestCase {
         popPage()
     }
 
+    // The panel beside a long map stays in view while the map scrolls (owner, 13.11.2026: the video
+    // scrolled out of the picture): at the top of the view, not past the map's end, never taller
+    // than the view (its text scrolls inside).
+    function test_9k_map_panel_sticky() {
+        failOnWarning(/ReferenceError|TypeError|Binding loop/)
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "d4")
+        window.width = 1280
+        window.height = 600
+        const page = push("TechniqueMapPage")
+        slidIn()
+        tryVerify(() => page.wide, 2000, "a wide window")
+        const heat = findChild(page, "techniqueMatrix")
+        const flick = page.flickable
+        tryVerify(() => flick.contentHeight > flick.height * 2, 2000, "a map longer than two views: " + flick.contentHeight)
+
+        // A place in the first row: the panel shows it.
+        let column = 0
+        while (heat.isEmpty(0, column)) {
+            column++
+        }
+        mouseClick(heat.cellAt(0, column))
+        tryVerify(() => page.paneEntry !== null)
+        const panel = findChild(page, "mapPanel")
+        const top = () => panel.mapToItem(flick, 0, 0).y
+        verify(panel.height <= flick.height, "no taller than the view: " + panel.height + " / " + flick.height)
+
+        // The map scrolled to its middle: the panel at the top of the view.
+        flick.contentY = (flick.contentHeight - flick.height) / 2
+        waitForRendering(page)
+        verify(top() >= 0 && top() + panel.height <= flick.height + 0.5, "in view in the middle: " + top())
+
+        // At the end: still in view, and its foot not below the map's.
+        flick.contentY = flick.contentHeight - flick.height
+        waitForRendering(page)
+        verify(top() >= 0 && top() + panel.height <= flick.height + 0.5, "in view at the end: " + top())
+        const area = findChild(page, "techniqueMatrix").parent
+        verify(panel.mapToItem(flick.contentItem, 0, panel.height).y <= area.mapToItem(flick.contentItem, 0, area.height).y + 0.5,
+               "not past the map's end")
+
+        // Back at the top: where it stood.
+        flick.contentY = 0
+        waitForRendering(page)
+        compare(Math.round(panel.mapToItem(heat.parent.parent, 0, 0).y), 0, "at the map's top")
+        popPage()
+    }
+
     // The panel's small player (owner, 12.11.2026): the chapter in a loop, mute, play/pause only;
     // it stands while another page lies above the map.
     function test_9k_map_mini_player() {
@@ -4296,7 +4343,7 @@ TestCase {
         page.paneEntry = rows[0]
         tryVerify(() => mini.visible && mini.height > 0, 2000, "the video above the name")
         const body = findChild(page, "paneSheet")
-        verify(body.y >= mini.y + mini.height, "the name below the video")
+        verify(body.mapToItem(mini.parent, 0, 0).y >= mini.y + mini.height, "the name below the video")
         tryVerify(() => mini.playing, 10000, "it plays by itself")
         const media = findChild(mini, "miniMedia")
         compare(media.audioOutput, null, "mute: no sound at all")
