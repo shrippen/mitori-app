@@ -188,7 +188,7 @@ Reihenfolge der Kacheln. Offen, nach Gewicht:
   Hinweisfeld, 30-Tage-Kalender, Landkarten-Miniatur, Wort des Tages, letzte Notiz, Werte asynchron aus `StartBoard`:
   erledigt. Noch offen: Bundle-Update mit Namen (der Hinweis zählt nur).
 - **Programm**: Shinki-Toho-Infokarte (Bedeutung, Inhalt, Mindestabstand); Beschreibung von Suburi und
-  Kiriotoshi; Lupe im Kopf; Tablet-Liste schneidet lange Ô-dachi-Zeilen ab.
+  Kiriotoshi; Lupe im Kopf. Lange Ô-dachi-Zeilen der Tablet-Liste: erledigt (Zeilen brechen um, #150).
 - **Kommentar**: Fußnoten und Listen setzen; Gruppe und Kanji im Text (Überschriften und ganzer Titel: erledigt).
 - **Heute üben**: Kalender 12 Wochen mit Legende; Hinweis „tippen öffnet das Blatt“.
 - **Videos**: Code-Seite mit Erklärung

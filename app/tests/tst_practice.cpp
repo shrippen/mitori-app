@@ -12,6 +12,7 @@
 #include <QTimeZone>
 
 #include "practice.h"
+#include "searchkey.h"
 #include "practicelog.h"
 
 class TstPractice : public QObject
@@ -542,6 +543,14 @@ private slots:
         QCOMPARE(practice.searchNotes(QStringLiteral("fuss aussen")).size(), 1);   // ß as ss
         practice.addNote(QStringLiteral("e"), QStringLiteral("Shiho-nage: Arm über den Kopf"));
         QCOMPARE(practice.searchNotes(QStringLiteral("shihonage")).size(), 1);    // the hyphen does not matter
+        // A long note: the hit shows the part around the word, as a comment's does (a row that
+        // wraps would otherwise take the whole note, Review #150).
+        const QString filler = QStringLiteral("Lange Notiz ohne das Wort. ").repeated(20);
+        practice.addNote(QStringLiteral("f"), filler + QStringLiteral("Tenkan weit genug") + filler);
+        const QVariantMap longHit = practice.searchNotes(QStringLiteral("tenkan")).first().toMap();
+        const QString excerpt = longHit.value(QStringLiteral("excerpt")).toString();
+        QVERIFY2(excerpt.contains(QStringLiteral("Tenkan")), qPrintable(excerpt));
+        QVERIFY2(excerpt.size() <= kExcerptLength + 2, qPrintable(QString::number(excerpt.size())));
         // Joined across a space only from the start of a word: "rein" is not in "nur ein".
         practice.addNote(QStringLiteral("f"), QStringLiteral("Fuß nur ein wenig drehen"));
         QVERIFY(practice.searchNotes(QStringLiteral("rein")).isEmpty());

@@ -400,6 +400,8 @@ QVariantList Practice::searchNotes(const QString &query, int limit) const
         if (n.text.matches(words)) {
             QVariantMap row = noteMap(n.note);
             row[QStringLiteral("entry")] = n.note.entry;
+            // The part around the word: a long note would fill the list.
+            row[QStringLiteral("excerpt")] = searchExcerpt(n.note.text, words);
             result << row;
             if (result.size() >= limit) {
                 break;

@@ -5595,7 +5595,6 @@ TestCase {
         verify(controls.contentHeight <= controls.height + 0.5, controls.contentHeight + " in " + controls.height)
     }
 
-    // A pane too narrow for columns (a small tablet window) keeps the one column.
     // Long names in the tablet's list (Ô-dachi 14, "Jûyon-ban · Wakigamae no Uchiotoshi"): whole,
     // on two lines, not cut with "…"; the play button stays beside them.
     function test_2v_c_long_rows_whole() {
@@ -5621,6 +5620,7 @@ TestCase {
         popPage()
     }
 
+    // A pane too narrow for columns (a small tablet window) keeps the one column.
     function test_2v_d_narrow_pane() {
         const page = tabletProgramme()
         window.width = 760

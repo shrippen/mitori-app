@@ -452,7 +452,7 @@ Kirigami.Page {
     }
 
     // What a row says. As in the programme: the technique's and the attack's addition tell rows
-    // apart; a note in one line, as the row shows it.
+    // apart; of a note the part around the word, as of a comment.
     function rowText(row) {
         const found = row.data
         if (row.kind === "word") {
@@ -467,7 +467,7 @@ Kirigami.Page {
         if (row.kind === "courseEntry") {
             return found.excerpt
         }
-        return row.kind === "note" ? found.text.replace(/\s+/g, " ") : ""
+        return row.kind === "note" ? found.excerpt : ""
     }
 
     function rowSubtitle(row) {
