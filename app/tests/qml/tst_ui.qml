@@ -33,6 +33,12 @@ TestCase {
         verify(new Date().getTimezoneOffset() > 0, "this run is west of UTC")
     }
 
+    // Every case: a signal handler that reads a parameter it does not declare (deprecated in Qt 6;
+    // Qt warns once per process, so only a check in every case catches it wherever it comes).
+    function init() {
+        failOnWarning(/Injection of parameters into signal handlers is deprecated/)
+    }
+
     function initTestCase() {
         const component = Qt.createComponent("Mitori", "Main")
         verify(component.status === Component.Ready, component.errorString())
