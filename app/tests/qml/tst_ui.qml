@@ -363,6 +363,31 @@ TestCase {
         popPage()
     }
 
+    // Shinki's grade chip (bible `.gchip`): the name bold, below it the stand in table figures at
+    // chipStandSize. The other looks keep the stand in the text.
+    function test_2a_chip_stand() {
+        Programme.discipline = "aikido"
+        PracticeGrade.setGrade("aikido", "k5")
+        const page = push("ProgrammePage")
+        const chips = findChild(page, "gradeChips")
+        verify(chips.count > 0)
+        for (let i = 0; i < chips.count; i++) {
+            const chip = chips.itemAt(i)
+            const stand = findChild(chip, "chipStand")
+            if (!Look.shinki) {
+                verify(!stand, "no stand label outside Shinki")
+                continue
+            }
+            verify(stand, "stand label in chip " + i)
+            verify(/^\d+\/\d+$|^–$/.test(stand.text), "stand text: " + stand.text)
+            compare(stand.font.pixelSize, Look.unit(11))
+            verify(stand.font.features["tnum"] === 1, "table figures")
+            verify(stand.y >= chip.height / 2 - stand.height, "the stand sits below the name")
+            verify(chip.text.indexOf("/") < 0, "the name alone in the text: " + chip.text)
+        }
+        popPage()
+    }
+
     function test_2b_sheet() {
         Programme.discipline = "aikido"
         PracticeGrade.setGrade("aikido", "k5")
