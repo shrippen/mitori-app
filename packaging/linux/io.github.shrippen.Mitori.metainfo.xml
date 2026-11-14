@@ -21,6 +21,13 @@
     <control>touch</control>
   </recommends>
   <releases>
+    <release version="0.4.0" date="2026-11-14">
+      <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.4.0</url>
+      <description>
+        <p>Learning videos with techniques of their own, a new start menu of tiles and a dark player.</p>
+        <p xml:lang="de">Lernvideos mit eigenen Techniken, ein neues Startmenü aus Kacheln und ein dunkler Player.</p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-11-10">
       <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.3.0</url>
       <description>

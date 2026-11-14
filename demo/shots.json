@@ -16,6 +16,9 @@
     {"name": "release-0.1.0-stats", "steps": ["pageStack.push(Qt.resolvedUrl('qrc:/qt/qml/Mitori/qml/StatsPage.qml'))"]},
     {"name": "release-0.1.0-courses", "steps": ["pageStack.push(Qt.resolvedUrl('qrc:/qt/qml/Mitori/qml/ListAndPage.qml'), { listSource: 'CoursesPage.qml' })"]},
     {"name": "release-0.1.0-grades", "steps": ["pageStack.push(Qt.resolvedUrl('qrc:/qt/qml/Mitori/qml/GradesPage.qml'))"]},
-    {"name": "release-0.1.0-shinki", "style": "shinki", "steps": []}
+    {"name": "release-0.1.0-shinki", "style": "shinki", "steps": []},
+    {"name": "release-0.4.0-start", "steps": []},
+    {"name": "release-0.4.0-glossary", "steps": ["pageStack.push(Qt.resolvedUrl('qrc:/qt/qml/Mitori/qml/SearchPage.qml'))"]},
+    {"name": "release-0.4.0-map", "steps": ["pageStack.push(Qt.resolvedUrl('qrc:/qt/qml/Mitori/qml/TechniqueMapPage.qml'))"]}
   ]
 }
