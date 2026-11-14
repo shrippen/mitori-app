@@ -1,7 +1,7 @@
 # Code-Audit mitori-app, 14.11.2026, Stand 7191dbd
 
 ## Urteil
-Mitori ist gut wartbar. Die Oberfläche erreicht beide Stile, Kante und Shinki, über eine Zwischenschicht, die Speicherschicht ruft nie einen Dienst auf, und fast jeder Dienst hat Tests, die sein Verhalten prüfen. Teuer wird die nächste Änderung dort, wo dasselbe mehrfach steht: kleine Regeln der Oberfläche sind in viele Seiten kopiert und weichen schon voneinander ab, die Bauanleitung der Tests zählt jede Quelldatei von Hand auf, und Datenbanken und Downloads werden an mehreren Stellen einzeln behandelt. Dies ist das erste Audit, einen Vergleich gibt es nicht. Wegen der Größe haben zwei Agenten je einen Teil geprüft (Oberfläche, übriger Code); aus ihren zwölf Funden stehen hier zehn, die übrigen nennt der PR zu diesem Bericht. Eine `ARCHITECTURE.md` fehlt; geprüft wurde gegen das Schichtbild in `agent.md`.
+Mitori ist gut wartbar. Die Oberfläche erreicht beide Stile, Kante und Shinki, über eine Zwischenschicht, die Speicherschicht ruft nie einen Dienst auf, und fast jeder Dienst hat Tests, die sein Verhalten prüfen. Teuer wird die nächste Änderung dort, wo dasselbe mehrfach steht: kleine Regeln der Oberfläche sind in viele Seiten kopiert und weichen schon voneinander ab, die Bauanleitung der Tests zählt jede Quelldatei von Hand auf, und Datenbanken und Downloads werden an mehreren Stellen einzeln behandelt. Dies ist das erste Audit, einen Vergleich gibt es nicht.
 
 ## Kennzahlen
 | | letztes Audit | jetzt |
@@ -105,11 +105,11 @@ Wird ein Feld in `mitori-daten` umbenannt, merkt das der Compiler nicht, also da
 **Beleg:** `app/services/courses.cpp:483`, `app/services/courses.cpp:502`, `app/services/courses.cpp:527`, `app/services/allnotes.cpp:100`, `app/services/programme.cpp:163`, `app/services/exam.cpp:139`, `app/services/practicegrade.cpp:100`, `app/services/startboard.cpp:488`, `app/catalog/catalog.h:15`, `app/services/programme.cpp:152`, `app/services/courses.cpp:96`, `app/services/bundles.cpp:188`.
 
 ### 9. Das Schichtbild in `agent.md` stimmt nicht mit dem Code überein, und es gibt keine `ARCHITECTURE.md`.
-**Was es kostet:** `agent.md` zeichnet die Plattformschicht unter die Speicherschicht. Plattformschicht heißt hier: Bildschirm, Helligkeit, Kalender des Geräts, Teilen. Danach dürften die Dienste sie nur über die Speicherschicht erreichen. Tatsächlich ruft keine Datei der Speicherschicht die Plattform auf. Fünf Dienste rufen sie direkt. Die Plattform steht also neben der Speicherschicht, nicht darunter.
+**Was es kostet:** `agent.md` zeichnet die Plattformschicht unter die Speicherschicht. Plattformschicht heißt hier: Bildschirm, Helligkeit, Kalender des Geräts, Teilen. Danach dürften die Dienste sie nur über die Speicherschicht erreichen. Tatsächlich ruft keine Datei der Speicherschicht die Plattform auf. Sechs Dienste rufen sie direkt. Die Plattform steht also neben der Speicherschicht, nicht darunter.
 
 Außerdem liegen unter „store“ (laut Bild „SQLite“) auch Dinge, die nichts speichern: Leser für Kalender und Untertitel, der WebDAV-Zugang, die Entschlüsselung der Pakete und die Suchtext-Aufbereitung. Wer neuen Code einordnen will, findet so keine verlässliche Regel.
 
-**Vorschlag:** Die Hauptsitzung legt nach Skill `architektur` eine `ARCHITECTURE.md` an, die den gelebten Aufbau beschreibt: die Plattform neben der Speicherschicht und den Inhalt von „store“ benannt. `agent.md` verweist dann darauf.
+**Vorschlag:** Die Hauptsitzung legt nach Skill `architektur` eine `ARCHITECTURE.md` an, die den gelebten Aufbau beschreibt: die Plattform neben der Speicherschicht und den Inhalt von „store“ benannt. `agent.md` verweist dann darauf. Dabei entscheidet der Eigentümer auch, wohin Netzzugriff gehört: Fund 3 schlägt den gemeinsamen Download für die Speicherschicht vor, die Prüfregeln des Repos legen Netzzugriff zu den Diensten.
 
 **Aufwand:** klein, nur Text, die erste Fassung bestätigt der Eigentümer.
 
@@ -122,15 +122,20 @@ Die Bestandsliste ist die Datei `structure.baseline`. Sie nennt, was heute über
 
 An einer Naht trennen sich:
 - Der Oberflächentest (9560 Zeilen, 285 Fälle): Die Fälle sind schon nach Seiten nummeriert, und der Testlauf führt jede Testdatei im Ordner aus. Je Seite eine Datei, die Hilfsfunktionen in eine gemeinsame Basis.
-- Der Videospieler (1715 Zeilen) enthält das Abspielen, neun kleine Bedien-Bausteine und drei vollständige Anordnungen (Telefon hochkant, Telefon quer, Tablet). Er teilt sich in eine Datei je Anordnung und eine für die Bausteine. Aufwand mittel, Risiko gering bis mittel: Der Oberflächentest hat viele Fälle zum Spieler.
+- Der Videospieler (1715 Zeilen) enthält das Abspielen, elf kleine Bedien-Bausteine und drei vollständige Anordnungen (Telefon hochkant, Telefon quer, Tablet). Er teilt sich in eine Datei je Anordnung und eine für die Bausteine. Aufwand mittel, Risiko gering bis mittel: Der Oberflächentest hat viele Fälle zum Spieler.
 - Die Programmseite (954 Zeilen): Auswahl von Fach und Grad, Tastenführung durch die Liste und der rechte Bereich lassen sich als eigene Bausteine herausnehmen.
-- Der Abgleich zwischen Geräten (147 Zeilen, 48 Verzweigungen) trennt sich an seinen vier Schritten: Ordner listen, fremde Daten einmischen, Medien tauschen, eigene Daten senden.
+- Der Abgleich zwischen Geräten (147 Zeilen, Komplexität 48; erlaubt sind 15) trennt sich an seinen vier Schritten: Ordner listen, fremde Daten einmischen, Medien tauschen, eigene Daten senden.
 - Das Laden der Videopakete (149 Zeilen) trennt sich in drei Teile: fertiges Paket einsetzen, nächste Datei anfordern, Antwort auswerten.
 - Der Dienst für Lehrgänge (869 Zeilen) hat vier Aufgaben; die eigenen Grade mit Wartezeiten können ein eigener Dienst werden.
+- Der Dienst für das Programm (865 Zeilen): Die Vorschlagssuche trennt sich als eigene Einheit ab.
 
-Bleiben können: die beiden Leitern von Schema-Schritten der Datenbanken (je Version ein Schritt), die Zeichentabellen der Suche, die Leser für Kalender und WebDAV, die großen, nach Themen getrennten C++-Tests und das Zellen-Raster von Shinki, das eine Kopie aus Kante ist und nur mit dem Original schrumpft.
+Bleiben können: die beiden Leitern von Schema-Schritten der Datenbanken (je Version ein Schritt), die Zeichentabellen der Suche, die Leser für Kalender und WebDAV und die großen, nach Themen getrennten C++-Tests.
 
-Aufwand je Naht klein bis mittel. Risiko gering, wo Tests vorhanden sind. Beleg: `app/tests/qml/tst_ui.qml`, `app/CMakeLists.txt:740`, `app/qml/PlayerView.qml:394`, `app/qml/PlayerView.qml:602`, `app/qml/PlayerView.qml:1160`, `app/qml/PlayerView.qml:1478`, `app/qml/ProgrammePage.qml:176`, `app/qml/ProgrammePage.qml:662`, `app/services/syncjob.cpp:50`, `app/services/bundles.cpp:524`, `app/services/courses.cpp:530`, `app/store/searchkey.h`, `shinki/qml/Shinki/ShinkiHeatGrid.qml:7`.
+Offen für den Eigentümer: Drei Diagramme von Shinki (das Raster mit Zellen, das Balkendiagramm, der Kalender) sind fast wörtliche Kopien aus Kante, rund 1600 Zeilen. Sie schrumpfen nur, wenn Kante Farben und Schriften dieser Diagramme einstellbar anbietet. Das berührt den Wunsch, Shinki von Kante zu trennen; darum entscheidet der Eigentümer zuerst.
+
+Die Teilberichte der beiden Agenten hatten zusammen zwölf Funde. Neun stehen oben als Fund 1 bis 9. Die drei übrigen stehen hier: der Videospieler und der Dienst für Lehrgänge als Naht, die Diagramme von Shinki als offene Entscheidung.
+
+Aufwand je Naht klein bis mittel. Risiko gering, wo Tests vorhanden sind. Beleg: `app/tests/qml/tst_ui.qml`, `app/CMakeLists.txt:740`, `app/qml/PlayerView.qml:394`, `app/qml/PlayerView.qml:602`, `app/qml/PlayerView.qml:1160`, `app/qml/PlayerView.qml:1478`, `app/qml/ProgrammePage.qml:176`, `app/qml/ProgrammePage.qml:662`, `app/services/syncjob.cpp:50`, `app/services/bundles.cpp:524`, `app/services/courses.cpp:530`, `app/services/programme.cpp:650`, `app/store/searchkey.h`, `shinki/qml/Shinki/ShinkiHeatGrid.qml:7`.
 
 ## Seit dem letzten Audit
 Erstes Audit.
