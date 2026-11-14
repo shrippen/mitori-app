@@ -9,7 +9,7 @@
 Screen readers can choose in the switches above the lists, and changing the style leaves no errors behind.
 
 #### Improved
-- Screen readers (TalkBack, Orca) can choose an option in the switches above the lists, such as the discipline in the programme, the statistics or the technique map. Before they could only read them out. A switch that is off ignores them.
+- Screen readers (TalkBack, Orca) can choose an option in the switches above the lists, such as the discipline in the programme, the statistics or the technique map. Before, in the styles Breeze, Material, Kante and Leinen, they could only read them out.
 
 #### Fixed
 - Changing the style (Settings → Appearance) could write errors to the log while the old window went: a page still sliding into place was moved one step further and touched pages already being removed.
@@ -21,7 +21,7 @@ All changes: https://github.com/shrippen/mitori-app/compare/v0.4.0...v0.4.1
 Screenreader können in den Umschaltern über den Listen wählen, und ein Wechsel des Stils hinterlässt keine Fehler mehr.
 
 #### Verbessert
-- Screenreader (TalkBack, Orca) können in den Umschaltern über den Listen eine Option wählen, etwa die Sparte im Programm, in der Statistik oder auf der Landkarte. Vorher konnten sie sie nur vorlesen. Ein ausgeschalteter Umschalter reagiert nicht darauf.
+- Screenreader (TalkBack, Orca) können in den Umschaltern über den Listen eine Option wählen, etwa die Sparte im Programm, in der Statistik oder auf der Landkarte. Vorher konnten sie sie in den Stilen Breeze, Material, Kante und Leinen nur vorlesen.
 
 #### Behoben
 - Ein Wechsel des Stils (Einstellungen → Darstellung) konnte Fehler ins Protokoll schreiben, während das alte Fenster ging: Eine Seite, die noch an ihren Platz glitt, wurde einen Schritt weiter bewegt und berührte Seiten, die schon entfernt wurden.
