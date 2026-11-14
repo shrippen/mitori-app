@@ -143,10 +143,6 @@ Kleinigkeiten aus Reviews und Tests, je ein Folge-PR oder beim nächsten Bearbei
 
 ### Kante
 - Screenshots im Kante-Changelog fehlen (1.65–1.71, 1.77): nachreichen nur mit dem Owner (veröffentlichte Notizen).
-- KanteScope als Eigenschaft (alle Seiten-Scopes der App, KanteDialogSkin/SheetSkin) erreicht kein Fenster, deaktivierte
-  Elemente bleiben dort schwarz. Die Suche über `target` (Kante #168) ließ `look::test_style_by_tap` im CI scheitern
-  (Kirigami Material Theme.qml:85, „Cannot read property 'Kirigami' of null“), lokal nicht nachstellbar; zurückgenommen
-  (Kante #169), Tests mit `expectFail`. Nächster Schritt: im Arch-Container nachstellen.
 - Binding loop implicitWidth in tst_kante143 (Fusion): kommt aus Qts Fusion-Dialog, wenn ein `Binding` den Header
   zurückgibt (auch ohne Kante); kein Fix in Kante.
 
