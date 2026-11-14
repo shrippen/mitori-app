@@ -21,6 +21,13 @@
     <control>touch</control>
   </recommends>
   <releases>
+    <release version="0.4.1" date="2026-11-14">
+      <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.4.1</url>
+      <description>
+        <p>Screen readers can choose in the switches above the lists; changing the style leaves no errors behind.</p>
+        <p xml:lang="de">Screenreader können in den Umschaltern über den Listen wählen; ein Wechsel des Stils hinterlässt keine Fehler mehr.</p>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-11-14">
       <url type="details">https://github.com/shrippen/mitori-app/releases/tag/v0.4.0</url>
       <description>
