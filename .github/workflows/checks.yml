@@ -1,6 +1,7 @@
 name: Checks
 
 # The checks of every commit (the same as scripts/check.sh):
+#   structure tools/structure-check.py (size limits)
 #   data      tools/daten.py, pytest, the generated YAML up to date, CHANGELOG.md headings
 #   app       the app with its C++ tests on Linux, qmllint (reports, does not block)
 # Local only: the booklet (heft/build.sh, LuaLaTeX with the Japanese fonts) and anything with the
@@ -51,13 +52,21 @@ jobs:
       # ttf-dejavu: a system font as every user has; without one the notes page took 2.4 s, not 0.2 (tst_perf).
       - name: Install Python, Qt, Kirigami, build tools
         run: |
-          pacman -Syu --noconfirm --needed git python python-yaml python-pytest python-pynacl poppler poppler-data \
+          pacman -Syu --noconfirm --needed git python python-pipx python-yaml python-pytest python-pynacl poppler poppler-data \
             base-devel cmake ninja extra-cmake-modules qt6-declarative qt6-shadertools qt6-tools qt6-multimedia qt6-multimedia-ffmpeg qt6-speech qtkeychain-qt6 kirigami \
             ttf-dejavu
 
       - uses: actions/checkout@v7
         with:
           submodules: recursive   # relative URL: the public mirror of mitori-daten
+
+      # Function and file size limits; what is over today is in structure.baseline.
+      # The container runs as root on a checkout owned by another user; git refuses it
+      # until the directory is marked safe, and the check reads `git ls-files`.
+      - name: Structure limits
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          pipx run tools/structure-check.py
 
       # Release headings "## [X.Y.Z] — YYYY-MM-DD": a wrong one shows up here, not at the tag.
       - name: CHANGELOG.md headings
