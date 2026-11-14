@@ -99,10 +99,10 @@ uses too.
 - The programme page has its own guard for typing (`AUDIT.md`, finding 7).
 - The catalog hands the data on raw; six services search them by field name, and
   seven listen for the language themselves (`AUDIT.md`, finding 8).
-- Eleven services open, write, move or delete files and folders themselves:
-  `appearance`, `backup`, `bundles` (which also downloads the videos), `courses`,
-  `media`, `practice`, `saveplace`, `storage`, `sync`, `syncjob`, `videos`
-  (not in `AUDIT.md`).
+- Seven services write, move or delete files and folders themselves: `backup`,
+  `bundles` (which also downloads the videos), `courses`, `media`, `practice`,
+  `storage`, `syncjob`; `videos`, `saveplace` and `appearance` check or read
+  files (not in `AUDIT.md`).
 - The practice schedule (what is due when) and the search key live in `store`,
   though they keep nothing (not in `AUDIT.md`).
 - `Main.qml` and `LookSample.qml` import Kante directly; services branch by
