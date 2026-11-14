@@ -30,6 +30,10 @@ Learning videos with techniques of their own, a new start menu of tiles and a da
 #### Fixed
 - Videos: a failed update of the videos no longer loses the ones already loaded; they stay until the new ones are in place. A download waiting for Wi-Fi now starts by itself when Wi-Fi or a cable comes.
 - Kante style: disabled buttons and fields on the pages showed the platform's colours instead of Kante's.
+- Player: the Back key (Android, Alt+Left) left the player playing unseen in the background; it now leaves it, as Escape does.
+- Desktop: Escape goes back one page on every page, not only in the player. In a field with text it first leaves the field, so the text stays.
+- Android: at start and after a change of style the interface was seen building up; it now shows once it stands.
+- Kante and Leinen: the title bar showed the platform's colours (on Android a pale white).
 
 #### Note
 - Videos: the "Video folder" setting for video files of one's own is gone. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
@@ -62,6 +66,10 @@ Lernvideos mit eigenen Techniken, ein neues Startmenü aus Kacheln und ein dunkl
 #### Behoben
 - Videos: Ein gescheitertes Update der Videos verliert die schon geladenen nicht mehr; sie bleiben, bis die neuen bereitliegen. Ein Download, der auf WLAN wartet, startet jetzt von selbst, sobald WLAN oder ein Kabel da ist.
 - Stil Kante: deaktivierte Knöpfe und Felder auf den Seiten zeigten die Farben der Plattform statt die von Kante.
+- Player: Die Zurück-Taste (Android, Alt+Links) ließ den Player unsichtbar im Hintergrund weiterspielen; jetzt verlässt sie ihn wie Escape.
+- Desktop: Escape geht auf jeder Seite eine Seite zurück, nicht nur im Player. In einem Feld mit Text verlässt es zuerst das Feld, der Text bleibt.
+- Android: Beim Start und nach einem Wechsel des Stils sah man die Oberfläche sich aufbauen; jetzt erscheint sie, wenn sie steht.
+- Kante und Leinen: Die Titelleiste zeigte die Farben der Plattform (unter Android ein blasses Weiß).
 
 #### Hinweis
 - Videos: Die Einstellung „Videoordner“ für eigene Videodateien entfällt. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.
