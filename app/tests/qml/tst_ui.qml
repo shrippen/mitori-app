@@ -2579,6 +2579,25 @@ TestCase {
         popPage()
     }
 
+    // Glossary on a phone: the rows end left of the list's scroll bar, so the bar crosses no kanji.
+    function test_9_glossary_bar_clear() {
+        window.width = 420
+        window.height = 860
+        wait(100)
+        const page = push("SearchPage")
+        slidIn()
+        const list = findChild(page, "glossaryList")
+        tryCompare(list, "count", Glossary.words.length)
+        const bar = findChild(page, "glossaryBar")
+        tryVerify(() => bar.visible && bar.width > 0)
+        tryVerify(() => findChild(list, "glossaryRow") !== null)
+        const row = findChild(list, "glossaryRow")
+        const rowEnd = row.mapToItem(list, row.width, 0).x
+        const barStart = bar.mapToItem(list, 0, 0).x
+        verify(rowEnd <= barStart + 0.5, "row ends at " + rowEnd + ", the bar starts at " + barStart)
+        popPage()
+    }
+
     // Glossary on a tablet sideways: a rail that stays, the list, the detail of the word tapped.
     function test_9_glossary_wide() {
         failOnWarning(/SearchPage.qml.*(TypeError|ReferenceError)|WordDetail.qml.*(TypeError|ReferenceError)/)

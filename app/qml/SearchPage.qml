@@ -187,11 +187,17 @@ Kirigami.Page {
         clip: true
         model: page.rows
         reuseItems: true
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
+        QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+            id: bar
+
+            objectName: "glossaryBar"
+        }
         // Without the three parts (a phone, a desktop window, a broad tablet upright) the rows keep
         // the reading width (Tablet.pageWidth) in the middle, each at `sideGap`.
         readonly property real sideGap: page.wide ? 0 : Tablet.sidePadding(width, 0)
-        readonly property real rowWidth: width - 2 * sideGap
+        // At the right the rows leave the scroll bar free, so it crosses no kanji.
+        readonly property real endGap: Math.max(sideGap, bar.visible ? bar.width : 0)
+        readonly property real rowWidth: width - sideGap - endGap
         // The list stays at its top while the head changes height (a query's results, the speech
         // hint, letters wrapping anew), only if it stood there: not once the reader has moved it
         // (flick, wheel, keys, a letter). A head that changes height leaves contentY as it is.
@@ -308,7 +314,7 @@ Kirigami.Page {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.leftMargin: list.sideGap
-                    anchors.rightMargin: list.sideGap
+                    anchors.rightMargin: list.endGap
                     readonly property var found: rowLoader.modelData.data
                     readonly property string kind: rowLoader.modelData.kind
 
@@ -378,7 +384,7 @@ Kirigami.Page {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.leftMargin: list.sideGap
-                    anchors.rightMargin: list.sideGap
+                    anchors.rightMargin: list.endGap
                     objectName: rowLoader.modelData.data.name
                     leftPadding: Kirigami.Units.largeSpacing
                     rightPadding: Kirigami.Units.largeSpacing
