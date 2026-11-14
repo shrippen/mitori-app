@@ -73,7 +73,7 @@ uses too.
 
 | Change | Touch |
 |---|---|
-| Any new file | Its entry in `app/CMakeLists.txt` |
+| A new C++ or QML file in `app/` (not `+shinki/`) | Its entry in `app/CMakeLists.txt` |
 | A new page | `app/qml/`, built from `Look` components; a case in `app/tests/qml/tst_ui.qml`; texts in `app/i18n/` |
 | A new element of the interface | `app/qml/Look/` in both forms; for Kante first in Kante, for Shinki in `shinki/` |
 | Something a page needs to know or do | A service in `app/services/`, with a test in `app/tests/` |
@@ -99,9 +99,10 @@ uses too.
 - The programme page has its own guard for typing (`AUDIT.md`, finding 7).
 - The catalog hands the data on raw; six services search them by field name, and
   seven listen for the language themselves (`AUDIT.md`, finding 8).
-- Services handle files themselves beyond that: `Bundles` downloads the videos
-  and swaps the folders, `Backup` opens and copies archives, the sync job writes
-  what it downloaded, `Storage` creates folders (not in `AUDIT.md`).
+- Eleven services open, write, move or delete files and folders themselves:
+  `appearance`, `backup`, `bundles` (which also downloads the videos), `courses`,
+  `media`, `practice`, `saveplace`, `storage`, `sync`, `syncjob`, `videos`
+  (not in `AUDIT.md`).
 - The practice schedule (what is due when) and the search key live in `store`,
   though they keep nothing (not in `AUDIT.md`).
 - `Main.qml` and `LookSample.qml` import Kante directly; services branch by
