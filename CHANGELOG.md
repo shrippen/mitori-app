@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-11-14
+
 ### English
+
+Learning videos with techniques of their own, a new start menu of tiles and a dark player. On tablets and wide windows the pages, the glossary and the technique map use the width.
 
 #### New
 - Learning videos: a new start tile for video packages with techniques of their own, apart from the exam programme. A package loads with its own code (Settings → Videos), like the DVD videos; until then the app shows nothing of it. Its techniques are listed in sections; tap one for its description, how well it sits, notes and the video, or to jump to the same technique in the exam programme, and back from the exam technique to the learning videos that teach it. On a tablet the packages and the open one stand side by side.
@@ -23,10 +27,18 @@
 - Start menu: the planned exam is no longer a hint box above the tiles; the exam tile shows it.
 - Player: a new dark layout with a video. Sideways the picture fills the page, with the name and Notes at the top, the four ratings at the right edge and one plate at the foot (timeline, tempo, frames, loop, subtitles, sound, full screen, next). Upright the middle shows how the technique was rated over time and its last notes, with a field for today's, and the controls, ratings and the way on lie in reach of the thumb.
 
-#### Removed
-- Videos: the "Video folder" setting for video files of one's own. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
+#### Fixed
+- Videos: a failed update of the videos no longer loses the ones already loaded; they stay until the new ones are in place. A download waiting for Wi-Fi now starts by itself when Wi-Fi or a cable comes.
+- Kante style: disabled buttons and fields on the pages showed the platform's colours instead of Kante's.
+
+#### Note
+- Videos: the "Video folder" setting for video files of one's own is gone. Such files rarely fit the cut points of the techniques; the videos come with the DVD codes.
+
+All changes: https://github.com/shrippen/mitori-app/compare/v0.3.0...v0.4.0
 
 ### Deutsch
+
+Lernvideos mit eigenen Techniken, ein neues Startmenü aus Kacheln und ein dunkler Player. Auf Tablets und in breiten Fenstern nutzen die Seiten, das Glossar und die Landkarte die Breite.
 
 #### Neu
 - Lernvideos: eine neue Kachel im Startmenü für Videopakete mit eigenen Techniken, getrennt vom Prüfungsprogramm. Ein Paket wird mit einem eigenen Code geladen (Einstellungen → Videos), wie die Videos der DVDs; bis dahin zeigt die App nichts davon. Seine Techniken stehen in Abschnitten; Antippen zeigt Beschreibung, Stand, Notizen und Video oder springt zur selben Technik im Prüfungsprogramm, und von der Prüfungstechnik zurück zu den Lernvideos, die sie zeigen. Auf einem Tablet stehen die Pakete und das geöffnete Paket nebeneinander.
@@ -47,8 +59,12 @@
 - Startmenü: die geplante Prüfung steht nicht mehr als Hinweis über den Kacheln, die Prüfungskachel zeigt sie.
 - Player: neues dunkles Layout mit Video. Quer füllt das Bild die Seite; oben stehen der Name und „Notizen“, am rechten Rand die vier Einschätzungen, unten eine Leiste (Zeitleiste, Tempo, Einzelbilder, Schleife, Untertitel, Ton, Vollbild, weiter). Hochkant zeigt die Mitte, wie die Technik eingeschätzt wurde, und die letzten Notizen mit einem Feld für die heutige; Steuerung, Einschätzung und Weiter liegen in Daumenreichweite.
 
-#### Entfernt
-- Videos: die Einstellung „Videoordner“ für eigene Videodateien. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.
+#### Behoben
+- Videos: Ein gescheitertes Update der Videos verliert die schon geladenen nicht mehr; sie bleiben, bis die neuen bereitliegen. Ein Download, der auf WLAN wartet, startet jetzt von selbst, sobald WLAN oder ein Kabel da ist.
+- Stil Kante: deaktivierte Knöpfe und Felder auf den Seiten zeigten die Farben der Plattform statt die von Kante.
+
+#### Hinweis
+- Videos: Die Einstellung „Videoordner“ für eigene Videodateien entfällt. Solche Dateien passen selten zu den Stellen der Techniken; die Videos kommen mit den Codes der DVDs.
 
 ## [0.3.0] — 2026-11-10
 
