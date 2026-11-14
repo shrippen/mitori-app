@@ -54,8 +54,10 @@ uses too.
   colour or font outside the styles.
 - Something several pages show the same way (a technique's name, playing a
   chapter, holding the layout while typing) is built once and used by all.
-- A service never reaches up to QML and knows no page. `store`, `player` and
-  `platform` know no service and none of each other.
+- A service never reaches up to QML and knows no page. Two named exceptions:
+  `LookPreview` is an item that draws the style sample, and `Appearance` switches
+  the engine's style. `store`, `player` and `platform` know no service and none
+  of each other.
 - `store` owns databases, files, archives and the network: a service says what it
   wants (this file from that address, both databases copied), never how. A service
   may remember a small setting of its own.
@@ -71,6 +73,7 @@ uses too.
 
 | Change | Touch |
 |---|---|
+| Any new file | Its entry in `app/CMakeLists.txt` |
 | A new page | `app/qml/`, built from `Look` components; a case in `app/tests/qml/tst_ui.qml`; texts in `app/i18n/` |
 | A new element of the interface | `app/qml/Look/` in both forms; for Kante first in Kante, for Shinki in `shinki/` |
 | Something a page needs to know or do | A service in `app/services/`, with a test in `app/tests/` |
@@ -96,5 +99,10 @@ uses too.
 - The programme page has its own guard for typing (`AUDIT.md`, finding 7).
 - The catalog hands the data on raw; six services search them by field name, and
   seven listen for the language themselves (`AUDIT.md`, finding 8).
+- Services handle files themselves beyond that: `Bundles` downloads the videos
+  and swaps the folders, `Backup` opens and copies archives, the sync job writes
+  what it downloaded, `Storage` creates folders (not in `AUDIT.md`).
+- The practice schedule (what is due when) and the search key live in `store`,
+  though they keep nothing (not in `AUDIT.md`).
 - `Main.qml` and `LookSample.qml` import Kante directly; services branch by
   platform in four places (not in `AUDIT.md`).
