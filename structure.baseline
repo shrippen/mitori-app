@@ -1,0 +1,64 @@
+# What is over a structure limit today (tools/structure-check.py). An entry may shrink,
+# never grow; a raised or new entry needs its reason in the PR. Rewrite with --update.
+# Lines: exclude<TAB>glob | path<TAB>function or - for the file<TAB>metric=value ...
+exclude	app/qml/Kante/*
+exclude	entwuerfe/*
+exclude	*.ts
+app/catalog/lessons.cpp	Lessons::refresh	ccn=18 length=91
+app/qml/PlayerView.qml	-	lines=1715
+app/qml/ProgrammePage.qml	-	lines=954
+app/qml/ProgrammePage.qml	scrollKey	nesting=5
+app/qml/SearchPage.qml	openRow	nesting=6
+app/services/backup.cpp	Backup::merge	ccn=22 length=84
+app/services/backup.cpp	Backup::save	ccn=18
+app/services/backup.cpp	Backup::swapIn	ccn=16
+app/services/bundles.cpp	Bundles::bundles	ccn=20
+app/services/bundles.cpp	Bundles::next	ccn=45 length=149
+app/services/courses.cpp	-	lines=869
+app/services/programme.cpp	-	lines=865
+app/services/programme.cpp	Programme::entry	nesting=5
+app/services/startboard.cpp	programmeTile	ccn=17
+app/services/sync.cpp	Sync::resolve	ccn=19
+app/services/syncjob.cpp	SyncJob::run	ccn=48 length=147
+app/store/coursebook.cpp	CourseBook::migrate	ccn=29 length=86
+app/store/icsreader.cpp	IcsReader::read	ccn=24 nesting=7
+app/store/practicelog.cpp	PracticeLog::migrate	ccn=24
+app/store/searchkey.h	NamedIn::endsClause	ccn=20
+app/store/searchkey.h	searchExcerpt	ccn=22
+app/store/searchkey.h	searchKey	ccn=19 nesting=5
+app/store/tablemerge.cpp	TableMerge::run	ccn=23
+app/store/webdav.cpp	WebDav::list	ccn=18 nesting=7
+app/tests/qml/tst_ui.qml	-	lines=9560
+app/tests/qml/tst_ui.qml	test_3d_backup_choices	length=108
+app/tests/qml/tst_ui.qml	test_4t_player_kino	ccn=20
+app/tests/qml/tst_ui.qml	test_4t_player_switches	ccn=25 length=83
+app/tests/qml/tst_ui.qml	test_4u_player_kino_upright	length=109
+app/tests/qml/tst_ui.qml	test_4v_full_screen	length=161
+app/tests/qml/tst_ui.qml	test_8d_all_notes	ccn=21 length=254 nesting=6
+app/tests/qml/tst_ui.qml	test_8e_export_sheet	length=97
+app/tests/qml/tst_ui.qml	test_8f_note_techniques	length=89
+app/tests/qml/tst_ui.qml	test_8f_photo_and_voice	length=90
+app/tests/qml/tst_ui.qml	test_8p_grade_without_forms	length=91
+app/tests/qml/tst_ui.qml	test_9_glossary_wide	length=107
+app/tests/qml/tst_ui.qml	test_9e_exam	length=118
+app/tests/qml/tst_ui.qml	test_9k_map	ccn=18 length=140
+app/tests/qml/tst_ui.qml	test_9m_courses	length=103
+app/tests/qml/tst_ui.qml	test_9n_videos_scan	length=122
+app/tests/qml/tst_ui.qml	test_9o_grades	length=127
+app/tests/qml/tst_ui.qml	test_9p_lessons	length=86
+app/tests/qml/tst_ui.qml	test_9p_lessons_subtitles	length=148
+app/tests/qml/tst_ui.qml	walk	ccn=17
+app/tests/tst_backup.cpp	-	lines=962
+app/tests/tst_backup.cpp	TstBackup::linksBackAndForth	length=131
+app/tests/tst_backup.cpp	TstBackup::mergeDevices	length=140
+app/tests/tst_bundles.cpp	-	lines=1140
+app/tests/tst_export.cpp	TstExport::notebookArchive	length=128
+app/tests/tst_programme.cpp	-	lines=1097
+app/tests/tst_programme.cpp	TstProgramme::searchFindsTechniques	length=84
+app/tests/tst_programme.cpp	TstProgramme::suggestFromText	length=83
+app/tests/tst_sync.cpp	-	lines=1324
+app/tests/tst_sync.cpp	FakeDav::take	ccn=22 nesting=6
+app/tests/tst_sync.cpp	TstSync::replacedData	length=106
+app/tests/tst_ui.cpp	Setup::applicationAvailable	length=110
+shinki/qml/Shinki/ShinkiHeatGrid.qml	-	lines=950
+shinki/qml/Shinki/ShinkiHeatGrid.qml	Keys.onPressed	nesting=6

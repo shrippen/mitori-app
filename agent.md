@@ -60,7 +60,7 @@ platform/       eine Implementierung je Plattform (Bildschirm wach, Helligkeit, 
 - Demo-Modus nur zum Erstellen von Screenshots (Build-Option `MITORI_DEMO`, aus), nie in einer Auslieferung.
   `demo/start.sh [de|en] [stil]`: Emi Hartmanns Übungsstand aus `demo/world.json` (Abschnitt `dojo`, Kopie aus
   `shrippen.github.io/demo/`, nie von Hand ändern), eigene Ordner, keine Videos, kein Netz; `demo/shots.json` die Bilder.
-- `scripts/check.sh` vor jedem Commit (Daten, Release-Notes, Tests, Build, qmllint).
+- `scripts/check.sh` vor jedem Commit (Strukturgrenzen, Daten, Release-Notes, Tests, Build, qmllint).
 - **Lokal bauen geht vor Warten auf die CI:** `scripts/build-all.sh [check|apk|appimage|flatpak]` baut alles, was die
   CI baut, nach `dist/`; eine Änderung an Build oder Paketen wird lokal gebaut und gestartet (APK per `adb` auf ein
   angeschlossenes Telefon, `.dev`-ID), bevor sie gepusht wird. Die CI läuft zusätzlich bei jedem Push.
