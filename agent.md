@@ -20,34 +20,12 @@ Prüfungsmodus, Lehrgänge. Plan: `ROADMAP.md`. Entscheidungen zur App: `entwuer
 Vorlage der Oberfläche: der Clickdummy `entwuerfe/clickdummy/index.html` (Telefon und Tablet quer).
 
 ## Aufbau
-```
-third_party/mitori-daten/   Submodul: daten/*.yaml die eine Quelle, tools/daten.py, KORREKTUREN.md
-                kommentare.py, lexikon.py lesen PDFs aus quellen/ → daten/*.yaml (erzeugt)
-                bundle.py (Video-Bundle-Encoder)
-app/           die App (CMake, C++, QML); app/qml/Kante ist eine Kopie aus ../Kante
-                Look-Schicht über Kante und Shinki
-shinki/        der Stil Shinki: Bibel, tokens.json, qml/Shinki, fonts/
-tools/         shinki_style.py, shinki_fonts.py, shinki_chars.py
-entwuerfe/     Konzept, Entscheidungen, Clickdummy (Vorlage, kein Produktcode)
-(mitori-heft: eigenes Repo, das gedruckte Heft; pinnt ebenfalls mitori-daten)
-KORREKTUREN.md  liegt im Submodul: offene und geklärte Fragen zu den Daten (IDs A-…, D-…, S-…)
-```
-
-## Schichten der App (nur zum direkten Nachbarn darunter)
-```
-qml/            Seiten und Komponenten (Kirigami + Kante), nur Darstellung
-  ↓
-services/       C++ QObjects für QML: Programm, Übungsstand, Notizen, Prüfung, Lehrgänge, Bundles, Abgleich
-  ↓
-store/          SQLite (Übungsprotokoll, Notizen, Einschätzungen)   catalog/  mitori-daten.json (Ressource)
-  ↓                                                                 player/   QtMultimedia, Kapitelzeiten
-platform/       eine Implementierung je Plattform (Bildschirm wach, Helligkeit, Lautstärke, Dateien)
-```
-- QML ruft nie SQLite, Dateien oder Netz direkt auf, immer über einen Service.
-- Programmdaten nur aus `mitori-daten.json` (Build aus `third_party/mitori-daten/` über `-DMITORI_DATA_DIR=…`), nie im Code.
-- Eine Datenversion wird durch das Submodul-Pin festgelegt. Neuer Datenstand: im Submodul-Repo PR, dann hier Submodul-Pointer erhöhen (PR). Heft- und App-Release hängen am selben Tag.
+Der Soll-Aufbau (Bausteine, Schichten, wo Neues hingehört, bekannte Abweichungen) steht in
+`ARCHITECTURE.md`. Das gedruckte Heft ist ein eigenes Repo (`mitori-heft`) und pinnt ebenfalls
+`mitori-daten`; `KORREKTUREN.md` liegt im Submodul.
 
 ## Konventionen
+- Eine Datenversion wird durch das Submodul-Pin festgelegt. Neuer Datenstand: im Submodul-Repo PR, dann hier Submodul-Pointer erhöhen (PR). Heft- und App-Release hängen am selben Tag.
 - Der Daten-Pin zeigt auf `main` auf ein Tag `v<Stand>` von mitori-daten (CI prüft es); App und Heft ziehen zusammen nach.
 - Programmdaten nur in `third_party/mitori-daten/daten/*.yaml` ändern, dann
   `python3 third_party/mitori-daten/tools/daten.py`; offene Fragen als `[ID]`, jede ID

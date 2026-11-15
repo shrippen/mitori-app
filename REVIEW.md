@@ -33,7 +33,7 @@ costs data or trust:
   checked by `tools/daten.py`; generated files (`daten/shinki-toho-kommentare.yaml`,
   `daten/lexikon.yaml`, `build/`) not edited by hand; every `[ID]` in the
   data has an entry in `KORREKTUREN.md`.
-- Layers: QML only through services; services own SQLite, files, network.
+- Layers: as in `ARCHITECTURE.md`; QML only through services.
   Database changes come with a migration and a test on an old database.
 - Texts in both catalogs (de, en). GUI rule: Kante as it is, no hex or
   `px` outside `app/qml/Kante` and `shinki/`, no local copy of a Kante component. Shinki
